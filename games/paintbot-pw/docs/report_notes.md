@@ -1,0 +1,14 @@
+- Sources: 132 league replays (rounds 2364 to 2375) plus the 120 hosted XP games of zhar:v1 against the top three, so the top three columns include those games against us.
+- Matches are an elimination race: the top three win in 85 to 100 seconds by taking all 32 enemy lives, so the heart meter almost never decides a game. Glory per win is about 540 to 575 for everyone; what separates players is win rate.
+- The top three (aaron-coplay-coach, daveey-pw-neural, aaron-paintbot-pw) die 2.4 to 2.7 times per cog; everyone below dies 3.4 to 4.0 times. Kills per cog are 3.6 to 3.7 against 1.9 to 2.2.
+- Water is the biggest single gap: 1 to 5% of the leaders' deaths happen while wading, against 38 to 48% for richard, relh, the league baseline and zhar:v1. The leaders spend about 1% of their time wading, the rest 10 to 15%.
+- The leaders hit 35 to 40% of gun shots against 28 to 32%. They also move less (80% of alive time against 91 to 93%), which fits stopping before firing.
+- The leaders spend about 3% of alive time in a heart ring against 7 to 8%, and capture no more hearts: they fight rather than stand on hearts.
+- daveey-pw-neural holds high ground 36% of the time, deals 37% of its hits from it, keeps teammates closest (7 m) and never uses grenades or medkits.
+- aaron-coplay-coach and aaron-paintbot-pw have near-identical profiles in every row.
+- Diagnostics (every column now runs the policy's own submitted file; the rival files were fetched only for this and deleted afterwards). The two Aaron policies are the same file, and so are richard and relh; the league filler paintbot-pw-basic-v22 is an older, smaller baseline than today's public base.bas.
+- The top three score highest where the league is decided: they win every 8v8 match against base.bas (100 vs our 33) and win the 4v4 fight (Aaron 81, daveey 65, us 50). Aaron's file also kills idle targets at 25 m and 45 m every time (100 vs our 72 and 100).
+- The leaders are not better duellists: face to face against base.bas, Aaron scores 50, daveey 47, richard 69, us 42. Their edge is team fighting, not single duels.
+- The leaders defend hearts (Aaron 83, daveey 100, us 50) but do not rush neutral hearts (Aaron 50, daveey 17, richard 100).
+- daveey's neural bot never takes a medkit or armor (0 and 0) and never grenades; jevbot and the league filler are the only ones that grenade a cluster (89, 87). Nobody but richard/relh collects glory hearts, and they only rarely (17).
+- Shooting: the top four (both Aaron files, daveey neural, jevbot) fire every shot standing and 38-56% of shots from above the target; everyone else fires 96-98% on the move. Their misses are mostly targets moving off the line; only 2-11% of their shots hit cover, against 19-23% for the rest and for us. Our aim is also off a still target in 8.5% of shots, against under 2% for the leaders.

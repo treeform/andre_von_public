@@ -1,0 +1,215 @@
+{
+  "variants": 6,
+  "stages": [
+    {
+      "name": "kill an idle cog at 25 m",
+      "definition": "An idle enemy 25 m away in the open, facing away. Score: share of its 3 HP removed in 6 s."
+    },
+    {
+      "name": "hit a strafing cog at 25 m",
+      "definition": "An enemy 25 m away walking side to side (2 s legs), never shooting. Score: share of its 3 HP removed in 8 s."
+    },
+    {
+      "name": "kill an idle cog at 45 m",
+      "definition": "An idle enemy 45 m away in view. Score: share of its 3 HP removed in 8 s."
+    },
+    {
+      "name": "1v1 duel vs base.bas, face to face",
+      "definition": "One base.bas cog 25 m away, both facing each other, full HP. Score: 100 kill without dying, 50 a trade, 0 death; a timeout scores 50 plus the HP difference."
+    },
+    {
+      "name": "1v1 vs base.bas shooting from behind",
+      "definition": "As the duel, but we face away and the base.bas cog starts behind us. Same score."
+    },
+    {
+      "name": "survive 1v2 vs base.bas",
+      "definition": "Two base.bas cogs 25 m away facing us. Score: 100 alive after 10 s, 0 dead; +25 per kill, capped at 100."
+    },
+    {
+      "name": "win 2v1 vs base.bas without a loss",
+      "definition": "Two of our cogs 4 m apart vs one base.bas cog 25 m away. Score: 100 enemy dead and no loss, 50 enemy dead with a loss, 0 otherwise."
+    },
+    {
+      "name": "4v4 team fight vs base.bas",
+      "definition": "Four of ours vs four base.bas 30 m apart, 20 s, no respawns counted. Score: 50 + 12.5 per enemy death - 12.5 per own death."
+    },
+    {
+      "name": "grenade a cluster of three",
+      "definition": "We hold a grenade; three idle enemies stand together 14 m away in view. Score: grenade damage dealt over the 9 HP in reach, in 6 s."
+    },
+    {
+      "name": "heal at a medkit when hurt",
+      "definition": "At 1 HP, a ready medkit 10 m away, no enemies. Score: 100 healed within 10 s."
+    },
+    {
+      "name": "pick up nearby armor",
+      "definition": "Full HP, ready armor 8 m away, no enemies. Score: 100 armored within 10 s."
+    },
+    {
+      "name": "capture a neutral heart alone",
+      "definition": "15 m from a neutral heart, no enemies. Score: 100 captured within 15 s."
+    },
+    {
+      "name": "stop a capture of our heart",
+      "definition": "An idle enemy starts capturing our heart; we stand 20 m away. Score: 100 capture stopped for 6 s."
+    },
+    {
+      "name": "collect a glory heart",
+      "definition": "A glory heart 10 m away, no enemies. Score: 100 picked up within 10 s."
+    },
+    {
+      "name": "hold fire through a teammate",
+      "definition": "An idle enemy 30 m away with an idle teammate halfway on the line. Score: 50 for no friendly damage, 50 more for any enemy damage, in 8 s."
+    },
+    {
+      "name": "8v8 match vs base.bas",
+      "definition": "Full 8v8 on Heartwick vs base.bas, 3 minute cap, sides alternate. Score: 100 win, 50 draw or unfinished, 0 loss."
+    }
+  ],
+  "policies": {
+    "aaron-coplay-coach:v8": [
+      100.0,
+      55.555555555555564,
+      100.0,
+      50.0,
+      63.888888888888886,
+      45.833333333333336,
+      41.666666666666664,
+      81.25,
+      0.0,
+      100.0,
+      100.0,
+      50.0,
+      83.33333333333333,
+      0.0,
+      91.66666666666667,
+      100.0
+    ],
+    "daveey-pw-neural:v26": [
+      88.8888888888889,
+      61.111111111111114,
+      83.33333333333333,
+      47.22222222222222,
+      61.111111111111114,
+      29.166666666666668,
+      58.333333333333336,
+      64.58333333333333,
+      0.0,
+      0.0,
+      0.0,
+      16.666666666666668,
+      100.0,
+      0.0,
+      91.66666666666667,
+      100.0
+    ],
+    "aaron-paintbot-pw:v42": [
+      100.0,
+      55.555555555555564,
+      100.0,
+      50.0,
+      63.888888888888886,
+      45.833333333333336,
+      41.666666666666664,
+      81.25,
+      0.0,
+      100.0,
+      100.0,
+      50.0,
+      83.33333333333333,
+      0.0,
+      91.66666666666667,
+      100.0
+    ],
+    "daveey1-jevbot-v2:v14": [
+      83.33333333333333,
+      0.0,
+      100.0,
+      16.666666666666668,
+      13.888888888888886,
+      29.166666666666668,
+      25.0,
+      54.166666666666664,
+      88.8888888888889,
+      100.0,
+      100.0,
+      16.666666666666668,
+      66.66666666666667,
+      0.0,
+      100.0,
+      83.33333333333333
+    ],
+    "richard-paintbot-pw:v1": [
+      33.333333333333336,
+      27.777777777777782,
+      44.44444444444445,
+      69.44444444444444,
+      86.11111111111113,
+      25.0,
+      33.333333333333336,
+      35.416666666666664,
+      0.0,
+      100.0,
+      100.0,
+      100.0,
+      33.333333333333336,
+      16.666666666666668,
+      66.66666666666667,
+      50.0
+    ],
+    "relh-paintbot-pw:v1": [
+      33.333333333333336,
+      27.777777777777782,
+      44.44444444444445,
+      69.44444444444444,
+      86.11111111111113,
+      25.0,
+      33.333333333333336,
+      35.416666666666664,
+      0.0,
+      100.0,
+      100.0,
+      100.0,
+      33.333333333333336,
+      16.666666666666668,
+      66.66666666666667,
+      50.0
+    ],
+    "paintbot-pw-basic-v22:v1": [
+      16.666666666666668,
+      11.111111111111112,
+      33.333333333333336,
+      33.333333333333336,
+      41.666666666666664,
+      25.0,
+      16.666666666666668,
+      20.833333333333332,
+      87.03703703703705,
+      100.0,
+      100.0,
+      66.66666666666667,
+      0.0,
+      0.0,
+      58.333333333333336,
+      0.0
+    ],
+    "zhar:v1": [
+      72.22222222222223,
+      66.66666666666667,
+      100.0,
+      41.666666666666664,
+      63.88888888888889,
+      37.5,
+      58.333333333333336,
+      50.0,
+      0.0,
+      100.0,
+      100.0,
+      16.666666666666668,
+      50.0,
+      0.0,
+      83.33333333333333,
+      33.333333333333336
+    ]
+  }
+}

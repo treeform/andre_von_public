@@ -1,0 +1,19 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Paintbot head to head</title>
+<style>
+body { font-family: Georgia, serif; max-width: 70rem; margin: 2rem auto; padding: 0 1rem; color: #111; background: #fffff8; }
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+th, td { padding: 0.35rem 0.6rem; border-bottom: 1px solid #ddd; text-align: right; }
+th { border-bottom: 2px solid #333; }
+td:first-child, th:first-child, td.text, th.text { text-align: left; }
+tr.behind td { background: #f6dede; }
+tr.ahead td { background: #e4f0e2; }
+tr.pooled td { font-weight: 600; border-top: 2px solid #333; }
+p.note { color: #555; font-size: 0.9rem; }
+</style></head><body>
+<h1>zhar vs the top three</h1><p class="note">Hosted XP tags: h12_v58, h15_v58, h16_v58. Win test: binomial z of wins against losses (draws left out), two-sided p. Score test: paired t on our glory minus theirs per episode (a loss scores 0). Red rows: significantly behind at 5%; green: significantly ahead.</p>
+<table><tr><th class="text">rival</th><th>n</th><th>W-D-L</th><th>win %</th><th>95% Wilson</th><th>win z</th><th>p</th><th>our glory</th><th>their glory</th><th>diff</th><th>paired t</th><th>p</th><th class="text">verdict</th></tr>
+<tr class="behind"><td class="text">jb-pw-opt:v29</td><td>192</td><td>91-0-101</td><td>47.4</td><td>[0.40, 0.54]</td><td>-0.72</td><td>0.470</td><td>235.</td><td>384.</td><td>-149.</td><td>-3.17</td><td>0.002</td><td class="text">win not significant, score behind</td></tr>
+<tr class="behind"><td class="text">co-gas-paintbot-bassy-richard:v1</td><td>192</td><td>94-0-98</td><td>49.0</td><td>[0.42, 0.56]</td><td>-0.29</td><td>0.773</td><td>257.</td><td>418.</td><td>-161.</td><td>-3.07</td><td>0.002</td><td class="text">win not significant, score behind</td></tr>
+<tr class="behind"><td class="text">co-gas-paintbot-relay-bassy-relh:v1</td><td>192</td><td>95-0-97</td><td>49.5</td><td>[0.42, 0.56]</td><td>-0.14</td><td>0.885</td><td>258.</td><td>479.</td><td>-221.</td><td>-3.78</td><td>0.000</td><td class="text">win not significant, score behind</td></tr>
+<tr class="pooled"><td class="text">all three</td><td>576</td><td>280-0-296</td><td>48.6</td><td>[0.45, 0.53]</td><td>-0.67</td><td>0.505</td><td>250.</td><td>427.</td><td>-177.</td><td>-5.80</td><td>0.000</td><td class="text">win not significant, score behind</td></tr>
+</table></body></html>

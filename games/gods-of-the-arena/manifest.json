@@ -1,0 +1,284 @@
+{
+  "id": "cow_e8fbfdfd-8cce-4cd0-a046-796e3c287fb8",
+  "name": "Gods of the Arena",
+  "version": "2026.9.9.3",
+  "manifest": {
+    "game": {
+      "docs": {
+        "pages": [],
+        "readme": {
+          "type": "text",
+          "value": "# Gods of the Arena\n\nTwo teams of five BASIC heroes battle to destroy the enemy fort. Every hero on the winning team scores one win. A time limit without a fort victory gives everyone zero.\n\nSlots 0\u20134 are Red and slots 5\u20139 are Blue. Platform slots are zero-based. Upload a `.bas` file containing BASIC source. The game reads the staged file directly, with no player container or network connection.\n\nStart with the bundled `players/base.bas`. The [game documentation](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/docs/index.html) describes observations and available BASIC commands. The same source is available under `examples/gods_of_the_arena/bots.nim` and `content.nim`.\n\nBASIC `PRINT` output, compiler diagnostics, runtime errors, and VM lifecycle messages go to the owning player's private log. Each log is limited to 10 MiB. Runtime limit errors disable that VM; other seats continue. Invalid BASIC syntax fails the episode with a player failure diagnostic. Public game logs and action replays contain no BASIC source or private print output.\n\nMatches run up to 28,800 deterministic ticks (20 simulated minutes), without real-time pacing. Replays run entirely in the browser with playback, seeking, speed, and loop controls. The server exposes `/healthz`; legacy clients are static stubs.\n\nThe Competition league runs every 30 minutes with at least two episodes per entrant. Separate baseline filler policies complete short rosters. Fillers are not ranked entrants. Standings use binary win scores and platform Elo.\n"
+        }
+      },
+      "name": "Gods of the Arena",
+      "owner": "treeform",
+      "version": "2026.9.9.3",
+      "runnable": {
+        "env": {},
+        "run": [],
+        "type": "game",
+        "image": "img_3098ce32-8793-42e2-a896-37dfc4f51d0d",
+        "source_url": "https://github.com/Metta-AI/polyworld/tree/028cc5f1692fa51f3dab65b8b261fa327013a543/examples/gods_of_the_arena"
+      },
+      "protocols": {
+        "global": {
+          "type": "text",
+          "value": "GET /client/global returns a static status page. /global sends one JSON status message after WebSocket upgrade and echoes Ping frames with Pong. No gameplay traffic uses WebSockets. Other legacy endpoints return explicit stubs."
+        },
+        "player": {
+          "type": "text",
+          "value": "Slots 0\u20134 are Red and slots 5\u20139 are Blue. Supply a raw BASIC file. The existing Polyworld BASIC host API runs with bounded source, memory, work, and instruction limits. PRINT is private. See the game guide and bundled base.bas for a complete working player."
+        }
+      },
+      "description": "Two teams of five BASIC heroes battle to destroy the enemy fort. Every hero on the winning team scores one win. A time limit without a fort victory gives everyone zero.",
+      "config_schema": {
+        "type": "object",
+        "required": [
+          "tokens",
+          "players",
+          "seed",
+          "max_ticks"
+        ],
+        "properties": {
+          "seed": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": -2147483648
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "maxItems": 10,
+            "minItems": 10
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false
+            },
+            "maxItems": 10,
+            "minItems": 10
+          },
+          "max_ticks": {
+            "type": "integer",
+            "maximum": 28800,
+            "minimum": 1
+          },
+          "spawn_interval_ticks": {
+            "type": "integer",
+            "default": 240,
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "replay_viewer": {
+        "bundle": "sha256:40ed27213498ed83fd521a54c47591530fc0674d3a2c0cb9d907e99dd501630d",
+        "replay_compression": "gzip"
+      },
+      "player_runtime": "game-hosted",
+      "results_schema": {
+        "type": "object",
+        "required": [
+          "scores",
+          "ticks",
+          "seed",
+          "outcome"
+        ],
+        "properties": {
+          "seed": {
+            "type": "integer"
+          },
+          "ticks": {
+            "type": "integer",
+            "maximum": 28800,
+            "minimum": 0
+          },
+          "scores": {
+            "type": "array",
+            "items": {
+              "enum": [
+                0,
+                1
+              ],
+              "type": "integer"
+            },
+            "maxItems": 10,
+            "minItems": 10
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "returned": {
+            "type": "array",
+            "items": {
+              "type": "boolean"
+            }
+          },
+          "banked_gold": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "tags": [
+      "strategy",
+      "basic",
+      "polyworld"
+    ],
+    "grader": [],
+    "player": [
+      {
+        "id": "baseline",
+        "env": {},
+        "run": [],
+        "file": "sha256:6af2a79e0c7815b41a00e824de897b1ab2a2f3057798c6c5395778e59d734ae9",
+        "name": "Baseline",
+        "type": "player",
+        "description": "Unmodified Gods of the Arena BASIC baseline."
+      }
+    ],
+    "reporter": [],
+    "variants": [
+      {
+        "id": "competition",
+        "name": "Competition",
+        "description": "Full-length deterministic competition match.",
+        "game_config": {
+          "seed": 2026,
+          "players": [
+            {
+              "name": "Baseline 0"
+            },
+            {
+              "name": "Baseline 1"
+            },
+            {
+              "name": "Baseline 2"
+            },
+            {
+              "name": "Baseline 3"
+            },
+            {
+              "name": "Baseline 4"
+            },
+            {
+              "name": "Baseline 5"
+            },
+            {
+              "name": "Baseline 6"
+            },
+            {
+              "name": "Baseline 7"
+            },
+            {
+              "name": "Baseline 8"
+            },
+            {
+              "name": "Baseline 9"
+            }
+          ],
+          "max_ticks": 28800,
+          "spawn_interval_ticks": 240
+        }
+      }
+    ],
+    "diagnoser": [],
+    "optimizer": [],
+    "commissioner": [],
+    "certification": {
+      "players": [
+        {
+          "player_id": "baseline"
+        },
+        {
+          "player_id": "baseline"
+        },
+        {
+          "player_id": "baseline"
+        },
+        {
+          "player_id": "baseline"
+        },
+        {
+          "player_id": "baseline"
+        },
+        {
+          "player_id": "baseline"
+        },
+        {
+          "player_id": "baseline"
+        },
+        {
+          "player_id": "baseline"
+        },
+        {
+          "player_id": "baseline"
+        },
+        {
+          "player_id": "baseline"
+        }
+      ],
+      "game_config": {
+        "seed": 2026,
+        "players": [
+          {
+            "name": "Baseline 0"
+          },
+          {
+            "name": "Baseline 1"
+          },
+          {
+            "name": "Baseline 2"
+          },
+          {
+            "name": "Baseline 3"
+          },
+          {
+            "name": "Baseline 4"
+          },
+          {
+            "name": "Baseline 5"
+          },
+          {
+            "name": "Baseline 6"
+          },
+          {
+            "name": "Baseline 7"
+          },
+          {
+            "name": "Baseline 8"
+          },
+          {
+            "name": "Baseline 9"
+          }
+        ],
+        "max_ticks": 28800,
+        "spawn_interval_ticks": 240
+      }
+    }
+  },
+  "manifest_hash": "sha256:457c712171c9db536f9a5a544981ac3e71224f216b1a2c240ec079e4f300d4b2",
+  "size_bytes": 5258,
+  "created_at": "2026-09-09T19:14:09.019828Z",
+  "canonical": true
+}

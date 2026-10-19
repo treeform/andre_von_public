@@ -1,0 +1,337 @@
+{
+ "id": "cow_e89aa419-24b0-463a-9ba4-28a1c5d03014",
+ "name": "Mindustry Survival",
+ "version": "0.2.0",
+ "visibility": "public",
+ "manifest": {
+  "tags": [
+   "strategy",
+   "basic",
+   "polyworld"
+  ],
+  "game": {
+   "name": "Mindustry Survival",
+   "version": "0.2.0",
+   "description": "BASIC players compete in mirrored four-versus-four native Mindustry PvP, or defend independent seeded survival worlds.",
+   "owner": "treeform",
+   "player_runtime": "game-hosted",
+   "config_schema": {
+    "type": "object",
+    "required": [
+     "tokens",
+     "players",
+     "seed",
+     "max_ticks"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "maximum": 2147483647,
+      "minimum": -2147483648
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "oneOf": [
+       {
+        "maxItems": 2,
+        "minItems": 2
+       },
+       {
+        "maxItems": 8,
+        "minItems": 8
+       }
+      ],
+      "maxItems": 8,
+      "minItems": 2
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "oneOf": [
+       {
+        "maxItems": 2,
+        "minItems": 2
+       },
+       {
+        "maxItems": 8,
+        "minItems": 8
+       }
+      ],
+      "maxItems": 8,
+      "minItems": 2
+     },
+     "max_ticks": {
+      "type": "integer",
+      "maximum": 36000,
+      "minimum": 1
+     },
+     "spawn_interval_ticks": {
+      "type": "integer",
+      "default": 3600,
+      "maximum": 3600,
+      "minimum": 120
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "required": [
+     "scores",
+     "ticks",
+     "seed",
+     "outcome"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer"
+     },
+     "ticks": {
+      "type": "integer",
+      "maximum": 36000,
+      "minimum": 0
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "oneOf": [
+       {
+        "maxItems": 2,
+        "minItems": 2
+       },
+       {
+        "maxItems": 8,
+        "minItems": 8
+       }
+      ],
+      "maxItems": 8,
+      "minItems": 2
+     },
+     "outcome": {
+      "type": "string"
+     },
+     "returned": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      }
+     },
+     "banked_gold": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      }
+     }
+    },
+    "additionalProperties": false
+   },
+   "runnable": {
+    "type": "game",
+    "image": "public.ecr.aws/q5f4m8t9/cogames@sha256:da7079ae3915c667f434bb2721b54537a69c2d121eea26cac7de1c4bb8679681",
+    "run": [],
+    "env": {
+     "COGAME_PLAYER_SEATS_SCHEMA": "coworld-player-seats/2"
+    },
+    "source_url": "https://github.com/Metta-AI/coworld-mindustry/tree/49bf8e6f7b81757d0df14c5c1bfa8470227f24b8/coworld/mindustry",
+    "resources": {
+     "requests": {
+      "cpu": "1",
+      "memory": "1Gi"
+     },
+     "limits": {
+      "cpu": "2",
+      "memory": "2Gi"
+     }
+    }
+   },
+   "protocols": {
+    "player": {
+     "type": "text",
+     "value": "Upload a bounded BASIC policy. Two seats run independent survival evaluations; eight seats run shared four-versus-four PvP. Slots 0-3 share the blue team and slots 4-7 the red team. Each policy controls its own native flyer and decides every six ticks. PRINT and annotations remain private."
+    },
+    "global": {
+     "type": "text",
+     "value": "GET /client/global returns a static status page. /global sends one JSON status message after WebSocket upgrade and echoes Ping frames with Pong. No gameplay traffic uses WebSockets. Other legacy endpoints return explicit stubs."
+    }
+   },
+   "docs": {
+    "readme": {
+     "type": "text",
+     "value": "# Mindustry Survival\n\nTwo BASIC policies defend identical Ground Zero survival worlds. Each seat gets\nits own Java process, native player flyer, starting inventory, rules and seed. Policy\ncode runs in the bounded Nim/Bassy host used by Polyworld and Gods of the Arena.\nOnly BASIC files execute. Submitted files cannot load Java mods or native code.\n\nThe simulation runs at 60 ticks per simulated second. Policies decide every six\nticks. A match ends when the core dies or the configured tick limit is reached.\nThe ten-minute limit is 36,000 ticks. Waves spawn every 3,600 ticks by default.\nThe score is `clearedWaves * 2 * maxTicks + ticksSurvived`. Wave completion\ntherefore takes priority over survival time. Seats run sequentially with fresh\nengine globals. The current scenario uses native Dagger waves that grow over time.\n\n## Run locally\n\nInstall Nim 2.2.10, Java 17 and Python 3. Clone Mindustry next to this repository: `git clone https://github.com/Anuken/Mindustry ../mindustry`.\nCheck out the revision with `git -C ../mindustry checkout \"$(cat coworld/mindustry/engine.commit)\"`.\nThe engine revision is pinned in `engine.commit`. The build script applies the\nevaluation-only determinism patch and builds the server and sprite atlas.\nThe patch settles pathfinding, orders building adjacency by tile, and disables\nwall-clock construction audio in evaluation runs. Desktop gameplay is unchanged.\n\nFrom the coworld-mindustry repository:\n\n```sh\n# Set JAVA_HOME if the portable JDK in ../mindustry/.local is unavailable.\ncoworld/mindustry/tools/build_adapter.sh\nnim r --hints:off --nimcache:tmp/coworld/tool-cache/deps coworld/tools/sync_dependencies.nim\nexport POLYWORLD_DEPS=\"$PWD/tmp/coworld/deps\"\nnim c --hints:off --nimcache:tmp/mindustry/nimcache \\\n  -o:tmp/mindustry/mindustry examples/mindustry/mindustry.nim\ntmp/mindustry/mindustry --bot coworld/mindustry/players/base.bas:2 \\\n  --ticks 36000 --seed 2026 --record tmp/mindustry/demo.replay\ncoworld/mindustry/tools/build_replay_viewer.sh \"$PWD/tmp/mindustry/viewer\"\nmkdir -p tmp/mindustry/viewer/replays\ncp tmp/mindustry/demo.replay tmp/mindustry/viewer/replays/demo.replay\npython3 -m http.server 8769 --bind 127.0.0.1 --directory tmp/mindustry/viewer\n```\n\nOpen `http://127.0.0.1:8769/index.html?replay=replays/demo.replay`.\nThe viewer shows the map and a bottom playback bar. Use play/pause, frame\nstepping, beginning/end, looping, the timeline, and 1x/2x/4x/16x speed. The\ncamera buttons fit the map or follow the flyer. Drag to pan and scroll to zoom.\nThe gold ring marks the player-controlled unit. Add `&seat=1` to the URL to\nwatch the second policy seat (seat indices start at zero).\n\n`MINDUSTRY_DIR`, `MINDUSTRY_JAVA`, `MINDUSTRY_JAR` and `MINDUSTRY_CLASSES`\ncan select installed engine artifacts. The Docker image sets these automatically.\n`--wave-spacing` accepts 120 to 3,600 ticks. `--wave-units` accepts 1 to 200\nstarting Daggers. These are local stress-test controls, not competition overrides.\n\n## BASIC API\n\nNumeric queries use parentheses. Variables and DIM arrays persist across\nsix-tick decisions. DIM arrays use `array(index)`. `/` performs fractional\ndivision. Use `\\` for integer tile arithmetic. PRINT is private in hosted games.\nUnknown function names can be interpreted as array indexing by BASIC, so use\nonly the documented API and compile-check your policy.\n\n| Query | Meaning |\n| --- | --- |\n| `tick()`, `wave()`, `cleared()` | Simulation tick, current wave and waves cleared. |\n| `coreX()`, `coreY()`, `coreHealth()` | Own core tile and current health. |\n| `pending()`, `planCount()`, `plan(i, field)` | Queued plans: x, y, rotation, native block ID (-1 breaks). |\n| `controlled()`, `flyerX()`, `flyerY()`, `flyerHealth()` | Current player-controlled unit ID, tile position and health. |\n| `carriedItem()`, `carried()` | Carried item ID (-1 empty) and amount. |\n| `blockId(\"duo\")`, `itemId(\"copper\")`, `unitTypeId(\"alpha\")`, `liquidId(\"water\")` | Native content IDs by name, -1 if absent. |\n| `commandId(\"move\")`, `stanceId(\"stop\")` | Native RTS command and stance IDs by name. |\n| `contentAt(x, y)`, `configAt(x, y, field)` | Native block ID and tagged configuration fields. |\n| `mapWidth()`, `mapHeight()` | Map dimensions in tiles. |\n| `oreAt(x, y)` | 1 copper, 2 lead, 3 coal, 0 otherwise. |\n| `blockAt(x, y)` | Palette ID, -1 empty, -2 other structure or boundary. |\n| `stock(itemId)` | Core inventory in pinned Mindustry item order. |\n| `buildingCount()`, `unitCount()`, `projectileCount()` | Full visible snapshot counts. |\n| `building(i, field)`, `unit(i, field)`, `projectile(i, field)` | Numeric fields in flat recorded rows. Positions preserve fractional values. |\n| `build(blockId, x, y, rotation)` | Queue an order. -1 breaks a native interactable tile. |\n\n| Block ID | Block |\n| --- | --- |\n| 0 | Mechanical drill, 2 by 2 tiles. |\n| 1 | Conveyor. |\n| 2 | Router. |\n| 3 | Junction. |\n| 4 | Copper wall. |\n| 5 | Duo. |\n| 6 | Graphite press, 2 by 2 tiles. |\n\nItem IDs include copper 0, lead 1, graphite 3 and coal 5. The replay catalog\ncontains all pinned item names and exact construction recipes.\n\nBuilding fields are ID 0, x 2, y 3, size 4, team 5, health 6, orientation 7,\nturret angle 8, construction fraction 9, turret ammo 11 and enabled flag 13.\nField 12 is a configuration row read through `configAt`, starting with a type\ntag: 0 integer, 1 boolean, 2 item, 3 liquid, 4 block, 5 unit type, 6 point,\n7 text, 8 bytes, 9 point pairs, -1 empty. Replay field 14 contains conveyor item\nrows `[itemId, lateralPosition, forwardProgress]`. Field 15 contains the native\nconveyor visual row `[variant, xScale, yScale, branchMask, effectiveSpeed, clogHeat]`.\nThese nested replay fields are not scalar BASIC queries. Unit fields are ID 0,\nx 2, y 3, angle 4, health 5, team 6, mining tile x/y 7/8, velocity x/y\n9/10 in tiles per tick, native unit type 11 and firing flag 12. Projectile fields are ID 0, x 1, y 2,\nangle 3 and team 4. Invalid indexes and nonnumeric fields return zero. The host\nexposes all entities, including enemies, without fog. Replays preserve fractional\ncoordinates and construction progress in both the replay and BASIC queries.\n\nRotation is native Mindustry orientation: 0 east, 1 north, 2 west, 3 south.\n`build` returns 1 when the host queues an order, or 0 after eight orders in a\ndecision. The Java adapter then applies native placement validation and reports\naccepted, invalid-place, invalid-break, invalid-order, queue-full or builder-dead\nin the replay. Acceptance does not guarantee completion. A maximum of 64 native\nplans can wait. Native resource costs, build time, terrain restrictions and build range remain\nactive. The player respawns through Mindustry's normal core-spawn mechanism.\n\nThe policy controls a native Player entity, just as a human controls a unit.\nThe adapter never chooses targets, presses fire, starts mining, or flies toward\na build plan for it. Movement, aim, firing, boosting and mining inputs are\nreleased at each decision; repeat a command to hold it for the next six ticks.\nNative momentum decays when movement is released. Queued construction continues\nwithin build range, as in the human client; the policy must fly into range.\n\nFriendly AI units, factories and unpossessed turrets retain Mindustry's normal\nautomation. Turrets select targets and fire when supplied. Friendly units use\ntheir native controllers and stances. Possess a unit or turret to control it\nwith player inputs. Other units receive the same RTS orders available in the\nhuman client. The API does not offer remote direct weapon control of arbitrary\nfriendly units or turrets. Native passive abilities and mining delivery remain\nnormal game mechanics.\n\nEach command returns 1 when queued in the host, or 0 if a host limit rejects it.\nNative ownership, capability, range and placement checks run afterward; inspect\nrecorded command statuses for acceptance. Coordinates use tiles, angles use\ndegrees, booleans use 0/1. The command budget is 32 per decision and 48 KiB,\nin addition to the eight legacy `build` orders.\n\n| Player input | Meaning |\n| --- | --- |\n| `move(dx, dy)` | Direction, clamped to length 1, multiplied by native speed. |\n| `aim(x, y)`, `shoot(enabled)`, `boost(enabled)` | Aim point, weapon input and boost input. |\n| `mine(x, y)`, `stopMine()` | Mine a native valid tile within mining range, or stop. |\n| `buildBlock(nativeId, x, y, rotation)`, `breakBlock(x, y)` | Queue native construction or deconstruction. |\n| `buildEnable(enabled)`, `clearPlans()`, `removePlan(x, y, breaking)` | Pause, clear or remove construction plans. |\n| `rotate(x, y, direction)`, `tap(x, y)` | Rotate a building (positive adds one rotation step) or use its native tap action. |\n| `take(x, y, itemId, amount)`, `deposit(x, y)`, `dropItem(angle)` | Native inventory interactions within range. |\n| `controlUnit(id)`, `controlBuilding(x, y)`, `leaveUnit()` | Possess an eligible friendly unit/building, or leave it. |\n| `pickupUnit(id)`, `pickupBuilding(x, y)`, `dropPayload(x, y)`, `enterPayload(x, y)` | Native payload actions on capable units/buildings. |\n| `commandMove(id, x, y, queue)`, `commandAttackUnit(id, targetId, queue)`, `commandAttackBuilding(id, x, y, queue)` | Human RTS movement and attack orders to a friendly AI unit. |\n| `unitCommand(id, commandId)`, `unitStance(id, stanceId, enabled)` | Select a supported native AI command or stance. |\n| `commandBuilding(x, y, targetX, targetY)` | Set the rally point of a commandable factory. |\n| `unitMove(id, dx, dy)`, `unitAim(id, x, y)`, `unitShoot(id, enabled)`, `unitBoost(id, enabled)`, `unitMine(id, x, y)`, `unitBuild(id, nativeId, x, y, rotation)` | Explicit aliases restricted to the currently possessed unit. |\n\nConfiguration uses the native building handlers. `configure(x, y, kind, value)`\naccepts kinds 0 integer, 1 boolean, 2 item ID, 3 liquid ID, 4 block ID and\n5 unit type ID. `configurePoint(x, y, dx, dy)` passes a native relative point.\n`configureText(x, y, \"text\")` handles message blocks. `configureCode(x, y, \"mlog\")`\ncompresses processor code while preserving existing links.\n`configureReset(x, y)` clears a configuration. `configurePoints(x, y, array)`\npasses flat relative x/y pairs; `configureBytes(x, y, array)` passes raw byte\nconfiguration. Arrays are DIM handles, limited to 1,024 numeric cells. Text is\nlimited to 4,096 characters. Unsupported configuration types are rejected.\n\nEmpty tiles can still be unsuitable terrain or outside the core's placement\narea. Observe the replay's order statuses when designing a construction plan.\nThe reference `base.bas` scans the terrain near the core, reserves an exposed\ncopper tile for player mining, and builds four drills. A reverse breadth-first\nsearch routes their conveyors into the core around obstacles and drill footprints.\nThe planner spreads work across decisions to stay within the BASIC budget.\nIt then builds a spaced Duo ring and a northern copper wall. The flyer explicitly\nmoves, mines, takes copper from the core, refills low-ammo turrets, leads nearby\nenemies and fires. Native turrets target enemies automatically. The policy\nrevisits its blueprint to rebuild destroyed structures and reserves copper for\nammo. `starter.bas` preserves the original short drill-and-Duo example.\n\nThis policy targets the current Ground Zero scenario and copper-based defense.\nIt does not yet build advanced factories, power, research or unit production.\nRun `python3 coworld/mindustry/tools/check_bot.py` to measure survival, verify\nfour directed drill-to-core paths, check copper income with player mining disabled,\nand compare all recorded states and hashes against a fresh Java simulation.\n\nLimits per policy: 64 KiB source, 20,000 compiled instructions, 2 MiB memory,\n4,096 array cells, 256 globals, 16 call depth, 100,000 instructions and 250,000\nwork units per decision. Printing has a 1,024-byte and 128-event decision budget.\nA runtime failure stops that policy's subsequent commands and is reported to\nits private log. Existing shared annotation functions remain available.\n\n## Replay and determinism\n\nMDR1 is a little-endian four-byte magic, a 32-bit JSON-header byte count, the\nUTF-8 header, then independently gzip-compressed JSON frame chunks. Each index\nentry gives slot, ticks, byte offset, compressed length, frame count and final\nnative state digest. The outer replay uses Coworld `identity` compression.\n\nThe header stores static terrain as palette-indexed runs, a block/item catalog,\nseat names, seed and final scores. Each five-second chunk starts with the full\nbuilding state. Later frames contain changed and removed buildings. Units,\nturret directions, visible projectiles, core health, inventory, order results\nand native state digests are sampled at 10 Hz. The browser interpolates motion\nand never runs the simulation. It loads byte ranges when the server supports\nRange and keeps at most three decoded chunks. Servers without Range fall back\nto downloading the compressed file once.\n\nSprite artwork is shipped once in the viewer bundle, with exported atlas\ncoordinates and native terrain metadata. Floors blend using neighboring edge\nstencils, native blend groups and layer priority. Matching walls use aligned\n2 by 2 patches, and autotile sprites use the native eight-neighbor masks.\nTile variants and wall patches use the same coordinate RNG as the Java client.\nThese choices are cached when a map loads and do not enlarge replay files.\nMining beams use the native laser sprites, source offsets and moving endpoints.\nDrill particles, unit mining particles, fire animation, burning status, muzzle\nflashes, flame effects, shell casings and supported weapon impacts use recorded\nnative events. Packaging samples the native Java particle geometry into reusable\nbrowser animations. Events include birth/lifetime, position, color and active\nparent motion, so seeking restores them without resimulation. Burning and drill\nvisual-only events use a separate deterministic seed, preserving gameplay RNG.\nBuilding beams and interpolated native bullet sprites make player actions visible.\nConveyors record native blend variants, mirrored corners, animation speed,\nclog state and each item's lateral/forward position. The browser interpolates\nrecorded ore positions across belt boundaries and uses the native item icons.\nRecordings made before conveyor positions were added need to be regenerated to\nshow moving cargo. Earlier files still open and infer turns from nearby buildings.\nThe renderer still simplifies destruction effects and sprite lighting. At overview scale, tiny units and particles use colored markers;\nzooming in restores their native sprites and geometry. Lighting and campaign UI\nare outside this viewer. The existing desktop client remains available for human play.\n\nNative digests cover serialized buildings and units, bullets, builder plans,\nwave timing and the engine RNG. They are validation fingerprints, not saved\nstates that can restore a JVM. Determinism is checked by running fresh JVMs and\ncomparing every sample. Cross-architecture floating-point equivalence is not\npromised. The evaluation patch settles pathfinding in explicit tick phases and stabilizes\nbuilding adjacency, construction sound randomness and overlapping-unit collision\nrandomness. Sleeping native buildings\nremain in observations and replays until they are actually removed.\n\n## Checks and Coworld packaging\n\n```sh\nexport POLYWORLD_DEPS=\"$PWD/tmp/coworld/deps\"\nnim check examples/mindustry/mindustry.nim\nnim check tests/test_mindustry.nim\nnim r --nimcache:tmp/mindustry/testcache --out:tmp/mindustry/test tests/test_mindustry.nim\npython3 coworld/mindustry/tools/check_adapter.py\npython3 coworld/mindustry/tools/verify_runs.py\nnode tests/test_mindustry_replay.mjs tmp/mindustry/baseline.replay \\\n  tmp/mindustry/busy-factory.replay tmp/mindustry/heavy-combat.replay\nnode tests/test_mindustry_belts.mjs tmp/mindustry/defender.replay\nnode tests/test_mindustry_terrain.mjs tmp/mindustry/viewer/assets\npython3 coworld/mindustry/tools/check_controls.py\npython3 coworld/mindustry/tools/check_bot.py\nnode tests/test_mindustry_effects.mjs tmp/mindustry/heavy-combat.replay\ncoworld build --project coworld/mindustry --version 0.2.0\ncoworld certify coworld/mindustry/dist/coworld_manifest.json --no-open-report\n```\n\nThe measurement script compares both identical BASIC seats and replays recorded\norders through another fresh JVM. Every restored building state, unit, shot,\nvisual event, fire, player plan, core value, outcome and hash must match. It writes real compressed sizes and\npeak entity counts to `tmp/mindustry/measurements.json`. Set an upload limit only\nafter reviewing these results and longer representative factory policies.\n\nThe package follows GotA's game-hosted seat schema, private logs, annotations,\nhealth endpoint, static replay viewer hook and atomic result finalization.\nSurvival requires two seats and shared PvP requires eight seats. No player\ncontainers or gameplay WebSockets are used.\n\n## License\n\nMindustry code and artwork are distributed under the upstream GPL-3.0 license.\nThe viewer bundle includes that license. The container carries the adapter and\nhost source, engine revision, patch and\na source archive. The matching full upstream engine source is also available\nat `https://github.com/Anuken/Mindustry` at the pinned revision. Preserve those\nnotices and provide corresponding source when redistributing modified binaries.\nThe original desktop build and launch wrappers are in the sibling Mindustry\ncheckout. This package implements a renderer, not a WebAssembly port.\n\n## Four versus four PvP\n\nRun eight BASIC players in one shared native world:\n\n```sh\ntmp/mindustry/mindustry --pvp --ticks 36000 \\\n  --bot coworld/mindustry/players/base.bas:4 \\\n  --bot coworld/mindustry/players/base.bas:4 \\\n  --record tmp/mindustry/pvp.replay\n```\n\nSlots 0 through 3 are blue, and slots 4 through 7 are red. The mirrored\n128 by 96 arena uses Mindustry's native Serpulo generator with the match seed\nand sector 144. Native biomes, cliffs and ore veins surround cleared starting\nareas and a ground route between the cores. Mirroring gives both teams the\nsame terrain, copper and lead deposits, core health and starting materials.\nEach team starts with 800 copper,\n600 lead, 400 silicon and 20 phase fabric. These materials support an early\npowered factory. The enemy core has an eight-tile construction exclusion\nradius. Waves are disabled. Native production, costs, construction, combat,\nmining, unit possession and respawning remain active.\n\nEach seat owns a native player and starts with its own Alpha flyer. Policies\nobserve the same decision boundary before any actions are applied. The engine\napplies all eight input batches, rotating their priority every decision, then\nadvances the world by six ticks. Teammates share their core inventory and can\ncooperate on construction. A player cannot possess a teammate's controlled\nunit. Unpossessed friendly units and turrets keep their native automation.\n\nThe BASIC queries `team()`, `member()`, `enemyCoreX()`, `enemyCoreY()` and\n`enemyCoreHealth()` identify the team, its member number from 0 through 3,\nand the opposing core. Unit field 13 is the controlling seat, or -1 for an\nunpossessed unit. Building inventories can be inspected with\n`buildingItem(index, itemId)`. There is full map visibility for both teams.\n\nThe default `base.bas` policy detects the opposing core and assigns members\n0 and 1 to engineering, defense and supply. Member 0 advances a line of Duo\nturrets and copper walls toward the opposing core, delivering copper ammo\nby hand. It advances eight tiles after its latest turret is built, supplied\nand has held for three seconds. Member 1 builds ground and air factories,\na solar grid, and delivers lead and silicon. The factories produce Dagger\nmechs and Flare fighters with rally points at the enemy core. Members 2 and\n3 possess Daggers and Flares respectively, while member 3 also gives attack\norders to unclaimed combat units. Controlled Flares keep flying around their\ntargets to meet their native weapon's movement requirement. Alpha's native\nweapons cannot damage buildings, so combat units or turrets must destroy the\nopposing core. A destroyed core ends the match. All four winning players\nscore 100, losers score 0, and a timeout with both cores intact scores 50 for\neveryone. Simultaneous core destruction is also a draw.\n\nThe `team-pvp` Coworld variant has eight seats. The survival variant retains\ntwo independent seats. Eight staged policy files select shared PvP in the\nhosted runner. For a league with eight distinct entrants, use the platform\n`team_n` scheduler with `team_count: 2`, `team_layout: \"blocks\"`,\n`distinct_teammates: true` and `insufficient_players: \"do_not_run\"`.\nOmitting distinct teammates instead lets each of two entrants field four\ncopies of its policy. The game's team mapping stays the same in both cases.\n\nPvP replays store the world once and include each player's personal state,\ninputs and command results. Click a controlled unit to follow its player\nwhile preserving the current playback time. Player names appear above their\ncontrolled units. Space toggles play and pause. Playback starts following the\nselected player's unit with looping enabled. Every builder's construction\nbeam and all recorded shots, mining and fire effects remain visible.\n\nValidate native team ownership, factory production, core destruction and\nrepeatability with `python3 coworld/mindustry/tools/check_pvp.py`. The check\ncompares every shared hash across two fresh Java processes. Inspect a recorded\nmatch with `node tests/test_mindustry_replay.mjs tmp/mindustry/pvp.replay`.\nRun `python3 coworld/mindustry/tools/check_pvp_bot.py` to verify that both teams\nconnect drills to their core, build supplied weapon factories, possess combat\nunits and fire, with identical visual states across repeated matches.\nRun `python3 coworld/mindustry/tools/check_hosted_pvp.py` to check eight staged\npolicies, a winning weapon-building squad, isolated policy failures and private\nlogs through the hosted runner.\nSet `MINDUSTRY_CONTAINER_IMAGE=coworld-mindustry:pvp` to run that check against\na locally built container. The certification fixture runs four default bots\nagainst four idle opponents for up to 6,000 ticks in the shared world.\n"
+    },
+    "pages": []
+   },
+   "replay_viewer": {
+    "bundle": "sha256:c11a6518479abb9024556c716fff62727a55afd3c93cfabe6e5a1f70cc8c69a7"
+   }
+  },
+  "player": [
+   {
+    "type": "player",
+    "run": [],
+    "env": {},
+    "file": "sha256:2211f02351dd26bc76c8f8385c36bc729c6782d8e89d88b71453d3548532b19d",
+    "id": "baseline",
+    "name": "Defender",
+    "description": "Builds copper supply and defenses in survival, or a powered factory, Duo defenses and a Dagger assault squad in team PvP."
+   },
+   {
+    "type": "player",
+    "run": [],
+    "env": {},
+    "file": "sha256:21eb887807c269a9e6386f07453f0ba262e07a39c01b90291e3b3132fca048f8",
+    "id": "idle",
+    "name": "Idle",
+    "description": "Builds nothing, for controlled comparisons."
+   }
+  ],
+  "reporter": [],
+  "commissioner": [],
+  "grader": [],
+  "diagnoser": [],
+  "optimizer": [],
+  "variants": [
+   {
+    "id": "competition",
+    "name": "Wave survival",
+    "game_config": {
+     "seed": 2026,
+     "players": [
+      {
+       "name": "Builder"
+      },
+      {
+       "name": "Idle"
+      }
+     ],
+     "max_ticks": 36000,
+     "spawn_interval_ticks": 3600
+    },
+    "description": "Two independent ten-minute seeded survival evaluations."
+   },
+   {
+    "id": "team-pvp",
+    "name": "Four versus four PvP",
+    "game_config": {
+     "seed": 2026,
+     "players": [
+      {
+       "name": "Blue 1"
+      },
+      {
+       "name": "Blue 2"
+      },
+      {
+       "name": "Blue 3"
+      },
+      {
+       "name": "Blue 4"
+      },
+      {
+       "name": "Red 1"
+      },
+      {
+       "name": "Red 2"
+      },
+      {
+       "name": "Red 3"
+      },
+      {
+       "name": "Red 4"
+      }
+     ],
+     "max_ticks": 36000,
+     "spawn_interval_ticks": 3600
+    },
+    "description": "One mirrored shared world, two teams of four players. Destroy the opposing core to win. Timeouts are draws. Contiguous team seats."
+   }
+  ],
+  "certification": {
+   "game_config": {
+    "seed": 2026,
+    "players": [
+     {
+      "name": "Blue 1"
+     },
+     {
+      "name": "Blue 2"
+     },
+     {
+      "name": "Blue 3"
+     },
+     {
+      "name": "Blue 4"
+     },
+     {
+      "name": "Red 1"
+     },
+     {
+      "name": "Red 2"
+     },
+     {
+      "name": "Red 3"
+     },
+     {
+      "name": "Red 4"
+     }
+    ],
+    "max_ticks": 6000,
+    "spawn_interval_ticks": 3600
+   },
+   "players": [
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "idle"
+    },
+    {
+     "player_id": "idle"
+    },
+    {
+     "player_id": "idle"
+    },
+    {
+     "player_id": "idle"
+    }
+   ]
+  }
+ },
+ "manifest_hash": "sha256:04d00c7a1fe1773a50970278b2c840f04bc109f11feb72f824cd4e004b410a3d",
+ "size_bytes": 27040,
+ "canonical": true,
+ "forum_markdown_url": "https://softmax.com/api/observatory/v2/forums/Mindustry%20Survival.md",
+ "wiki_markdown_url": "https://softmax.com/api/observatory/v2/wikis/Mindustry%20Survival/pages.md",
+ "documentation_url": "https://softmax.com/docs/coworld/build-a-player/choose-a-coworld",
+ "certification_status_url": "https://softmax.com/api/observatory/v2/coworlds/cow_e89aa419-24b0-463a-9ba4-28a1c5d03014/certification",
+ "certification_transcript_url": "https://softmax.com/api/observatory/v2/coworlds/cow_e89aa419-24b0-463a-9ba4-28a1c5d03014/certification/transcript"
+}

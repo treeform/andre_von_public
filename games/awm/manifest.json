@@ -1,0 +1,262 @@
+{
+  "id": "cow_ca2284e3-a47d-411e-8f5e-a9bcbc535a77",
+  "name": "Archers Warriors Mages",
+  "version": "2026.10.1.1",
+  "visibility": "public",
+  "manifest": {
+    "tags": [
+      "strategy",
+      "basic",
+      "polyworld",
+      "cards"
+    ],
+    "game": {
+      "name": "Archers Warriors Mages",
+      "version": "2026.10.1.1",
+      "description": "Two to seven BASIC heroes play a class card game: a duel, or a free-for-all around a ring of balconies. The last hero standing scores one win; draws and timeouts score zero.",
+      "owner": "treeform",
+      "player_runtime": "game-hosted",
+      "config_schema": {
+        "type": "object",
+        "required": [
+          "tokens",
+          "players",
+          "seed",
+          "max_ticks"
+        ],
+        "properties": {
+          "seed": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": -2147483648
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "maxItems": 7,
+            "minItems": 2
+          },
+          "classes": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "archer",
+                "warrior",
+                "mage"
+              ],
+              "type": "string"
+            },
+            "maxItems": 7,
+            "minItems": 2,
+            "description": "One hero class per slot. Omitted, each slot's class is drawn from the seed."
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false
+            },
+            "maxItems": 7,
+            "minItems": 2
+          },
+          "max_ticks": {
+            "type": "integer",
+            "maximum": 28800,
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "results_schema": {
+        "type": "object",
+        "required": [
+          "scores",
+          "ticks",
+          "seed",
+          "outcome"
+        ],
+        "properties": {
+          "seed": {
+            "type": "integer"
+          },
+          "ticks": {
+            "type": "integer",
+            "maximum": 28800,
+            "minimum": 0
+          },
+          "scores": {
+            "type": "array",
+            "items": {
+              "enum": [
+                0,
+                1
+              ],
+              "type": "integer"
+            },
+            "minItems": 2
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "returned": {
+            "type": "array",
+            "items": {
+              "type": "boolean"
+            }
+          },
+          "banked_gold": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "runnable": {
+        "type": "game",
+        "image": "public.ecr.aws/q5f4m8t9/cogames@sha256:f3d823b652d4f0ec954317cc5019cfe21aefb55b235fcba69c24041e3baa2674",
+        "run": [],
+        "env": {},
+        "source_url": "https://github.com/Metta-AI/polyworld/tree/4dbf9b2799562c60cde5bfd4c10479442db55296/examples/awm"
+      },
+      "protocols": {
+        "player": {
+          "type": "text",
+          "value": "Each zero-based slot commands one hero. Supply a raw BASIC file. The script runs once per decision on its hero's turn and plays at most one card; a decision that plays nothing ends the turn after the hero's ready minions attack. The existing Polyworld BASIC host API runs with bounded source, memory, work, and instruction limits. PRINT is private. See the game guide and bundled base.bas for a complete working player."
+        },
+        "global": {
+          "type": "text",
+          "value": "GET /client/global returns a static status page. /global sends one JSON status message after WebSocket upgrade and echoes Ping frames with Pong. No gameplay traffic uses WebSockets. Other legacy endpoints return explicit stubs."
+        }
+      },
+      "docs": {
+        "readme": {
+          "type": "text",
+          "value": "# Archers Warriors Mages\n\nTwo to seven BASIC heroes play a card game around a courtyard. Each hero has a\nclass (Archer, Warrior, or Mage), 20 life, and a 40-card class deck. The last\nhero standing scores one win; everyone else, and every hero in a draw or a\ntimeout, scores zero.\n\nTwo players play a duel. Three to seven play a free-for-all around a ring of\nbalconies, in seat order. Each slot commands one hero. Platform slots are\nzero-based. Classes come from the optional `classes` config (one per slot), or\nare drawn from the seed. Upload a `.bas` file containing BASIC source. The game\nreads the staged file directly, with no player container or network\nconnection.\n\nStart with the bundled `players/base.bas`, which lists the game's values and calls.\nThe same source is available under `examples/awm/src/core/bots.nim`, and the\ncards are in `examples/awm/src/core/baseset.nim` and `examples/awm/README.md`.\n\n## Turns\n\nEach turn the hero gains one energy, refills it, and draws a card (the first\nplayer skips their first draw). Drawing from an empty deck loses. Your script\nruns once per decision on your turn and may play at most one card. A decision\nthat plays a card is followed by another; one that plays nothing ends the\nturn. Then every ready minion attacks the next living player's hero, and the\nturn passes. A turn also ends after 30 cards. Discards and trigger targets are\nchosen for you by the built-in bot.\n\nThe script's `enemyPlayer` is the next living player. `selfPlayer` is your\nslot. Globals and arrays keep their values between decisions.\n\n## Ticks\n\nOne tick is one game action: a card played, one minion's attack, a discard or\ntrigger answered, or a turn ended. `max_ticks` bounds the match; a match that\nreaches it is a timeout. Replays store one action and one state hash per tick\nand play back in the browser with seeking, speed, and loop controls.\n\n## Logs and failures\n\nBASIC `PRINT` output, compiler diagnostics, runtime errors, and VM lifecycle\nmessages go to the owning player's private log. Each log is limited to 10 MiB.\nA runtime error, including an instruction limit, disables that VM: its hero\npasses every later turn and its minions stop attacking. Other seats continue.\nInvalid BASIC syntax fails the episode with a player failure diagnostic.\nPublic game logs and action replays contain no BASIC source or private print\noutput. The server exposes `/healthz`; legacy clients are static stubs.\n\n## Mailboxes\n\nEach player has an inbox. `sendChat(-2, text$)` reaches every player,\nincluding the sender; `sendChat(slot, text$)` reaches one player. AWM has no\nteams. `pullMailbox$()`, `mailboxId()`, `mailboxCount()`, `mailboxSelf()`, and\n`mailboxPlayers()` work as in the other Polyworld games. Messages are read\nwhen your script next runs, which is on your turn.\n\n## BASIC numbers\n\nBASIC uses [Bassy](https://github.com/treeform/bassy) with\n[Fixxy](https://github.com/treeform/fixxy) Q16.16 decimals enabled. `/`\nperforms decimal division; `\\` performs integer division. Hand indexes,\nchoice indexes, and slots require exact integers.\n"
+        },
+        "pages": []
+      },
+      "replay_viewer": {
+        "bundle": "sha256:b83c0fba6b29ff2dcacf13674c2be00047a651285ce9ce66ba9465e486c6e7a6",
+        "replay_compression": "gzip"
+      }
+    },
+    "player": [
+      {
+        "type": "player",
+        "run": [],
+        "env": {},
+        "file": "sha256:12a7c654c743a3aebab11e198dbe5769662f0bc08c153ff5dab8eb5774d8fc80",
+        "id": "baseline",
+        "name": "Baseline",
+        "description": "AWM BASIC baseline: plays the first affordable card in hand, aiming at the enemy hero, then an enemy minion; two-target cards go on its own minion when the rule helps it."
+      }
+    ],
+    "reporter": [],
+    "commissioner": [],
+    "grader": [],
+    "diagnoser": [],
+    "optimizer": [],
+    "variants": [
+      {
+        "id": "duel",
+        "name": "Duel",
+        "game_config": {
+          "seed": 2026,
+          "players": [
+            {
+              "name": "Baseline 0"
+            },
+            {
+              "name": "Baseline 1"
+            }
+          ],
+          "max_ticks": 28800
+        },
+        "description": "Full-length deterministic two-player duel."
+      },
+      {
+        "id": "competition",
+        "name": "Competition",
+        "game_config": {
+          "seed": 2026,
+          "players": [
+            {
+              "name": "Baseline 0"
+            },
+            {
+              "name": "Baseline 1"
+            },
+            {
+              "name": "Baseline 2"
+            },
+            {
+              "name": "Baseline 3"
+            },
+            {
+              "name": "Baseline 4"
+            }
+          ],
+          "max_ticks": 28800
+        },
+        "description": "Full-length deterministic five-player free-for-all."
+      }
+    ],
+    "certification": {
+      "game_config": {
+        "seed": 2026,
+        "players": [
+          {
+            "name": "Baseline 0"
+          },
+          {
+            "name": "Baseline 1"
+          },
+          {
+            "name": "Baseline 2"
+          },
+          {
+            "name": "Baseline 3"
+          }
+        ],
+        "max_ticks": 28800
+      },
+      "players": [
+        {
+          "player_id": "baseline"
+        },
+        {
+          "player_id": "baseline"
+        },
+        {
+          "player_id": "baseline"
+        },
+        {
+          "player_id": "baseline"
+        }
+      ]
+    }
+  },
+  "manifest_hash": "sha256:c7f7e7d22864ae8b73d26d07d347933e8f1c06244d5a1f8e2008951fdb5ccd63",
+  "size_bytes": 6965,
+  "canonical": true,
+  "forum_markdown_url": "https://softmax.com/api/observatory/v2/forums/Archers%20Warriors%20Mages.md",
+  "wiki_markdown_url": "https://softmax.com/api/observatory/v2/wikis/Archers%20Warriors%20Mages/pages.md",
+  "documentation_url": "https://softmax.com/docs/coworld/build-a-player/choose-a-coworld",
+  "certification_status_url": "https://softmax.com/api/observatory/v2/coworlds/cow_ca2284e3-a47d-411e-8f5e-a9bcbc535a77/certification",
+  "certification_transcript_url": "https://softmax.com/api/observatory/v2/coworlds/cow_ca2284e3-a47d-411e-8f5e-a9bcbc535a77/certification/transcript"
+}

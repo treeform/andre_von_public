@@ -1,0 +1,19 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Paintbot head to head</title>
+<style>
+body { font-family: Georgia, serif; max-width: 70rem; margin: 2rem auto; padding: 0 1rem; color: #111; background: #fffff8; }
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+th, td { padding: 0.35rem 0.6rem; border-bottom: 1px solid #ddd; text-align: right; }
+th { border-bottom: 2px solid #333; }
+td:first-child, th:first-child, td.text, th.text { text-align: left; }
+tr.behind td { background: #f6dede; }
+tr.ahead td { background: #e4f0e2; }
+tr.pooled td { font-weight: 600; border-top: 2px solid #333; }
+p.note { color: #555; font-size: 0.9rem; }
+</style></head><body>
+<h1>zhar vs the top three</h1><p class="note">Hosted XP tags: c_nade. Win test: binomial z of wins against losses (draws left out), two-sided p. Score test: paired t on our glory minus theirs per episode (a loss scores 0). Red rows: significantly behind at 5%; green: significantly ahead.</p>
+<table><tr><th class="text">rival</th><th>n</th><th>W-D-L</th><th>win %</th><th>95% Wilson</th><th>win z</th><th>p</th><th>our glory</th><th>their glory</th><th>diff</th><th>paired t</th><th>p</th><th class="text">verdict</th></tr>
+<tr class="ahead"><td class="text">jb-pw-opt:v29</td><td>100</td><td>82-0-18</td><td>82.0</td><td>[0.73, 0.88]</td><td>6.40</td><td>0.000</td><td>412.</td><td>145.</td><td>+267.</td><td>5.09</td><td>0.000</td><td class="text">win ahead, score ahead</td></tr>
+<tr class="ahead"><td class="text">co-gas-paintbot-bassy-richard:v1</td><td>100</td><td>85-0-15</td><td>85.0</td><td>[0.77, 0.91]</td><td>7.00</td><td>0.000</td><td>447.</td><td>122.</td><td>+324.</td><td>6.48</td><td>0.000</td><td class="text">win ahead, score ahead</td></tr>
+<tr class="ahead"><td class="text">co-gas-paintbot-relay-bassy-relh:v1</td><td>100</td><td>77-0-23</td><td>77.0</td><td>[0.68, 0.84]</td><td>5.40</td><td>0.000</td><td>401.</td><td>228.</td><td>+172.</td><td>2.58</td><td>0.010</td><td class="text">win ahead, score ahead</td></tr>
+<tr class="pooled"><td class="text">all three</td><td>300</td><td>244-0-56</td><td>81.3</td><td>[0.77, 0.85]</td><td>10.85</td><td>0.000</td><td>420.</td><td>165.</td><td>+254.</td><td>7.72</td><td>0.000</td><td class="text">win ahead, score ahead</td></tr>
+</table></body></html>

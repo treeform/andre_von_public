@@ -9,6 +9,7 @@ stopped. Games still being played are not here yet.
 | agricogla | mikula | 20ae58b7 | 2026-09-01 |
 | atari-57 | emelya_jr | 20ae58b7 | 2026-09-01 |
 | atari-cabinet | emelya | 20ae58b7 | 2026-09-01 |
+| awm | radogost | 9f2e3c69 | 2026-10-16 |
 | babel | gamayun | 92f06376 | 2026-09-01 |
 | battleroyale | koschei | 6f3ca27f | 2026-09-01 |
 | board-gauntlet | volga | 20ae58b7 | 2026-09-01 |
@@ -59,6 +60,7 @@ stopped. Games still being played are not here yet.
 | gen-generals-io | suvorov | 20ae58b7 | 2026-09-01 |
 | gift-refinements | ded_moroz | 20ae58b7 | 2026-09-01 |
 | gnomic | gnom_gnomych | 35f14b9f | 2026-08-31 |
+| gods-of-the-arena | khors | 3d8e5250 | 2026-10-09 |
 | goofspiel-oshi-zumo | dubynya | 20ae58b7 | 2026-09-01 |
 | grf-football | alyosha | 20ae58b7 | 2026-09-01 |
 | grid-wars | perun | ff8bd66f | 2026-09-01 |
@@ -82,6 +84,7 @@ stopped. Games still being played are not here yet.
 | magent-battle | chernomor | 20ae58b7 | 2026-09-01 |
 | matrix-games | anchutka | 92f06376 | 2026-09-01 |
 | meadow | poludnitsa | 20ae58b7 | 2026-09-01 |
+| mindustry | polkan | 00519c5b | 2026-10-11 |
 | minecraft | zodchiy | e2ab8db1 | 2026-08-31 |
 | minigrid | kroshechka | 92f06376 | 2026-09-01 |
 | moba | gorynych | 5d22a735 | 2026-09-28 |
@@ -93,6 +96,7 @@ stopped. Games still being played are not here yet.
 | nomic-fable | moska | 20ae58b7 | 2026-09-01 |
 | paintarena | iskusnitsa | e80e9d1b | 2026-09-01 |
 | paintbot | morevna | 5d22a735 | 2026-09-28 |
+| paintbot-pw |  | aa874807 | 2026-10-09 |
 | parley | boyan | 20ae58b7 | 2026-09-01 |
 | particle-worlds | stribog | 92f06376 | 2026-09-01 |
 | persistent-wow | ruslan | bd982e3b | 2026-08-31 |
@@ -108,6 +112,7 @@ stopped. Games still being played are not here yet.
 | raid | ushkuynik | 92f06376 | 2026-09-01 |
 | rumor | babarikha | 92f06376 | 2026-09-01 |
 | rware-warehouse | ovinnik | 92f06376 | 2026-09-01 |
+| screeps-pw |  | 7205a042 | 2026-10-09 |
 | smac-starcraft-micro | peresvet | 20ae58b7 | 2026-09-01 |
 | snake-royale | zmeya | 20ae58b7 | 2026-09-01 |
 | sokoban | gruzchik | 70fbdef1 | 2026-08-31 |
@@ -123,4 +128,5 @@ stopped. Games still being played are not here yet.
 | vizdoom-deathmatch | chert | 92f06376 | 2026-09-01 |
 | walker-waterworld | vodyanoy | 20ae58b7 | 2026-09-01 |
 | werecog | volkolak | 20ae58b7 | 2026-09-01 |
+| who-cried-wolf | volchok | 22b8438d | 2026-10-07 |
 | zero-sum | belobog | 20ae58b7 | 2026-09-01 |

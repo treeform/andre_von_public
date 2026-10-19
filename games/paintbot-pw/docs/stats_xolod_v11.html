@@ -1,0 +1,125 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paintbot stats</title><style>
+:root{--bg:#fbfaf7;--fg:#1d1d1b;--muted:#6b6a64;--line:#e4e1d8;--head:#f1eee6;--ours:#f6f2e8;--flag:#fbe9e7;--flagText:#9b2c1f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171716;--fg:#ecebe6;--muted:#9c9a92;--line:#34332f;--head:#22211f;--ours:#201f1c;--flag:#3a201c;--flagText:#f0a597}}
+:root[data-theme="dark"]{--bg:#171716;--fg:#ecebe6;--muted:#9c9a92;--line:#34332f;--head:#22211f;--ours:#201f1c;--flag:#3a201c;--flagText:#f0a597}
+body{background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,sans-serif;margin:0;padding:24px 16px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:28px 0 8px}p{color:var(--muted);max-width:90ch}
+.wrap{overflow-x:auto}table{border-collapse:collapse;min-width:100%}
+th,td{border-bottom:1px solid var(--line);padding:5px 10px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+thead th{background:var(--head);position:sticky;top:0}
+td.ours,th.ours{background:var(--ours);font-weight:600}
+tr.flag td{background:var(--flag)}tr.flag td.gap{color:var(--flagText);font-weight:600}
+td .u{color:var(--muted);font-size:12px}abbr{text-decoration:none;cursor:help}
+</style></head><body>
+<h1>zhar v50 vs xolod v11</h1><p>60 replays re-simulated with the hosted engine rules (0 state-hash mismatches, 0 replays without a roster skipped). Columns are policy versions, ordered by glory per game. Replay rows are means over the policy's seat-games unless noted.</p><p>First column: ours (zhar:v50). Gap = (ours − rivals' mean) / rivals' mean. Rows tinted red are out of line with the rivals: a gap of at least 25% (for % rows, also at least 2 points). Hover a stat for its definition.</p><h2>Largest gaps in what we control</h2><div class="wrap"><table><thead><tr><th>stat</th><th class="ours">zhar:v50</th><th>xolod:v11</th><th>rivals' mean</th><th>gap</th></tr></thead><tbody>
+<tr class="flag"><td><abbr title="Gun orders at a moving target aimed less than half a step ahead.">unled shots at movers</abbr> <span class="u">%</span></td><td class="ours">78.3</td><td>2.3</td><td>2.3</td><td class="gap">3365%</td></tr>
+<tr class="flag"><td><abbr title="Share of aimed shots that passed a target that moved more than 0.3 m during the windup.">miss: target moved off the line</abbr> <span class="u">%</span></td><td class="ours">49.0</td><td>13.7</td><td>13.7</td><td class="gap">258%</td></tr>
+<tr class="flag"><td><abbr title="Mean aim offset from a moving target along its last step, in steps.">lead on a moving target</abbr> <span class="u">ticks</span></td><td class="ours">1.1</td><td>4.8</td><td>4.8</td><td class="gap">-77%</td></tr>
+<tr class="flag"><td><abbr title="Uniform (disguise) pickups.">uniforms</abbr> <span class="u">/cog</span></td><td class="ours">0.01</td><td>0.06</td><td>0.06</td><td class="gap">-75%</td></tr>
+<tr class="flag"><td><abbr title="Share of aimed shots stopped by cover or scenery before the nearest enemy on the line.">miss: cover in the way</abbr> <span class="u">%</span></td><td class="ours">5.6</td><td>21.8</td><td>21.8</td><td class="gap">-74%</td></tr>
+<tr class="flag"><td><abbr title="Share of aimed shots that passed a target that barely moved during the windup.">miss: aim off a still target</abbr> <span class="u">%</span></td><td class="ours">1.7</td><td>5.4</td><td>5.4</td><td class="gap">-68%</td></tr>
+<tr class="flag"><td><abbr title="Hit rate of aimed shots by the range to the nearest visible enemy.">accuracy 0-10 m</abbr> <span class="u">%</span></td><td class="ours">36.3</td><td>63.2</td><td>63.2</td><td class="gap">-43%</td></tr>
+<tr class="flag"><td><abbr title="Shield (armor) pickups.">armor</abbr> <span class="u">/cog</span></td><td class="ours">0.10</td><td>0.15</td><td>0.15</td><td class="gap">-36%</td></tr>
+<tr class="flag"><td><abbr title="Medkit heals.">medkits</abbr> <span class="u">/cog</span></td><td class="ours">0.39</td><td>0.61</td><td>0.61</td><td class="gap">-36%</td></tr>
+<tr class="flag"><td><abbr title="Spray bursts fired.">spray bursts</abbr> <span class="u">/cog</span></td><td class="ours">0.04</td><td>0.05</td><td>0.05</td><td class="gap">-35%</td></tr>
+<tr class="flag"><td><abbr title="Hit rate from at least 0.5 m above the target (less spread).">accuracy from above</abbr> <span class="u">%</span></td><td class="ours">33.3</td><td>48.1</td><td>48.1</td><td class="gap">-31%</td></tr>
+<tr class="flag"><td><abbr title="Hit rate of aimed shots by range.">accuracy 20-30 m</abbr> <span class="u">%</span></td><td class="ours">34.1</td><td>49.0</td><td>49.0</td><td class="gap">-30%</td></tr>
+<tr class="flag"><td><abbr title="Hit rate of aimed shots by range.">accuracy 30-45 m</abbr> <span class="u">%</span></td><td class="ours">33.7</td><td>48.2</td><td>48.2</td><td class="gap">-30%</td></tr>
+<tr class="flag"><td><abbr title="Hit rate of gun shots released while no enemy was in the cog's sight (pre-aimed shots).">accuracy with no enemy in view</abbr> <span class="u">%</span></td><td class="ours">17.0</td><td>24.0</td><td>24.0</td><td class="gap">-29%</td></tr>
+<tr class="flag"><td><abbr title="Grenades released.">grenades thrown</abbr> <span class="u">/cog</span></td><td class="ours">0.36</td><td>0.51</td><td>0.51</td><td class="gap">-28%</td></tr>
+<tr class="flag"><td><abbr title="Hit rate of shots fired standing.">accuracy standing</abbr> <span class="u">%</span></td><td class="ours">31.5</td><td>43.7</td><td>43.7</td><td class="gap">-28%</td></tr>
+<tr class="flag"><td><abbr title="Hit rate within 0.5 m of the target's height.">accuracy level</abbr> <span class="u">%</span></td><td class="ours">30.0</td><td>41.0</td><td>41.0</td><td class="gap">-27%</td></tr>
+<tr class="flag"><td><abbr title="Glory hearts picked up (+20 glory each).">glory hearts</abbr> <span class="u">/cog</span></td><td class="ours">0.15</td><td>0.21</td><td>0.21</td><td class="gap">-26%</td></tr>
+<tr class="flag"><td><abbr title="Hit rate of aimed shots by range.">accuracy 45+ m</abbr> <span class="u">%</span></td><td class="ours">28.2</td><td>37.8</td><td>37.8</td><td class="gap">-25%</td></tr>
+<tr class="flag"><td><abbr title="Enemy gun hits over gun shots.">gun accuracy</abbr> <span class="u">%</span></td><td class="ours">28.5</td><td>38.1</td><td>38.1</td><td class="gap">-25%</td></tr>
+<tr class="flag"><td><abbr title="Share of aimed shots that crossed an enemy but did not hit (trench cover or a blocked sight line).">miss: in radius, no hit</abbr> <span class="u">%</span></td><td class="ours">8.4</td><td>11.2</td><td>11.2</td><td class="gap">-25%</td></tr>
+</tbody></table></div>
+<h2>1. Controlled directly: movement, footwork, aiming, shooting</h2><div class="wrap"><table><thead><tr><th>stat</th><th class="ours">zhar:v50</th><th>xolod:v11</th><th>rivals' mean</th><th>gap</th></tr></thead><tbody>
+<tr><td><abbr title="Health removed from teammates.">friendly damage</abbr> <span class="u">/cog</span></td><td class="ours">0.80</td><td>0.80</td><td>0.80</td><td class="gap">0%</td></tr>
+<tr><td><abbr title="Alive time with an enemy in this cog's own sight.">enemy in view</abbr> <span class="u">%</span></td><td class="ours">54.2</td><td>50.6</td><td>50.6</td><td class="gap">7%</td></tr>
+<tr><td><abbr title="Gun rays fired per minute alive.">gun shots</abbr> <span class="u">/min</span></td><td class="ours">22.5</td><td>18.2</td><td>18.2</td><td class="gap">24%</td></tr>
+<tr class="flag"><td><abbr title="Enemy gun hits over gun shots.">gun accuracy</abbr> <span class="u">%</span></td><td class="ours">28.5</td><td>38.1</td><td>38.1</td><td class="gap">-25%</td></tr>
+<tr><td><abbr title="Seconds to the cog's first gun shot.">first shot</abbr> <span class="u">s</span></td><td class="ours">7.6</td><td>8.2</td><td>8.2</td><td class="gap">-8%</td></tr>
+<tr><td><abbr title="Gun shots released while no enemy was in the cog's sight.">shots with no enemy in view</abbr> <span class="u">%</span></td><td class="ours">20.6</td><td>25.3</td><td>25.3</td><td class="gap">-19%</td></tr>
+<tr class="flag"><td><abbr title="Hit rate of gun shots released while no enemy was in the cog's sight (pre-aimed shots).">accuracy with no enemy in view</abbr> <span class="u">%</span></td><td class="ours">17.0</td><td>24.0</td><td>24.0</td><td class="gap">-29%</td></tr>
+<tr><td><abbr title="Share of aimed shots whose nearest visible enemy was under 20 m.">range under 20 m</abbr> <span class="u">%</span></td><td class="ours">10.3</td><td>9.4</td><td>9.4</td><td class="gap">9%</td></tr>
+<tr class="flag"><td><abbr title="Hit rate of aimed shots by the range to the nearest visible enemy.">accuracy 0-10 m</abbr> <span class="u">%</span></td><td class="ours">36.3</td><td>63.2</td><td>63.2</td><td class="gap">-43%</td></tr>
+<tr><td><abbr title="Hit rate of aimed shots by range.">accuracy 10-20 m</abbr> <span class="u">%</span></td><td class="ours">38.7</td><td>48.0</td><td>48.0</td><td class="gap">-19%</td></tr>
+<tr class="flag"><td><abbr title="Hit rate of aimed shots by range.">accuracy 20-30 m</abbr> <span class="u">%</span></td><td class="ours">34.1</td><td>49.0</td><td>49.0</td><td class="gap">-30%</td></tr>
+<tr class="flag"><td><abbr title="Hit rate of aimed shots by range.">accuracy 30-45 m</abbr> <span class="u">%</span></td><td class="ours">33.7</td><td>48.2</td><td>48.2</td><td class="gap">-30%</td></tr>
+<tr class="flag"><td><abbr title="Hit rate of aimed shots by range.">accuracy 45+ m</abbr> <span class="u">%</span></td><td class="ours">28.2</td><td>37.8</td><td>37.8</td><td class="gap">-25%</td></tr>
+<tr><td><abbr title="Aimed shots released while the shooter did not move the tick before.">shots fired standing</abbr> <span class="u">%</span></td><td class="ours">100.0</td><td>94.3</td><td>94.3</td><td class="gap">6%</td></tr>
+<tr class="flag"><td><abbr title="Hit rate of shots fired standing.">accuracy standing</abbr> <span class="u">%</span></td><td class="ours">31.5</td><td>43.7</td><td>43.7</td><td class="gap">-28%</td></tr>
+<tr><td><abbr title="Hit rate of shots fired on the move.">accuracy moving</abbr> <span class="u">%</span></td><td class="ours">—</td><td>30.2</td><td>30.2</td><td class="gap">—</td></tr>
+<tr><td><abbr title="Aimed shots from at least 0.5 m above the target.">shots from above</abbr> <span class="u">%</span></td><td class="ours">42.8</td><td>41.1</td><td>41.1</td><td class="gap">4%</td></tr>
+<tr class="flag"><td><abbr title="Hit rate from at least 0.5 m above the target (less spread).">accuracy from above</abbr> <span class="u">%</span></td><td class="ours">33.3</td><td>48.1</td><td>48.1</td><td class="gap">-31%</td></tr>
+<tr class="flag"><td><abbr title="Hit rate within 0.5 m of the target's height.">accuracy level</abbr> <span class="u">%</span></td><td class="ours">30.0</td><td>41.0</td><td>41.0</td><td class="gap">-27%</td></tr>
+<tr><td><abbr title="Hit rate from at least 0.5 m below the target (more spread).">accuracy from below</abbr> <span class="u">%</span></td><td class="ours">30.1</td><td>38.0</td><td>38.0</td><td class="gap">-21%</td></tr>
+<tr><td><abbr title="Enemy hits dealt while standing on high ground.">hits from high ground</abbr> <span class="u">%</span></td><td class="ours">52.5</td><td>49.1</td><td>49.1</td><td class="gap">7%</td></tr>
+<tr><td><abbr title="Enemy hits dealt from inside a trench.">hits from trench</abbr> <span class="u">%</span></td><td class="ours">0.4</td><td>0.5</td><td>0.5</td><td class="gap">-15%</td></tr>
+<tr class="flag"><td><abbr title="Share of aimed shots stopped by cover or scenery before the nearest enemy on the line.">miss: cover in the way</abbr> <span class="u">%</span></td><td class="ours">5.6</td><td>21.8</td><td>21.8</td><td class="gap">-74%</td></tr>
+<tr class="flag"><td><abbr title="Share of aimed shots that passed a target that moved more than 0.3 m during the windup.">miss: target moved off the line</abbr> <span class="u">%</span></td><td class="ours">49.0</td><td>13.7</td><td>13.7</td><td class="gap">258%</td></tr>
+<tr class="flag"><td><abbr title="Share of aimed shots that passed a target that barely moved during the windup.">miss: aim off a still target</abbr> <span class="u">%</span></td><td class="ours">1.7</td><td>5.4</td><td>5.4</td><td class="gap">-68%</td></tr>
+<tr class="flag"><td><abbr title="Share of aimed shots that crossed an enemy but did not hit (trench cover or a blocked sight line).">miss: in radius, no hit</abbr> <span class="u">%</span></td><td class="ours">8.4</td><td>11.2</td><td>11.2</td><td class="gap">-25%</td></tr>
+<tr><td><abbr title="Share of aimed shots whose line crossed a teammate first.">miss: teammate in the way</abbr> <span class="u">%</span></td><td class="ours">1.8</td><td>1.9</td><td>1.9</td><td class="gap">-6%</td></tr>
+<tr><td><abbr title="Share of aimed shots that passed no cog within 6 m.">miss: nobody near the line</abbr> <span class="u">%</span></td><td class="ours">2.0</td><td>3.1</td><td>3.1</td><td class="gap">-34%</td></tr>
+<tr><td><abbr title="Metres travelled per second alive.">speed</abbr> <span class="u">m/s</span></td><td class="ours">5.37</td><td>5.53</td><td>5.53</td><td class="gap">-3%</td></tr>
+<tr><td><abbr title="Alive ticks spent moving.">moving</abbr> <span class="u">%</span></td><td class="ours">84.5</td><td>87.6</td><td>87.6</td><td class="gap">-4%</td></tr>
+<tr><td><abbr title="Alive ticks in water.">wading</abbr> <span class="u">%</span></td><td class="ours">0.3</td><td>1.0</td><td>1.0</td><td class="gap">-69%</td></tr>
+<tr><td><abbr title="Alive ticks with sneak on.">sneaking</abbr> <span class="u">%</span></td><td class="ours">4.9</td><td>5.1</td><td>5.1</td><td class="gap">-5%</td></tr>
+<tr><td><abbr title="Alive ticks inside a trench.">in trench</abbr> <span class="u">%</span></td><td class="ours">0.6</td><td>0.5</td><td>0.5</td><td class="gap">10%</td></tr>
+<tr><td><abbr title="Alive ticks on high ground.">high ground</abbr> <span class="u">%</span></td><td class="ours">44.2</td><td>40.6</td><td>40.6</td><td class="gap">9%</td></tr>
+<tr><td><abbr title="Moving ticks whose step is exactly (28, 0), (0, 28) or (19, 19) in size: the neural decoder's 2 m compass goals.">exact compass steps</abbr> <span class="u">%</span></td><td class="ours">7.2</td><td>7.1</td><td>7.1</td><td class="gap">2%</td></tr>
+<tr><td><abbr title="Mean distance to the nearest living teammate.">nearest teammate</abbr> <span class="u">m</span></td><td class="ours">12.3</td><td>11.8</td><td>11.8</td><td class="gap">4%</td></tr>
+<tr class="flag"><td><abbr title="Mean aim offset from a moving target along its last step, in steps.">lead on a moving target</abbr> <span class="u">ticks</span></td><td class="ours">1.1</td><td>4.8</td><td>4.8</td><td class="gap">-77%</td></tr>
+<tr><td><abbr title="Mean ticks an enemy stays continuously in view once seen (per enemy).">sight run length</abbr> <span class="u">ticks</span></td><td class="ours">7.9</td><td>7.9</td><td>7.9</td><td class="gap">-1%</td></tr>
+<tr><td><abbr title="Times an enemy comes (back) into view, per minute alive.">new sightings</abbr> <span class="u">/min</span></td><td class="ours">164.3</td><td>147.1</td><td>147.1</td><td class="gap">12%</td></tr>
+<tr><td><abbr title="Gun orders whose target (the enemy nearest the aim point) the shooter could see.">shots at a target in view</abbr> <span class="u">%</span></td><td class="ours">99.7</td><td>99.1</td><td>99.1</td><td class="gap">1%</td></tr>
+<tr><td><abbr title="Gun orders whose target the shooter also saw on the tick before (a step to lead from).">shots at a tracked target</abbr> <span class="u">%</span></td><td class="ours">77.1</td><td>99.0</td><td>99.0</td><td class="gap">-22%</td></tr>
+<tr class="flag"><td><abbr title="Gun orders at a moving target aimed less than half a step ahead.">unled shots at movers</abbr> <span class="u">%</span></td><td class="ours">78.3</td><td>2.3</td><td>2.3</td><td class="gap">3365%</td></tr>
+<tr><td><abbr title="Ticks with an enemy in view spent not moving.">standing with an enemy in sight</abbr> <span class="u">%</span></td><td class="ours">20.2</td><td>17.0</td><td>17.0</td><td class="gap">19%</td></tr>
+<tr><td><abbr title="Mean ticks moving one way before reversing or stopping.">run length in sight</abbr> <span class="u">ticks</span></td><td class="ours">6.3</td><td>6.3</td><td>6.3</td><td class="gap">0%</td></tr>
+<tr><td><abbr title="Runs ended by turning back rather than standing.">runs ended by reversing</abbr> <span class="u">%</span></td><td class="ours">35.9</td><td>44.6</td><td>44.6</td><td class="gap">-20%</td></tr>
+<tr><td><abbr title="Reversals plus stops per second with an enemy in view.">direction changes in sight</abbr> <span class="u">/s</span></td><td class="ours">1.36</td><td>1.45</td><td>1.45</td><td class="gap">-6%</td></tr>
+<tr><td><abbr title="Alive ticks within 140 units of a heart.">in a heart ring</abbr> <span class="u">%</span></td><td class="ours">3.6</td><td>3.3</td><td>3.3</td><td class="gap">8%</td></tr>
+<tr><td><abbr title="Alive ticks with a walk order.">walk orders</abbr> <span class="u">%</span></td><td class="ours">100.0</td><td>100.0</td><td>100.0</td><td class="gap">0%</td></tr>
+<tr><td><abbr title="Alive ticks with a shoot order.">shoot orders</abbr> <span class="u">%</span></td><td class="ours">1.6</td><td>1.3</td><td>1.3</td><td class="gap">22%</td></tr>
+<tr><td><abbr title="Walk orders that skip the path planner.">direct walks</abbr> <span class="u">%</span></td><td class="ours">0.0</td><td>0.0</td><td>0.0</td><td class="gap">—</td></tr>
+<tr><td><abbr title="Alive ticks holding a grenade charge.">grenade charging</abbr> <span class="u">%</span></td><td class="ours">0.1</td><td>0.2</td><td>0.2</td><td class="gap">-14%</td></tr>
+</tbody></table></div>
+<h2>2. Controlled indirectly: items picked up and used</h2><div class="wrap"><table><thead><tr><th>stat</th><th class="ours">zhar:v50</th><th>xolod:v11</th><th>rivals' mean</th><th>gap</th></tr></thead><tbody>
+<tr><td><abbr title="Grenade pickups.">grenades picked</abbr> <span class="u">/cog</span></td><td class="ours">1.79</td><td>2.13</td><td>2.13</td><td class="gap">-16%</td></tr>
+<tr class="flag"><td><abbr title="Grenades released.">grenades thrown</abbr> <span class="u">/cog</span></td><td class="ours">0.36</td><td>0.51</td><td>0.51</td><td class="gap">-28%</td></tr>
+<tr><td><abbr title="Enemy cogs damaged per grenade thrown.">grenade hits</abbr> <span class="u">/throw</span></td><td class="ours">0.20</td><td>0.21</td><td>0.21</td><td class="gap">-4%</td></tr>
+<tr><td><abbr title="Spray can pickups.">spray cans</abbr> <span class="u">/cog</span></td><td class="ours">0.18</td><td>0.20</td><td>0.20</td><td class="gap">-10%</td></tr>
+<tr class="flag"><td><abbr title="Spray bursts fired.">spray bursts</abbr> <span class="u">/cog</span></td><td class="ours">0.04</td><td>0.05</td><td>0.05</td><td class="gap">-35%</td></tr>
+<tr class="flag"><td><abbr title="Shield (armor) pickups.">armor</abbr> <span class="u">/cog</span></td><td class="ours">0.10</td><td>0.15</td><td>0.15</td><td class="gap">-36%</td></tr>
+<tr class="flag"><td><abbr title="Medkit heals.">medkits</abbr> <span class="u">/cog</span></td><td class="ours">0.39</td><td>0.61</td><td>0.61</td><td class="gap">-36%</td></tr>
+<tr class="flag"><td><abbr title="Glory hearts picked up (+20 glory each).">glory hearts</abbr> <span class="u">/cog</span></td><td class="ours">0.15</td><td>0.21</td><td>0.21</td><td class="gap">-26%</td></tr>
+<tr class="flag"><td><abbr title="Uniform (disguise) pickups.">uniforms</abbr> <span class="u">/cog</span></td><td class="ours">0.01</td><td>0.06</td><td>0.06</td><td class="gap">-75%</td></tr>
+</tbody></table></div>
+<h2>3. Outcomes: winning, killing, dying, territory</h2><div class="wrap"><table><thead><tr><th>stat</th><th class="ours">zhar:v50</th><th>xolod:v11</th><th>rivals' mean</th><th>gap</th></tr></thead><tbody>
+<tr><td><abbr title="Team-games seen in these replays.">games</abbr> <span class="u"></span></td><td class="ours">60</td><td>60</td><td>60</td><td class="gap">0%</td></tr>
+<tr class="flag"><td><abbr title="Team-games won, over all team-games.">win rate</abbr> <span class="u">%</span></td><td class="ours">15.0</td><td>85.0</td><td>85.0</td><td class="gap">-82%</td></tr>
+<tr><td><abbr title="Team-games drawn.">draw rate</abbr> <span class="u">%</span></td><td class="ours">0.0</td><td>0.0</td><td>0.0</td><td class="gap">—</td></tr>
+<tr class="flag"><td><abbr title="Winner's glory, zero on a loss or draw, per team-game (the ladder input).">glory per game</abbr> <span class="u"></span></td><td class="ours">91</td><td>477</td><td>477</td><td class="gap">-81%</td></tr>
+<tr><td><abbr title="Mean glory in games won: how fast the wins are.">glory per win</abbr> <span class="u"></span></td><td class="ours">606</td><td>561</td><td>561</td><td class="gap">8%</td></tr>
+<tr><td><abbr title="Seconds until the match ended.">match length</abbr> <span class="u">s</span></td><td class="ours">117</td><td>117</td><td>117</td><td class="gap">0%</td></tr>
+<tr class="flag"><td><abbr title="Lives lost per cog per match (four lives in all).">deaths</abbr> <span class="u">/cog</span></td><td class="ours">3.91</td><td>2.99</td><td>2.99</td><td class="gap">31%</td></tr>
+<tr class="flag"><td><abbr title="Lives the cog still had at the end, counting the one on the field.">lives left</abbr> <span class="u">/cog</span></td><td class="ours">0.15</td><td>1.62</td><td>1.62</td><td class="gap">-91%</td></tr>
+<tr><td><abbr title="Seconds to the cog's first death (cogs that never died excluded).">first death</abbr> <span class="u">s</span></td><td class="ours">32.0</td><td>35.0</td><td>35.0</td><td class="gap">-9%</td></tr>
+<tr><td><abbr title="Share of deaths while wading.">deaths in water</abbr> <span class="u">%</span></td><td class="ours">1.7</td><td>3.4</td><td>3.4</td><td class="gap">-50%</td></tr>
+<tr><td><abbr title="Share of deaths inside a trench.">deaths in trench</abbr> <span class="u">%</span></td><td class="ours">0.4</td><td>0.7</td><td>0.7</td><td class="gap">-47%</td></tr>
+<tr><td><abbr title="Enemy damage removed from this cog (armor excluded).">damage taken</abbr> <span class="u">/cog</span></td><td class="ours">11.22</td><td>8.98</td><td>8.98</td><td class="gap">25%</td></tr>
+<tr class="flag"><td><abbr title="Enemy cogs this cog killed.">kills</abbr> <span class="u">/cog</span></td><td class="ours">2.53</td><td>3.53</td><td>3.53</td><td class="gap">-28%</td></tr>
+<tr class="flag"><td><abbr title="Kills over deaths.">kill/death</abbr> <span class="u"></span></td><td class="ours">0.65</td><td>1.18</td><td>1.18</td><td class="gap">-45%</td></tr>
+<tr><td><abbr title="Health removed from enemies.">damage dealt</abbr> <span class="u">/cog</span></td><td class="ours">8.98</td><td>11.22</td><td>11.22</td><td class="gap">-20%</td></tr>
+<tr><td><abbr title="Share of kills made with the gun.">gun kills</abbr> <span class="u">%</span></td><td class="ours">95.7</td><td>95.7</td><td>95.7</td><td class="gap">0%</td></tr>
+<tr><td><abbr title="Share of kills made with grenades.">grenade kills</abbr> <span class="u">%</span></td><td class="ours">2.9</td><td>3.0</td><td>3.0</td><td class="gap">-4%</td></tr>
+<tr><td><abbr title="Share of kills made with spray.">spray kills</abbr> <span class="u">%</span></td><td class="ours">1.4</td><td>1.3</td><td>1.3</td><td class="gap">8%</td></tr>
+<tr><td><abbr title="Heart captures completed by this cog.">captures</abbr> <span class="u">/cog</span></td><td class="ours">0.41</td><td>0.44</td><td>0.44</td><td class="gap">-7%</td></tr>
+</tbody></table></div>
+</body></html>

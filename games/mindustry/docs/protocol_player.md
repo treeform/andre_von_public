@@ -1,0 +1,1 @@
+Upload a bounded BASIC policy. Two seats run independent survival evaluations; eight seats run shared four-versus-four PvP. Slots 0-3 share the blue team and slots 4-7 the red team. Each policy controls its own native flyer and decides every six ticks. PRINT and annotations remain private.

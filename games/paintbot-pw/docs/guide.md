@@ -1,0 +1,877 @@
+# Paintbot PW
+
+<!-- readme:skip-start -->
+## Private Jev decision export
+
+After a completed episode with the Jev BASIC policy, export its objective decisions
+from the 16 private seat logs and final results:
+
+The exporter also joins the score arm's typed candidate values to the policy's
+applied objective. Exploratory overrides stay fallbacks. Retreat and survival
+answers remain private evidence until their executed effects can be joined.
+
+```bash
+python3 coworld/paintbot/tools/export_semantic_trajectory.py \
+  --seats /path/to/episode/seats.json \
+  --results /path/to/episode/results.json \
+  --episode-id paintbot-run-1 \
+  --source-revision "$(git rev-parse HEAD)" \
+  --output /path/to/private/paintbot-run-1.jsonl
+```
+
+The output is one `CompleteEpisode` JSONL row using Coworld trajectory schema 1.
+Each decision joins the seat-visible oracle state and typed question to its delivered
+answer and the BASIC policy's objective directive. Policy overrides, failed requests,
+and unanswered requests stay separate from accepted choices. The `objout` observation
+is attached as a reward only when the policy applied the model's objective.
+The exporter refuses score-arm runs because their chosen objective follows a different
+path. It creates the output with mode `0600`; keep the input seat logs and output private.
+
+<!-- readme:skip-end -->
+
+Sixteen wheeled cogs fight for territory in Heartwick. Red uses even slots;
+Blue uses odd slots. Ten stationary hearts divide the entire map into nearest-heart
+regions. Each team starts with its base heart; eight hearts start neutral gray.
+Stay within 140 units of a heart on connected terrain for three seconds (72 ticks)
+to claim it. Extra cogs do not accelerate capture. Both teams in range pause
+progress; if the attackers leave or only defenders remain, progress resets.
+The current owner keeps earning points until capture completes. Holding all ten increases income but does not immediately end the game.
+
+The default-on territory overlay colors each region by its heart owner, including
+neutral gray. Toggle it off for an unobstructed terrain view. Heart locations and
+ownership are public. BASIC exposes `heartCount()`, `controlX(i)`, `controlY(i)`,
+and `controlOwner(i)` (-1 neutral, 0 red, 1 blue). Capture state is also public:
+`controlCaptureTeam(i)` (-1 idle), `controlCaptureTicks(i)` (0–71 of 72), and
+`controlContested(i)` (0 or 1). Invalid indices return -1. Glory is
+public too: `glory(team)` (-1 for an invalid team) (rules 37). In FFA-kin mode
+(Heartland, below) owners and capturers are seats instead of teams: `controlOwner(i)`,
+its FFA-only alias `heartOwner(i)` and `controlCaptureTeam(i)` return the seat (0-15) or -1.
+
+Cogs have three base HP and three respawns (four lives total). Death loses equipment and respawns
+after 72 ticks; spawn protection lasts 36 ticks. Initial spawns and respawns are within 350 world units
+of an owned heart, sampled with softmax over the sum of distances from living teammates (excluding
+self). Larger sums favor less-covered hearts. Temperature is 1,000 world units, with distances
+quantized to 10 units for deterministic sampling. With no owned hearts, respawns use the endzone.
+Blocked or crowded heart placements retry on the next tick. Each owned normal heart earns its team one point per second, accumulated at 24 ticks
+per second. Each team's heart meter holds 900 points: five of the ten hearts held
+for 180 seconds fills it exactly. Every heart has equal income. The first team to
+fill its meter wins. Typical matches target about five minutes including capture
+and contest time; the hard limit is ten minutes (14,400 ticks). At the limit, the
+higher meter wins; equal totals draw. Simultaneous fills use the higher point total,
+with equal totals drawing. A team is eliminated when every cog is out with no
+respawns left; it loses immediately and the surviving team's meter fills (rules 34).
+If both teams are eliminated on the same tick, the match ends with no bonus and the
+higher meter wins; equal totals draw. There is no bombardment or overtime.
+The match score is **glory** (rules 37), a self-imposed handicap. Each team starts with the
+match length in seconds (600) and loses one glory per second. Every thirty seconds without
+collecting a supply adds 10, each glory heart picked up 20 (rules 38), and every five seconds
+a team behind in lives earns 1 per life it trails by (rules 39). Friendly fire taken in the
+opening thirty seconds paid 30 per hit in rules 37 and 38 only; nothing that makes a team more likely to win pays glory. When the match ends the loser's glory drops to zero
+and a draw pays nobody; the winner's glory is its score and the ladder input. The heart
+meter still decides who wins. See "Glory" below.
+Older replays retain their original capture-the-heart rules.
+
+## Combat and equipment
+
+- Solid bodies block teammates and opponents. Movement while carrying is 70%.
+- Vision is a 120-degree forward cone with unlimited distance and wall occlusion.
+- Paintball guns lock aim during a five-tick windup, then trace a hitscan ray.
+  Friendly fire is enabled. Shots released together choose targets before damage.
+  Range is 5250 units. The user-selected cadence is one shot per second.
+- Four grenade pickups refill after five seconds. Carry one; hold C to charge up
+  to 24 ticks and release to throw. Grenades fly over walls, land after ten ticks,
+  and deal three damage (two before rules 40) to every body in the blast, including
+  allies and yourself. The blast reaches 360 units (270 before rules 40).
+- Spray cans refill after 30 seconds. A carried can replaces the gun. Fire sends
+  a directional cone for five ticks, with 8 ticks of recovery (20 before rules 40).
+  Aim locks at the beginning of each burst; each victim takes three damage once per
+  burst. From rules 40 the cone's half width is 4/5 of the distance (3/5 before).
+- Trenches are walkable pits. Entering is full speed; movement outward is slowed
+  fivefold. Gun cooldown is tripled, and 70% of outside gunfire passes overhead.
+  Shots from inside the same trench and spray ignore that protection. Grenades
+  deal six damage to victims in the landing trench, two to victims in other
+  trenches, and three outside trenches (one and two before rules 40).
+- Shields add three armor HP without healing base HP. Damage consumes armor first.
+  Armor, heart carrying, and trenches slow gunfire threefold without stacking.
+- Med kits restore base HP; healthy cogs leave them. Shields and kits refill in
+  30 seconds. All pickups and other cogs are fog-gated for policies.
+
+The game runs at 24 deterministic ticks per second. Coordinates use integer
+hundredths of a Polyworld tile on a 6400×4000 arena.
+
+## File policies
+
+Submit a UTF-8 BASIC file. Every seat runs as a BASIC script inside the engine, with the
+observations and actuators below; there is no other policy format. (Until version 0.3.33 a
+WASM module on the Paintbot sprite protocol was also accepted. That lane is gone: a WASM
+upload now forfeits its seat at episode start with an explicit reason, and the sixteen seats
+play on. Earlier recordings are unaffected.)
+
+BASIC read-only data: `selfId`, `selfTeam`, `selfX`, `selfY`, `selfHp`, `carrying`,
+`homeX`, `homeY`, `heartX`, `heartY`, `ownHeartX`, `ownHeartY`, `ownHeartStolen`,
+`worldTick`, `hasGrenade`, `hasSpray`, `armorHp`, `livesLeft`, `grenadeCharge`,
+`trenchId` (-1 outside).
+
+Queries: `visible(slot)`, `playerX(slot)`, `playerY(slot)`, `playerHp(slot)`,
+`playerCarrying(slot)`, `pickupCount()`, `pickupVisible(id)`, `pickupX(id)`,
+`pickupY(id)`, `pickupKind(id)` (0 grenade, 1 spray, 2 medkit, 3 armor),
+`glory(team)` (rules 37), `gloryHeartCount()`, `gloryHeartX(id)`, `gloryHeartY(id)`,
+`gloryHeartTicksLeft(id)` (rules 38). The scoreboard the HUD shows: `teamLives(team)` (lives
+left summed over the team's cogs, the count the behind-in-lives award compares),
+`awardBehind()` (glory per life trailed) and `awardBehindSeconds()` (its period), and from rules 47
+`teamCogsOut(team)` (the team's cogs out of the match: dead with no lives left),
+`awardBehindCogs()` (glory per extra cog out) and `awardBehindCogsSeconds()` (its period), from the
+match's glory config; -1 for an invalid team and in FFA-kin. Hidden player, pickup and glory-heart coordinates are
+not disclosed (-1). Nearby agents: `nearAgents(radius)` lists the agents you can see within `radius`
+(clamped to 20000), nearest first, at most 64, and returns the count; `nearAgentId(k)`, `nearAgentX(k)`,
+`nearAgentY(k)`, `nearAgentHp(k)` and `nearAgentTeam(k)` read entry k (-1, or Hp 0, past the end).
+Identities follow the same disguise rules as `visible`. Its cost follows the neighbourhood rather than
+the roster, so prefer it to looping `visible(i)` over every seat; `players/nearby.bas` is `base.bas` rewritten
+this way. Available in FFA-kin mode only (Heartland): `gameMode()`, `seatCount()`, `kin(slot)`, `gene(slot,i)`,
+`seatScore(slot)`, `seatAlive(slot)`, `heartOwner(i)`, `greatHeartCount()`, `greatHeartX(i)`,
+`greatHeartY(i)`, `greatHeartPresent(i)`, `greatHeartProgress(i)`, `greatHeartDormant(i)` and
+`territoryBoost()`; see "FFA-kin mode (Heartland)". In the teams game these names are not defined, so scripts may
+use them as ordinary variables.
+
+Actions: `walkTo(x,y)`, `lookAt(x,y)`, `shootAt(x,y)`, `chargeGrenade(held)`.
+Release by calling `chargeGrenade(0)` or not calling it on the next tick.
+`shout(stringHandle)` is public communication; PRINT remains private.
+Source is limited to 128 KiB, memory to 2 MiB, and each decision to 50,000
+instructions / 125,000 work units and a string pool of 1,024 handles / 64 KiB (reset every decision).
+
+## Replays
+
+Replays record accepted actions and per-tick state hashes. Version 6 includes
+all equipment state and the approved Paint Crew cog models. The viewer supports
+seeking, individual cone visibility, first-person view, event filtering, inventory,
+armor/lives inspection, grenade arcs/blasts, spray effects and trench markers.
+Earlier replay versions retain their original rules and hashes.
+
+<!-- readme:skip-start -->
+## Comparing two builds on hosted episodes
+
+A hosted experience request runs a batch of episodes you define, on a pinned Coworld, without
+touching a league seat. `uv run coworld xp-request create body.json`, then
+`uv run coworld xp-request get <xreq_...> --json` for the scores and
+`uv run coworld episode-logs <ereq_...> -d <dir>` for the seat logs. For the Jev baseline's own
+switches, `coworld/paintbot/tools/jev_experiment.py` writes the arm files and the bodies for
+you and prints the upload and create commands; the rest of this section is what to put in a
+body it does not cover, and how to read what comes back.
+
+```json
+{"target": {"coworld_id": "cow_...", "variant_id": "competition"},
+ "roster": [{"slot": 0, "player": {"policy_ref": "my-build:v3"}},
+            {"slot": 1, "player": {"policy_ref": "<pvid or name:vN>"}}],
+ "num_episodes": 30, "execution_backend": "k8s",
+ "episode_player_llm_spend_limit_usd": 0.5, "notes": "what this arm is"}
+```
+
+Give the roster one entry per seat, all sixteen (two are shown above) — even seats are Red, odd
+are Blue, so seat parity is the team. Two traps in the body itself: `variant_id` belongs in
+`target` **or** at the top level, never both, and `policy_ref` takes the bare `name:vN` or a
+policy-version UUID, not the player-prefixed `player/name:vN` form that the request echo prints
+back. An advised build also needs `episode_player_llm_spend_limit_usd`: a seat with no budget has
+no advisor, plays as the baseline and still scores normally, so the request looks healthy and
+measures nothing.
+
+Four things about reading the result:
+
+- **The gap between the two scores is one bit; the winner's glory is not.** The loser's glory
+  is zeroed at the final tick, so subtracting one side's score from the other only restates who
+  won. The winner's number is a real measurement — roughly the match length in seconds minus
+  the seconds it took, plus event awards — so it says how *fast* the win was. Which statistic
+  to use follows from the matchup. Against an opponent an arm nearly always beats, compare the
+  arms' **mean winning glory**: win rate is saturated and carries nothing (two arms both went
+  20/20 against the plain BASIC baseline, but their winning glory, 676.7 +/- 83.7 against
+  672.6 +/- 91.5 over 20 episodes each, is a comparison with real resolution). Between arms
+  that are close, use **win rate**: each arm only has a glory number for the games it won, so
+  the means are computed over selected and non-comparable subsets.
+- **Split each arm into equal halves with the sides swapped.** Rules 35 mirrored the map and
+  validated it at red 51.7% over 400 native seeds, so neither side is favoured — but 60
+  episodes of one build against another still came out 35/60 to Red by chance alone
+  (95% Wilson [0.457, 0.699]). A 58% split from noise is the same size as the effects these
+  batteries are trying to find.
+- **Budget the episodes.** 60 episodes give a Wilson interval of about ±0.12: enough to reject
+  a 70/30 effect, not enough to tell 0.62 from 0.50. Plan ~250 for that. Decide the stopping
+  point and the rule before the first result, and start a fresh battery rather than extending
+  one you have already read.
+- **Check the seats before trusting a score.** Each seat's BASIC `print` output comes back from
+  `coworld episode-logs`; count its asks against its failures and refusals. Locally,
+  `PW_BASIC_PEAKS=1` prints each seat's peak instructions, work units and string handles.
+- **Read the replay, not just the score.** `examples/paintbot/replay_stats.nim` re-simulates a
+  replay and reports, per side, lives left, cogs standing, captures, heart-ticks held, ticks
+  spent ahead on heart count and every glory award by kind. Win rate alone hid the most
+  important fact about this league: matches end by elimination at roughly a quarter of the
+  clock, so the heart meter usually never decides anything. Hosted replays are gzipped —
+  `curl -sS <replay_url> | gunzip -c > match.raw` first.
+
+**A league round swaps which side a policy takes between episodes.** Derive the side from that
+episode's `policy_version_ids` zipped with slots; never assume your policy is on the even seats.
+Assuming it turns a win into a loss in your table, silently.
+
+### What the advisor switches are worth
+
+Measured on 0.3.36 over 420 hosted episodes, every arm 60 head-to-head against the shipped
+build with the sides swapped in equal halves (`coworld/paintbot/tools/jev_experiment.py`,
+scored by `jev_results.py`). Win rate with a 95% Wilson interval; the loser's glory is zeroed
+so the margin says nothing.
+
+| arm | switch | candidate even | candidate odd | pooled | 95% Wilson |
+| --- | --- | --- | --- | --- | --- |
+| a1-structured | shipped, vs the plain BASIC baseline | 30/30 | 30/30 | **1.000** | [0.940, 1.000] |
+| a2-no-nouls | `useNouls = 0` | 0.37 | 0.50 | 0.433 | [0.316, 0.559] |
+| a3-score | `useScore = 1` | 0.43 | 0.40 | 0.417 | [0.301, 0.543] |
+| a4-margin | `kMargin = 150` | 0.43 | 0.60 | 0.517 | [0.393, 0.638] |
+| a5-wide | `useWide = 1` | 0.30 | 0.47 | 0.383 | [0.271, 0.510] |
+| a6-retreat | `useRetreat = 1`, `useDial = 1` | 0.70 | 0.47 | 0.583 | [0.457, 0.699] |
+| a7-echo | `useEcho = 1` | 0.30 | 0.23 | **0.267** | [0.171, 0.390] |
+
+Only two separate from a coin flip. The advised build beats the plain baseline every time, which
+is a sanity check and not a result. And the old echoing relay **loses**: `useEcho = 1` took 16 of
+60, consistently on both sides, so the one-voice default is now supported by measurement and not
+only by its mechanism.
+
+Everything else is a draw at this power, and the defaults stay as they are. Two of them are worth
+reading carefully rather than as weak evidence:
+
+- **a6-retreat looks like the best arm and is not.** Its halves disagree: 0.70 with the candidate
+  on even seats against 0.47 on odd. Pooled it is 0.583, which is exactly the split that arose
+  from noise alone in the earlier 60-episode battery. An unbalanced battery would have reported
+  the retreat choice as promising. This is what the side swap is for.
+- **a2-no-nouls does not buy latency.** In a single episode with the two builds on opposite
+  sides, the two-question build answered at a median of 26 ticks and the five-question build at
+  25, with the five-question build steadier at the tail (p90 78 against 107) and dropping 3% of
+  answers as stale against 12%. Questions in one request are evaluated in parallel; asking three
+  more costs tokens, not time, so the narrow yes/no questions stay on and keep producing labels.
+
+Separating an effect near 0.60 needs about 250 episodes, not 60, so a draw here is "not measured"
+rather than "no difference".
+
+### Against the league leader: the lake decides it
+
+Re-simulating 60 hosted games of the shipped Jev build against `a-aron:v7` (league #1), with the
+state hash checked every tick, showed where the games are lost. **73% of our deaths happened in the
+lake** (his: 21%), and we spent 20.6% of our alive time wading (his: 9.5%). Almost none of those
+deaths came while outnumbered nearby: a wading cog moves at a quarter of its speed and is shot from
+range. The match is an elimination race - in games we lost we burned 31.9 of 32 lives, he burned
+25.5 - while we captured 2.8 times as many hearts as he did. That is why changing how the objective
+is chosen made no difference against him: we already win the territory and lose the lives.
+
+The cause is the navigator. `waypoint()` returns the goal whenever `walkClear(start, goal)` - no
+wall in the way - and water is not a wall, so any objective across the lake is reached by a
+straight wade; the grid search behind it has no water term either.
+
+`useDryRoute` routes around it from the policy: when the straight way to a target more than 8 m off
+crosses water (`waterAt`, ten samples), the cog first walks to whichever of six points beside the
+route is quickest to go through, counting a wet metre as `kWetCost` (6) dry ones, and keeps that
+point until it is reached, the target moves 10 m, or ten seconds pass.
+
+| against `a-aron:v7`, 0.3.38, sides swapped | even | odd | wins | 95% Wilson |
+| --- | --- | --- | --- | --- |
+| shipped build + `useDryRoute = 1` | 47/60 | 42/60 | **89/120 = 0.742** | [0.657, 0.812] |
+| shipped build, run alongside it | 3/30 | 9/30 | 12/60 = 0.200 | [0.118, 0.318] |
+
+The replays of the dry-route games confirm the mechanism rather than just the score: time wading
+fell from 20.6% to 12.1%, deaths in the water from 73% to 49%, and the elimination race turned -
+he now burns 30.9 of his 32 lives a game. Half our deaths still come in the water, so there is more
+to take here.
+
+<!-- readme:skip-end -->
+
+## Heartwick arena
+
+Cottages, garden walls, carts, supply stacks and the market well are solid cover: they block movement, sight and direct fire. Grenades still lob over them. The village is symmetric under a half turn, with a market square, cross streets and side lanes. Flower patches are walkable decoration. Trenches retain their existing movement and damage rules.
+
+### High ground accuracy
+
+Gun spread decreases by 25% per metre above the locked aim point, capped at 50% less spread. Shooting uphill increases spread by up to 50%; level shots are unchanged. Terrain and trench depth both count. This applies to every policy, starting with replay rules version 10.
+
+### Village navigation and nearby speech
+
+Rules 11 widen terrace ramps from 2m to 6m. The baseline assigns high-ground holders and separate flanking lanes, scans when it loses sight of enemies, and holds distance with guns while closing with spray cans.
+
+BASIC uses `shout(strNew("Contact!"))`. Messages are limited to four 256-byte lines per tick. On the next tick, living cogs within 12.8m hear both teams through `heardCount()`, `heardSlot(i)`, `heardX(i)`, `heardY(i)`, and `heardText(i)`. Hearing is independent of the vision cone. The viewer shows speech bubbles for visible living speakers for three seconds.
+
+The equipment baseline remembers visible supplies for ten seconds and equips when it is safe to. Grenade charge follows target distance with a visible-friendly blast check.
+
+Grenade and spray pickups are enlarged, bob, and spin. Each gun shot draws four bright paintballs for readability; this is visual only and still resolves one hit with the existing cooldown.
+
+### Wilderness flanks (rules 12)
+
+Heartwick now has 80m × 48m of playable terrain, 50% more area than the original 64m × 40m village. Coordinates extend from (-800,-400) to (7200,4400) cm, preserving the village, hearts, and equipment positions. Wooded rolling hills and a continuous perimeter trail connect back into the village on all sides. Two BASIC flankers per team use the upper and lower wilderness wings. `mapMinX/Y()` and `mapMaxX/Y()` expose the bounds. Older recordings retain their original boundaries.
+
+Heartwick now spans 120 × 64 metres (twice the preceding wilderness map area).
+The original village sits inside wooded hill country with broad saddles, outer
+trails, six outlying territory hearts, and four extra medkit stations. Terrain
+heights and tree/bush collision bounds are what `terrainHeight` and `walkTo` see.
+
+Baseline routine callouts are staggered across seats every 15 seconds.
+
+New matches use meandering paths with varying widths and curved terrain banks.
+The same deterministic land deformation drives heights, ramps, navigation,
+and vegetation placement; older recordings keep their original terrain.
+
+Heartwick now occupies an irregular island. The sandy coast slopes into water;
+policies and movement respect the shoreline, while all objectives remain connected.
+
+Spray covers a roughly 62-degree cone and deals 3 damage per target per burst; armor absorbs damage first.
+
+### Stronger grenades and spray (rules 40)
+
+League games showed the best teams almost never used either pickup, so rules 40 make
+them worth the detour: grenade blasts reach 360 units instead of 270 and deal 3 in the
+open (a full-health kill) and 2 to victims in other trenches; spray recovers in 8 ticks
+instead of 20 and its cone is a third wider. Charge time (24 ticks) and spray reach (850)
+are unchanged so existing throw-distance math and neural decoders keep working.
+
+### Configurable glory awards (rules 43)
+
+Rules 43 move the glory awards into the game config, so a variant can retune glory without an
+engine change. The optional `"glory"` object (teams game only) overrides any of these keys;
+absent keys keep the defaults in the glory table below:
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `quiet_supplies` | 10 | glory for each quiet stretch with no supply collected |
+| `quiet_supplies_seconds` | 30 | length of that stretch, in seconds |
+| `behind_lives` | 1 | glory per life a team trails the enemy by |
+| `behind_lives_seconds` | 5 | how often the behind-in-lives award pays, in seconds |
+| `heart` | 20 | glory for picking up a glory heart |
+| `behind_cogs` | 1 | rules 47: glory per cog a team has out of the match beyond the enemy's count |
+| `behind_cogs_seconds` | 5 | rules 47: how often the behind-in-cogs award pays, in seconds |
+
+Awards are 0 to 1000 and periods 1 to 600 seconds. Every teams variant sets
+`"glory": {"behind_lives": 5, "behind_cogs": 10}`, so every five seconds a team behind in lives
+earns 5 per life it trails by, and a team with more cogs out earns 10 per extra cog out.
+Replays record the awards they were played with.
+
+### Glory for cogs out (rules 47)
+
+A cog is out of the match once it is dead with no lives left. From rules 47, every
+`behind_cogs_seconds` a team earns `behind_cogs` glory per cog it has out beyond the enemy's
+count, on top of the behind-in-lives award (a cog that runs out still counts toward the lives
+deficit as well). The team with fewer cogs out earns nothing. Teams recordings at rules 46 and
+older never pay it and replay as before.
+
+### Team vision (rules 42, opt-in)
+
+Rules 42 add an optional vision mode for large games. With `"vision": "team"` in the game config
+(teams game only), each team shares what any living teammate can see. Sight reaches 20 m in every
+direction, is blocked by cover, and is occluded by terrain. It is computed once per tick on a grid of
+1.25 m cells, the approach Gods of the Arena uses. Teammates always see each other. `visible`,
+`playerX/Y/Hp`, `nearAgents` and pickup visibility all read the shared grid, so a large game no
+longer traces one sight line per pair of cogs. Without the option, every variant keeps per-cog
+sight lines, and the game plays exactly as under rules 41. Replays record the mode.
+
+### Generated maps (rules 41)
+
+Rules 41 add ten generated maps beside Heartwick island. Each map has its own variant,
+`map-<name>`, and sets `"map": "<name>"` in the game config: `twin-mesas`, `archipelago`,
+`serpent-river`, `crater`, `terraces`, `deep-forest`, `badlands`, `atoll`, `highlands`,
+`delta`. A config with no map (every existing variant) still plays on Heartwick. Replays
+record the map name, and the viewer draws each map's terrain, scenery and coastline.
+
+Two big maps stretch the same layouts over ten times the area: `big-twin-mesas` and
+`big-deep-forest` (variants `map-big-twin-mesas` and `map-big-deep-forest`; the
+`heartland` Coworld's `heartland-big` variant plays FFA-kin on `big-twin-mesas`). The world spans about
+50,000 x 30,000 units instead of 16,000 x 9,600, still centred on (3200, 2000). Hearts keep
+the shipped maps' territory per heart, about 730 m2 of land each, so the big maps carry 100
+(`big-twin-mesas`) and 126 (`big-deep-forest`) control hearts: the two homes, the four role
+pairs, and extra neutral pairs spread by farthest-point sampling. Read the count from
+`heartCount()`. Supplies and trenches scale the same way (one rules-40 set per ten hearts:
+10x on `big-twin-mesas`, 13x on `big-deep-forest`), each extra copy in its kind's usual zone,
+and each glory-heart spawn places one mirrored pair per ten control hearts.
+
+A map keeps the rules you already play under: 16 cogs, 10 control hearts on the shipped-size
+maps (two homes, then four neutral pairs), 4 grenades, 2 sprays, 2 armors, 4 medkits, 2 uniforms and 6 trenches.
+Everything is mirrored under the same half turn about (3200, 2000). What changes is the
+ground and where things sit, so a policy should read positions from the host API
+(`controlX`/`controlY`, `pickupX`/`pickupY`, `terrainHeight`, `waterAt`, `trenchAt`)
+instead of assuming Heartwick coordinates. The generator places items by role: grenades
+behind your lines, spray in the thickest cover, armor on exposed high ground, medkits at
+the centre and on a flank, and trenches on open approaches.
+The generator and previews are in `tools/mapgen/`.
+
+### FFA-kin mode (Heartland)
+
+Heartland is published as its own Coworld, `heartland` (variants `heartland` and `heartland-big`); it is
+this engine with `"mode": "ffa_kin"` in the game config (rules 41 otherwise; the
+teams game is untouched when the mode is absent or `"teams"`). The variant plays on Heartwick;
+a config may add a generated `"map"`, and the FFA-kin rules below apply there unchanged. All sixteen cogs are separate
+players, but some are related, and a cog's score counts its relatives' points.
+
+- **Families.** Every match draws a kinship layout from the seed: four families of four,
+  eight pairs, five trios and a loner, four families of four in two cousin-linked pairs,
+  rarely all strangers, rarely all clones. Each cog has 32 genes (bits). Siblings share
+  16 loci by descent, so their relatedness r is 1/2; linked cousins share 8 (r = 1/4); clones
+  share all 32 (r = 1); strangers 0. A cog's r to itself is 1. Other matching bits are chance
+  and do not count. Families spawn together around one anchor each, spread over the map.
+- **Kin layout.** The optional `"kin_layout"` config key pins every match to one layout:
+  `"fours"`, `"pairs"`, `"trios_loner"`, `"cousins"`, `"strangers"`, `"clones"` or `"tribes"`
+  (families of five full siblings filling the seats: Heartland Big's 50 seats are 10 tribes of 5)
+  (`"sampled"` or absent draws one per seed, as above). Which seats form which family and
+  every genome still come from the seed. The key is FFA-kin only; a teams config that sets it
+  is rejected. The Heartland league (the `heartland` Coworld's `heartland` variant) sets `"kin_layout": "cousins"`,
+  so every league match has four families of four in two cousin-linked pairs, with r = 1, 1/2,
+  1/4 and 0 all present.
+- **Rules.** Every hit is an ordinary hit (there are no teams, so no friendly fire, and no
+  uniforms). Cogs carry 10 base HP instead of 3 (a medkit restores all 10; `selfHp` and
+  `playerHp` read 0-10), and gun rays stop at 20 m (2,000 units) instead of 52.5 m. Grenades,
+  spray and armor are unchanged. One life: a cog that dies is out, and every heart it owns goes neutral at once.
+  All ten control hearts start neutral. One cog alone within 140 units for 72 ticks captures
+  a heart; any second cog in range, relatives included, pauses the capture, and the heart's
+  owner standing on it blocks capture entirely. An owned heart pays its owner 1 point per
+  second.
+- **Territory boost.** The ground belongs to the owner of the nearest control heart (the
+  territory overlay; a neutral heart's ground belongs to nobody). A cog on ground owned by
+  seat j moves faster and shoots straighter by 30% × r(me, j): +30% on its own ground, +15% on
+  a sibling's, +7% on a cousin's (7.5 rounded down), nothing on a stranger's or neutral ground.
+  Speed is multiplied by (100 + boost)/100 (before sneaking or wading halve or quarter it) and
+  gun spread by (100 - boost)/100.
+- **Great hearts.** Two great hearts sit at mirrored spots. Three or more living cogs inside
+  200 units for 5 seconds (120 ticks) capture one; progress falls one tick per tick while
+  fewer than three are present. A capture pays 60 points split equally among every cog in the
+  zone, then the heart is dormant for 60 seconds.
+- **Match.** A fixed 6:00 (8,640 ticks), ending early when at most one cog is left. No glory,
+  no heart meter, no elimination victory; results report outcome `ended`.
+- **Score.** Raw score s_i is heart income plus great-heart shares, kept in tenths of a point.
+  The match score is the kin-weighted R_i = sum over j of r_ij * s_j (in points). Helping a
+  sibling earn a point is worth half a point of your own; killing one costs you.
+
+BASIC in this mode: `selfTeam` and `playerTeam(slot)` are the seat, so team-parity bots treat
+everyone as an opponent. `homeX`/`homeY` are the seat's spawn anchor, and `heartX`/`heartY`/
+`ownHeartX`/`ownHeartY` read the same point (`ownHeartStolen` is 0).
+
+**Fog of war (rules 48).** You are never shown a cog out of view. "In view" is the line of
+sight `visible(slot)` already reports. For a cog you cannot see now, `kin`, `gene`, `seatScore`
+and `seatAlive` read -1, the value an invalid seat reads, exactly like `playerX`/`playerY`
+(-1) and `playerHp` (0); your own seat is always known. Genes never change within a match, so a
+policy may remember what it read while a cog was in view. `seatCount()` and the match constants
+stay public, and so do the hearts: `heartOwner(i)`/`controlOwner(i)` and the capture fields are
+properties of the map heart, which everyone sees. Shouts still carry: a cog within hearing range
+(1280 units, a fifth of the island's width, on every map, as before) hears them whatever the line of sight, with the sender's
+seat and position as always, but hearing a cog unlocks nothing else about it. The neural
+observation follows the same rule: an unseen cog's ffa.v1 row is zero (`neural_actor.md`).
+Before rules 48 kinship, genes, scores and who is still playing were public with no line of
+sight. The functions below are available
+in FFA-kin mode only: in the teams game they do not exist, and a teams script may use the
+same names as ordinary variables (a script that calls them fails to compile there).
+
+- `gameMode()`: 1 (FFA-kin); it exists only in this mode.
+- `seatCount()`: seats in the match, 16 (or 50 in Heartland Big); seat indices run 0 .. seatCount()-1.
+- `kin(slot)`: round(100 r) between you and `slot`: 100 self (and clones), 50 siblings,
+  25 cousins, 0 strangers; -1 for an invalid slot or a cog out of view (rules 48).
+- `gene(slot, i)`: bit `i` (0-31) of that cog's genome, 0 or 1; -1 for an invalid slot or
+  locus, a cog that is out of the match, or a cog out of view (rules 48).
+- `seatScore(slot)`: raw score s in tenths of a point; -1 for an invalid slot or a cog out of
+  view (rules 48).
+- `seatAlive(slot)`: 1 while the cog is still in the match, 0 once it is out; -1 for an
+  invalid slot or, from rules 48, a cog out of view (unknown: a dead cog is never in view).
+- `heartOwner(i)`: the control heart's owning seat, -1 neutral (same as `controlOwner(i)`).
+- `greatHeartCount()`: 2. `greatHeartX(i)`, `greatHeartY(i)`: its
+  position. `greatHeartPresent(i)`: living cogs in its zone. `greatHeartProgress(i)`: capture
+  ticks (0-119). `greatHeartDormant(i)`: ticks until it is ready again, 0 if ready. Invalid
+  indices return -1.
+- `territoryBoost()`: your territory boost where you stand, in percent (30 own, 15 sibling,
+  7 cousin, 0 stranger or neutral).
+
+`seatScore` and `seatAlive` are named that way because `score` and `alive` are common variable
+names in existing bots. The baseline for this mode is `players/ffa.bas` (submit it as a policy; it calls FFA-only
+functions, so it does not compile in the teams game): it remembers each cog's `kin` once it has
+seen it and treats a cog it has never seen as a stranger; it never shoots a cog
+with `kin` of 50 or more, prefers strangers seen hurting relatives, joins a ready great heart
+when others gather there, and captures hearts that no relative is holding or taking. Once no
+neutral heart is left it waits at a ready great heart (while three or more cogs live) or walks
+into the nearest stranger's heart to steal it. In a fight it shouts "at" every fourth tick so
+relatives who cannot see it know where it stands.
+
+### Expanded island and navigation (rules 22)
+
+The island spans 160 × 96 metres, exactly twice the previous map area.
+Bounds are (-4800, -2800) to (11200, 6800) centimetres. Six outer hearts
+now sit in the expanded wooded hills. BASIC walkTo routes account for body
+clearance and traversable slopes; blocked cogs sidestep instead of pushing
+forever. Baselines abandon objectives after three seconds without progress.
+
+### Deliberate heart captures (rules 24)
+
+Heart towers show a bar in the capturing team's color. A yellow marker means
+capture is contested and paused; the minimap shows the same progress and an
+exclamation mark. Capturing an enemy heart takes the same three seconds as a
+neutral heart. A different attacking team starts from zero. Capture progress
+is recorded in deterministic state hashes and restored when seeking replays.
+Rules 23 and older retain their original instant captures and replay hashes.
+
+### Big hearts (rules 25)
+
+Big hearts are twice as large and have a gold ring; the minimap marks them with
+`5`. Capture time, capture radius, and ownership rules stay the same. A neutral
+big heart earns no points until captured. BASIC `controlPoints(i)` returns 1 or 5
+(-1 for an invalid index). Choices are deterministic
+for replay verification, and seeking restores both the active heart and used-heart
+history. Rules 24 and older retain ordinary one-point hearts.
+
+### Trenches and imperfect hearing (rules 26)
+
+Trenches have dark sunken floors, exposed ochre banks, and timber duckboards.
+The tactical map outlines their footprints in tan. Their cover rules are unchanged:
+most outside gunfire passes overhead, but grenades landing in the same trench are
+especially dangerous, and climbing out is slower.
+
+Nearby movement, gunfire, explosions, and spray produce one-second sound cues.
+Sound travels around walls but reveals only a kind, one of eight compass sectors,
+and a rough distance band; it reveals no source identity, team, or exact position.
+Normal movement is audible within 10 metres, gunfire within 35, explosions within
+50, and spray within 18. Cues refresh rather than stack for the same kind and sector,
+with at most twelve retained per listener. Dead cogs hear nothing.
+
+BASIC exposes `soundCount()`, `soundKind(i)` (0 footsteps, 1 gunfire, 2 explosion,
+3 spray), `soundDirection(i)` (0 E, 1 SE, 2 S, 3 SW, 4 W, 5 NW, 6 N, 7 NE),
+`soundDistance(i)` (0 within 6m, 1 within 18m, 2 farther), and `soundAge(i)` in ticks.
+Invalid indices return -1. Call `sneak(1)` each tick to move at half speed without
+footstep cues; weapons remain audible. Humans hold Q while moving. The selected cog's cues
+appear as coarse arcs on the minimap and as brief directional text.
+
+The starter policy turns toward sounds when it has no visible opponent and uses
+quiet approaches near objectives. Speech remains a separate existing channel.
+Older recordings retain their original mechanics and replay hashes.
+
+
+### Uniform disguises (rules 27)
+
+Two uniform stations let a cog impersonate the opposing team until it attacks
+or dies. Gun windup, a spray burst, or releasing a grenade reveals the cog;
+charging a grenade alone does not. A collected uniform respawns after 30 seconds.
+The cog's actual team still owns its captures and earns its score. Friendly fire
+is enabled for every cog and every weapon, including disguised cogs.
+
+Other agents see the opposite colors and a valid opposing seat number. BASIC
+`visible`, `playerX/Y/Hp/Carrying`, `playerTeam`, and `heardSlot` use that observed
+identity. The wearer's self identity is unchanged. When both a genuine cog and
+its impersonator are visible under the same seat, BASIC reports the nearer body.
+`playerTeam(i)` returns the observed team, or -1 when unseen; `hasUniform()`
+reports only your own disguise. Pickup kind 4 is a uniform. Spectator scoreboards keep true ownership; bodies and minimap
+markers show the disguise. Rules 26 and older keep their original replay hashes.
+
+### Lake (rules 33)
+
+An irregular, enclosed lake sits inland in Heartwick, surrounded by dry land.
+Its shallow water is about 38 cm above the carved bed, with sloping banks for
+wading. Cogs in the water move at one-quarter speed (7 cm/tick normally),
+stacking with sneaking and carrying penalties. Dry banks retain normal speed;
+the water causes no damage. Terrain height, line of sight, and navigation use
+the lake bed. Earlier replays preserve their original river geometry and rules.
+
+### Routes that measure time (rules 38)
+
+Until rules 38 the navigator walked straight at any goal no wall blocked, and water blocks
+nothing; behind that shortcut it searched an unweighted grid. So any objective across the lake
+was reached by wading at a quarter speed. Re-simulating 60 hosted games of the Jev baseline
+against the league leader, 73% of its deaths happened in that water.
+
+Rules 38 route by time. A lake cell costs four steps in the grid search, so the field measures
+how long a route takes, not how long it is. From dry land a cog takes the straight shortcut, or
+pulls its path taut, only while that line stays dry; a cog already in the water keeps the old
+freedom, since every way out starts in it, and a cog that would otherwise have no move at all
+falls back to the old rule rather than standing still. Walking one cog across the lake, rules 37
+wade and rules 38 go round without touching water and arrive sooner
+(`tests/test_paintbot_dry_navigation.nim`). Every earlier replay keeps its original routes: 160
+hosted rules-37 games re-simulate hash for hash under the new engine.
+
+### Lake hearts are reachable (rules 44 in Heartland, rules 45 everywhere)
+
+Heartwick's two lake hearts, (3200, 1250) and (3200, 2750), stand in the water, and so do the
+medkits 83 units off them. Under the rules-38 routes a cog on dry land with a goal in the lake
+only ever took dry anchors and dry pulls, so it walked to the shore cell nearest the goal and
+stood there, about 300 units out and beyond the 140-unit capture ring, for as long as it kept
+that goal. In eight hosted Heartland matches cogs stood like that beside a lake heart 71 times
+(26 minutes in all), and a lake heart changed hands 6 times.
+
+From rules 44, in FFA-kin mode, a cog on dry land whose goal's own cell is wet routes as a wading
+cog does: it still keeps to dry land for as long as that is faster (the lake costs four), and it
+still never takes a straight shortcut that ends in water, but it now wades the last stretch. Over
+six local `ffa.bas` Heartland matches the shore stalls went from 49 to 0 and lake-heart captures
+from 5 to 43 (`tests/test_paintbot_ffa_lake_hearts.nim`).
+
+Rules 45 apply the same routing to the teams game. In eight local teams matches of sixteen
+`base.bas` cogs, cogs stood on the shore beside a lake heart 37 times (489 s in all) under rules
+44 and never under rules 45, and lake-heart captures went from 9 to 29. Teams recordings at rules 44 and older, and FFA recordings at rules
+40-43, keep their routes and replay hash for hash.
+
+### Glory (rules 37)
+
+(There are no rules 36. Version 0.3.32 stamped its recordings 36 while the live engine still
+played rules 35, so a 36 header is read as rules 35 and those replays play back correctly.)
+
+The heart meter decides who wins; glory decides how much the win is worth. Every score the
+ladder sees is a winner's glory, so a fast win outranks a slow one, and a team that loses
+scores nothing however it played. Glory is a self-imposed handicap: it never pays for anything
+that makes a team more likely to win (captures, tags, meter points), only for restraint and
+for hardship a team takes on. Each team's glory starts at the match length in seconds (600 for
+the ten-minute limit, `endTick div TickRate`) and loses one per second, so a five-minute win
+keeps about 300 before events. The events below list the engine defaults from `sim.nim`; from
+rules 43 a variant's `"glory"` config can change them (every teams variant pays 5 per life behind
+and 10 per cog out behind):
+
+| Event | Glory | Credited to |
+| --- | --- | --- |
+| Thirty seconds with no supply collected (`GloryQuietSupplies`, per team, repeating) | +10 | the abstaining team |
+| Friendly fire taken in the opening thirty seconds (`GloryFriendlyFire`, per hit; rules 37 and 38, removed in rules 39) | +30 | the team that took it |
+| Picking up a glory heart (`GloryHeartAward`, rules 38) | +20 | the team of the cog that touched it |
+| Every five seconds, per life fewer than the enemy (`GloryBehindLives`, rules 39; lives left summed over the team's cogs) | +1 | the team behind in lives |
+| Every five seconds, per cog out of the match beyond the enemy's count (`GloryBehindCogs`, rules 47; dead with no lives left) | +1 | the team with more cogs out |
+
+Spawn protection and self-damage never count; the supply
+clock restarts whenever a teammate collects a grenade, spray can, medkit, armor or uniform,
+and the countdown floors at zero. At the final tick the loser's glory is set to zero (a draw
+zeroes both), then glory is frozen: `scores()` reports each seat's team glory, so the winner's
+seats all carry the same number and the loser's carry zero. Glory, the supply clocks and the
+recent awards are part of the rules 37 world hash; older recordings ignore them.
+
+The engine keeps each award for four seconds (`gloryEvents`). The viewer shows recent awards
+at the very top of the page in the earning team's color ("Ember +10 glory · thirty seconds
+without supplies"), the header's big number is each team's glory with the heart-meter points
+in small type beside it, and the scoreboard dialog repeats both. `tests/test_paintbot_glory.nim`
+covers the countdown, each event, the end-of-match settlement, the hash gate and a rules 37
+recording round trip.
+
+### Glory hearts (rules 38)
+
+Small spinning gold hearts appear on the field in mirrored pairs: the first pair at 0:20, then a
+new pair every 10-20 seconds (on a map with more than ten control hearts, one pair per ten hearts
+each time) (`GloryHeartMinGap`..`GloryHeartMaxGap`, drawn from the match RNG).
+Each heart sits on a random open, dry spot and its mirror under the map's half turn, lasts thirty
+seconds (`GloryHeartTicks`; it blinks in its last five), then vanishes. The first living cog
+within 120 units (`GloryHeartReach`, seat order alternating each tick like other pickups) takes it
+and its team earns +20 glory. A glory heart is not a supply: it does not restart the
+thirty-seconds-without-supplies clock. It gives nothing that helps win; the detour to fetch one is
+the price. The viewer draws a "+20" rising over the cog that took it, and the top toast names
+the award. Hearts are fog-gated for policies like any pickup (`gloryHeartX/Y/TicksLeft(id)` read
+-1 when out of view; `gloryHeartCount()` is public). The hearts, the next spawn tick and the
+recent pickups (`gloryPickups`, kept four seconds for the viewer) are part of the rules 38 world
+hash; older recordings ignore them. `tests/test_paintbot_glory_hearts.nim` covers spawning,
+expiry, pickup, the hash gate and the BASIC queries. Training builds (`NativeRules`) play
+the current rules, so glory hearts are on the field there too. First live in 0.3.40.
+
+### A fair map: mirrored ground (rules 35)
+
+Heartwick is meant to be the same map for both teams under a half turn, and its cottages,
+cover, trenches, supplies and hearts were always placed as mirrored pairs. The ground under
+them was not: the organic land deformation (rules 15), the coast (rules 16) and the lake
+(rules 33) are waves in absolute coordinates, so one team's trench sat on a 2.5 m plateau
+overlooking the lake while the other team's sat at its foot, 18% of the lake's shore had a
+dry mirror, and the woodland groves were jittered independently. With the same policy on
+both sides, red won 27 of 32 hosted matches.
+
+Rules 35 make every wave odd (coordinate shifts) or even (heights) under the half turn:
+`shift'(p) = (shift(p) - shift(mirror p)) / 2`, so mirrored points land on mirrored ground;
+the groves are placed on the northern half and mirrored; supplies and hearts are nudged free
+once and mirrored exactly. `tests/test_paintbot_symmetry.nim` checks heights, water, coast,
+cover, trenches, supplies and hearts at every sampled point.
+
+Two things in the engine were also one-sided. Seats act in seat order within a tick, and seats
+alternate teams, so red (even seats) moved, collected and sprayed first in every contested
+exchange; rules 35 swap each pair of seats on odd ticks. And the `walkTo` path search breaks
+ties by scan order (north-west first), so blue's routes were not mirror images of red's; rules
+35 route blue on the mirrored map and mirror the answer back. Policies that read the map
+(`terrainHeight`, `controlX/Y`, the walkability sprite) need no change; older recordings keep
+their terrain, order and hashes.
+
+The baseline itself was also not mirror play: its first squad worked from north of home and its
+idle sweep looked east first for both teams, so the two teams' priority squads sat on the same
+absolute side of the map. Both are now team-relative (blue plays the half turn of red), in
+`base.bas`. Validation, same file on both sides, 400 distinct seeds
+each in the native engine: `base.bas` red 51.7% (95% CI 47-57%, p=0.52); a minimal
+capture-and-shoot policy red 52.0% (CI 47-57%, p=0.45). Before rules 35 the same `base.bas`
+mirror gave red 43% on the old map and 60% on the mirrored map with the old baseline. A policy
+that is itself one-sided can of course still favour a seat; the map and engine no longer do.
+
+### Baseline squads, footwork and aim
+
+The BASIC baseline (`players/base.bas`) was rebuilt around four habits. Each cog still runs alone
+with fog-gated vision and no shared memory.
+
+- **Aim.** It leads a moving target by the whole gun windup (six moves) and subtracts its own
+  drift, because the ray leaves from wherever the shooter stands when the windup ends, along
+  the direction locked when the shot was ordered. BASIC cannot read its gun cooldown, so the
+  policy keeps its own estimate and only orders a shot at the start of a movement leg that lasts
+  the full windup.
+- **Footwork.** While an opponent is in sight it moves in short legs of random length across the
+  line to the threat instead of walking straight, staying inside the capture ring when it is
+  holding one. Randomness comes from a small integer generator seeded by the seat.
+- **Squads of four without talking.** Seats 1-4 and 5-8 of a team form two squads. A squad's
+  target is a pure function of public heart ownership and the squad number, so all four members,
+  including one that has just respawned, choose the same heart. Two members stand in the ring;
+  two cover from outside it on the opposing side and step in if nobody is capturing.
+- **Refusing bad fights.** A cog that sees more opponents nearby than teammates heads for the
+  heart that is far from them and close to it.
+- **Dry routes.** When the straight way to a target more than 8 m off crosses water (`waterAt`,
+  ten samples), the cog first walks to whichever of six points beside the route is quickest to
+  go through, a wet metre costing six dry ones, and keeps that point until it arrives, the target
+  moves 10 m, or ten seconds pass. It was measured against the league leader as a switch on the
+  Jev baseline: 89 of 120 against 12 of 60 for the same build without it. Against the previous
+  baseline over 100 side-swapped matches it wins 83-17 under rules 37 (time wading 18.9% to
+  11.2%). Under rules 38 the navigator already routes around the lake - the previous baseline
+  wades 3.9% of the time there - and the habit adds little on top: 59-41, which does not separate
+  from a coin flip. It stays because it never hurts and does not depend on the engine's routing.
+
+It no longer collects spray cans (a can replaces the gun, which loses at range) or uniforms.
+Measured in the engine over 100 side-swapped matches it beat the previous baseline 100-0, using
+at most 5,670 of the 20,000 instructions and 8,722 of the 50,000 work units per decision, with
+no seat disabled. Removing any one habit loses to the full policy (aim 3-37, footwork 12-28,
+refusing fights 12-28, squads 16-24 over 40 matches each).
+
+## Advisor oracle (host feature, no rules change)
+
+Seats stay sandboxed and never touch the network. A script may instead draft one request
+through typed host functions (below) and let the host ask one operator-configured advisor
+endpoint on its behalf. A request is a JSON body `{"state": ..., "questions": {...}}` (at most
+32 KiB, 1-64 questions). An ask returns a request id (1 or more), or 0 when refused: no oracle
+configured, a request still in flight for this seat, fewer than the minimum ticks since the
+seat's last ask (default 24), or an invalid body. Asking never blocks the tick. Polling returns
+0 while the request is pending and -1 if it failed (deadline, transport or malformed reply) or
+is unknown; at most four answers are kept per seat.
+
+The host sets the endpoint, model and credential from `COGAME_ORACLE_URL` (https only),
+`COGAME_ORACLE_MODEL` and `COGAME_ORACLE_KEY`, with `COGAME_ORACLE_INTERVAL` ticks between asks
+and `COGAME_ORACLE_DEADLINE` seconds per request. The guest cannot choose any of them. Answers
+land on a later tick, so a policy keeps acting on its last answer meanwhile. Replays are
+unaffected: they record accepted actions and state hashes, not how a policy chose them, so a
+replay of an advised match verifies like any other. Without an oracle, as in certification pods
+with no network, every ask returns 0 and matches behave exactly as before.
+
+In hosted Softmax episodes the game pod holds no provider key, so `COGAME_ORACLE_URL` is not used
+there. The host finds the platform's LLM sidecar at `AWS_ENDPOINT_URL_BEDROCK_RUNTIME` and posts
+to its `/v1/systemone` route, which forwards to Jev (`typesafe/jev-1.13`) on OpenRouter. Each ask
+names the asking seat, so its cost counts against that seat's per-episode LLM spend limit for the
+league and its requests against that seat's System One bucket: 120 a minute, twice what the
+24-tick interval between asks can use. A seat past its request bucket sees asks fail (`-1`) for a
+few seconds, until the bucket refills. A seat past its spend limit sees every ask fail for the
+rest of the episode, and a league with a $0 limit has no advisor at all. An ask also fails when
+its reply does not arrive whole within twice `COGAME_ORACLE_DEADLINE`, or arrives with no answer
+the host can use: `oraclePoll` returns `-1` for these, never `0`, so a script waiting on a
+request can always tell that it is over. Write the policy so that a
+failed or refused ask costs nothing: keep acting on the last answer, or on none.
+
+### The oracle API
+
+A script reaches the oracle through typed host functions; the engine assembles the
+JSON, ships it to the host over the policy bridge, and the flattened answer comes back on a later
+tick. Everything is int32: string arguments are pool handles (`strNew(...)`), and probabilities,
+scores and confidences are scaled by 1000. The draft lives for one decision only, so build it and
+call `oracleAsk()` in the same tick.
+
+- `oracleAvailable()` is 1 when the host has an oracle. `oracleReady()` is 0 when a fresh
+  `oracleAsk()` would be accepted, the ticks still to wait when it would not, and -1 when there
+  is no oracle or this seat already has a request in flight. Drafting costs string operations
+  whether or not the request ships, so test it before building anything.
+- `oracleState(key, value)`, `oracleStateText(key, text)` add fields to `state` (at most 256);
+  `oracleNote(text)` appends to `state.notes` (at most 16). Keys are 1-64 bytes. A key may be a
+  **path**: `candidates[0].reach_seconds` builds nested objects and arrays, so facts go out as
+  fields rather than spliced into a sentence. A key that is not a well-formed path is used as a
+  flat field name.
+- `oracleQuestion(key, kind, instructions)` adds a question: kind 0 is a yes/no (`noul`), 1 a
+  `score`, 2 a `choice` (1-64 questions). `oracleCriterion(key, label, text)` appends one criterion
+  (at most 16): the ordered level text for a score (label ignored), or `label: text` for a yes/no
+  (`"true"` / `"false"`) or a choice. `oracleCriterionField(key, label, field, text)` turns one
+  criterion into an object - its own text becomes `what` and this adds another field such as
+  `not_for` or `examples`; a field name used twice becomes an array. Score criteria take no
+  fields.
+- `oracleAsk()` returns the request id (1 or more), or 0 when refused for the same reasons as
+  `oracle_ask`, when the draft has no question, or when its JSON exceeds 32 KiB. Each call clears
+  the draft. Store the id in a global: string handles do not survive the tick, integers do.
+- `oraclePoll(id)` is 0 while pending, -1 when failed or unknown, else the number of answers.
+  Answers stay readable until four newer ones have arrived for the seat.
+- `oracleAnswer(id, key)`: yes/no → P(true) × 1000; score → score × 1000; choice → the index of
+  the chosen criterion in the order it was added; -1 when missing.
+  `oracleConfidence(id, key)` is the endpoint's confidence × 1000 (-1 when absent) and
+  `oracleProbability(id, key, label)` a choice's probability for one label × 1000 (-1 when absent).
+
+`COGAME_ORACLE_LOG=<path>` makes the host append one JSON line per request (slot, id, tick,
+latency, the exact request and the raw answers) for offline replay and scoring.
+
+Local evaluation: the hosted league runs in real time, but a local engine runs several times
+faster, so answers land tens of ticks late. Set `COGAME_TICK_SECONDS=0.0417` on the host to pace
+the bridge to 24 ticks per second, and `PW_BASIC_PEAKS=1` to have the engine print each seat's
+peak instructions, work units and string handles at the end of the match.
+
+`examples/paintbot/players/advised.bas` asks every 48 ticks and switches a cog between capturing
+and guarding on the answer. Host calls cost work units like any other (`oracleAsk` 68); the
+20,000-instruction budget is unchanged, and without an oracle the same script plays as if the calls
+were not there.
+
+`players/jev.bas` (manifest entry `basic-jev`, the second BASIC baseline) is `base.bas` with an
+advisor layer spliced in by `coworld/paintbot/tools/make_jev_baseline.py`; regenerate it whenever
+`base.bas` changes (`--check` in CI keeps the two copies honest). Reflexes stay in code. One cog
+per squad asks Jev to pick the squad's objective from a code-ranked list (the three cheapest
+capture candidates or keep current) and relays the answer by shout so the squad keeps agreeing.
+The facts go out as structured fields - each candidate is a `candidates[k]` row of its owner,
+distance, reach time, threat and capture state - and each criterion is one line naming its row,
+rather than a sentence with the facts spliced into it. Three narrow yes/no questions ride along
+in the same request (outnumbered, a heart of ours falling, the squad arriving together): they
+steer nothing, and each is journaled against what the game went on to do so it can be scored.
+The draft also carries a retreat choice and a "loses a life" estimate, journaled but switched
+off (`useRetreat`, `useDial`, `useWide`, `useScore` in the init block) because they lost
+full-length games in the ablations. Asks are event-driven with a 24-tick debounce, and a pick
+that arrives more than `kStale` ticks after its ask is dropped rather than applied.
+
+The callout is three words — `Alpha, push Forge.`, `Bravo, hold Chapel.`, `Alpha, carry on.` — and
+a listener decodes only the squad word, the verb's first letter and the heart's first letter (A +
+index). **Only the asker repeats it**, every two seconds while its answer is fresh; a cog that
+adopts a callout falls silent until one of its own asks is answered (`amSpeaker`, gated by
+`useEcho = 0`). That is worth knowing for any policy that talks: shouts are heard by *both* teams
+within 12.8 m, and each adoption also pushes the listener's objective hold and its leader-takeover
+timer out by `kHold`. Before the switch existed every squadmate repeated the callout, which
+multiplied the traffic on a channel the enemy can read — one measured episode logged 450 directive
+adoptions on the echoing team against 76 on the quiet one — and let two listeners in earshot keep
+each other's directive alive indefinitely, so a squad could hold a dead asker's heart forever and
+never promote a new asker. `useEcho = 1` restores that behaviour for comparison, and it loses: over two independent
+60-episode head-to-head batteries on 0.3.36, sides swapped in equal halves, the echoing build took
+42 of 120 (0.350, 95% Wilson [0.271, 0.439], exact two-sided p = 0.0013). Neither battery could be
+called on its own — they landed 0.267 and 0.433, which is what a Wilson half-width of 0.12 at n =
+60 does to two honest samples.
+Where no oracle is configured, as in certification pods (two seats play it there), every ask is
+refused and the file plays exactly like `base.bas`: `tests/test_paintbot_jev_baseline.nim` holds
+it to the same state hash and checks the drafting cost with the oracle on. The layer was
+developed and measured in daveey/cogamer (`cogames/paintbot/jev`): 20 of 24 full-length matches
+against `base.bas` through the hosted route, about 100 asks per game.
+
+## Neural BASIC policies
+
+A neural BASIC policy is a ZIP containing exactly `manifest.json`, `policy.bas`,
+and `model.bin`. Submit it through the same file-policy upload route as a plain
+BASIC source. The BASIC script calls native floating-point inference; it does not
+interpret the network's matrix arithmetic or quantize observations to integers.
+
+```basic
+paintbot_observe(neuralObservation())
+run_neural_net(neuralModel(), neuralObservation(), neuralLogits(), neuralState())
+paintbot_act(neuralLogits())
+```
+
+The four handle functions identify this seat's model, observation, output, and
+recurrent state. Handles cannot access another seat. Each living seat can observe,
+infer, and decode one action per tick, in that order. Recurrent state resets on
+match start, death, and respawn. The decoder deterministically selects the largest
+logit in each action head. Other BASIC actuators remain available for orchestration.
+
+The restricted FP32 actor uses 448 policy-visible inputs (observation contract v1; v2
+adds a 58-float public terrain block, water and height, for 506), one MinGRU layer of
+width 64, 128, or 256, and categorical action heads `[51,25,2,2,2]`. It receives
+public objectives, own state, visible apparent identities/pickups, sound cues,
+and local terrain; it receives no hidden enemy identities or positions. The
+shared training/deployment contract includes public cooldown and heart-meter
+information beyond the older BASIC scalar getters.
+
+The bundle manifest uses schema `paintbot-neural-basic/1`, hashes both payloads,
+and binds the versioned observation/action contracts. Expanded files are bounded
+to 128 KiB BASIC, 16 MiB model, and 8 KiB manifest. Native inference is separately
+limited to 4,000,000 counted operations per seat/tick; BASIC's bytecode limits
+still apply. Invalid models, buffers, or inference results disable the offending
+seat with an explicit policy error and a safe action.
+
+See [package and host API](../../examples/paintbot/neural_basic.md) and
+[FP32 actor format](../../examples/paintbot/neural_actor.md) for the exact manifest,
+weight layout, reset semantics, and local validation commands. These interfaces
+require a game version containing the neural runtime; older game versions accept
+only their previously supported policy formats.
