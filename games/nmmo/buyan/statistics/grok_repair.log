@@ -1,0 +1,31 @@
+[2m2026-09-12T14:42:59.681820Z[0m [33m WARN[0m disallowedTools entry matched nothing [3magent[0m[2m=[0mgrok-build-plan [3mtool[0m[2m=[0mrun_terminal_command
+[2m2026-09-12T14:42:59.688544Z[0m [33m WARN[0m hooks: skipped unrecognized event names (check for typos) [3mfile[0m[2m=[0m/Users/me/.claude/settings.json [3mskipped[0m[2m=[0m["PermissionRequest"]
+[2m2026-09-12T14:42:59.688609Z[0m [33m WARN[0m hook loading from settings file: failed to parse hook file /Users/me/.cursor/hooks.json: invalid matcher groups for event 'preToolUse': missing field `hooks`
+[2m2026-09-12T14:42:59.688624Z[0m [33m WARN[0m hook loading error [3merror[0m[2m=[0mParseFile { path: "/Users/me/.cursor/hooks.json", detail: "invalid matcher groups for event 'preToolUse': missing field `hooks`" }
+[2m2026-09-12T14:42:59.762153Z[0m [31mERROR[0m Failed to spawn MCP server 'metta-pr-similarity': No such file or directory (os error 2)
+[2m2026-09-12T14:42:59.762338Z[0m [33m WARN[0m Failed to spawn MCP server: Failed to spawn MCP server 'metta-pr-similarity': No such file or directory (os error 2)
+[2m2026-09-12T14:42:59.766000Z[0m [33m WARN[0m MCP server spawn failed, removing from initializing set [3mserver[0m[2m=[0m"metta-pr-similarity"
+[2m2026-09-12T14:42:59.825198Z[0m [31mERROR[0m worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer resource_metadata=\"https://mcp.figma.com/.well-known/oauth-protected-resource\",scope=\"mcp:connect\",authorization_uri=\"https://api.figma.com/.well-known/oauth-authorization-server\"" })
+[2m2026-09-12T14:42:59.863282Z[0m [31mERROR[0m worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer resource_metadata=\"https://mcp.figma.com/.well-known/oauth-protected-resource\",scope=\"mcp:connect\",authorization_uri=\"https://api.figma.com/.well-known/oauth-authorization-server\"" })
+[2m2026-09-12T14:42:59.863330Z[0m [33m WARN[0m both handshake phases failed (surfacing the legacy error) [3mserver[0m[2m=[0mfigma [3mprobe_error[0m[2m=[0mSend message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send discover request [3mlegacy_error[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request
+[2m2026-09-12T14:42:59.863362Z[0m [33m WARN[0m MCP server init failed [3mserver[0m[2m=[0mfigma [3merror[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request
+[2m2026-09-12T14:42:59.863371Z[0m [33m WARN[0m MCP server failed to initialize [3mserver[0m[2m=[0m"figma" [3melapsed_ms[0m[2m=[0m96 [3mtimeout_sec[0m[2m=[0m30 [3merror[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request [3mneeds_auth[0m[2m=[0mtrue
+I'll read the statistics-folder sources and the review task so the compiler and validation fixes match the existing design.I'll check the task spec for the activation schema and remaining constraints before applying the compiler and validation fixes.I'll apply the KeyError-safe accessors and the review-task validation changes in `comparisons.nim`, then update tests and the synthetic CLI fixtures.I'll update `tests.nim` next: rename reserved `out` identifiers, add the review-task cases, and write the synthetic CLI fixture set.Fixes are in place under `games/nmmo/buyan/statistics` only. I did not run `nim check` or tests.
+
+**`comparisons.nim`**
+- JSON and table access go through `getOrDefault` / `child` / `mgetOrPut` so public procs still only raise `BuyanError`.
+- Paths match by exact string or normalized absolute path, not basename. `compareFiles` resolves plan `episodes_file` against the plan directory and CLI episode paths against the current working directory.
+- Missing or null `participant_scores` is `missing_score`; a non-array remains fatal. Duplicate score positions are scanned before a missing/nonfinite return.
+- `signTestP` rejects `wins+losses > 300`. Compare then emits `sign_test_p: null` and `off_schedule`.
+- Empty experiment / coworld / episode / request ids fail closed. Baseline and candidate `policy_version_id` must differ; the same id cannot map to two identities.
+- `decideGate` checks nonnegative counts, `n >= wins+losses`, finite means, and that `p` equals `signTestP` on scheduled looks. `n > 300` is `off_schedule` without a fake p.
+- Optional `source` / `experiment` / `xp_id` on episode objects must match when present.
+
+**`tests.nim`**
+- Every `let out` is now `report`.
+- Two-request activations start as `xreq_first` / `xreq_second`.
+- n=301 gate no longer calls `signTestP(301, 0)`.
+- Added cases for path mismatch, missing/null/malformed scores, duplicate-before-missing, empty ids, `policy_version_id` collisions, fabricated p, `source="local"`, large n with null p.
+- At the end, tests write labeled synthetic CLI files under `statistics/synthetic/` (`plan.json`, `activations.json`, `episodes.json`) via `createDir` / `writeFile`.
+
+**`compare.nim`** unchanged. `signs.nim` / `signs_tests.nim` not touched.

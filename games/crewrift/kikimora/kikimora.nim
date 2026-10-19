@@ -1,0 +1,7452 @@
+## Kikimora — Crewrift command player over the bitworld sprite protocol.
+## Vendored from the proven truecrew bot (github.com/treeform/truecrew,
+## commit 73406ad0ac49c95ca5457080da71d8e2518d002a; truecrew:v24 lineage,
+## ranked #6 in the Crewrift league). Only adaptation: staticRead of
+## prompt.md is relative to this directory instead of ../prompt.md.
+import
+  std/[algorithm, exitprocs, json, monotimes, options, os,
+    parseopt, random, strutils, times],
+  bitworld/[pixelfonts, spriteprotocol, server],
+  bitworld/ais/bedrock as bedrockAi,
+  pixie,
+  crewrift/sim,
+  truecrew/protocols,
+  truecrew/navigation
+when defined(profileTracePath):
+  import bitworld/profile
+else:
+  import bitworld/profile except measure
+
+  template measure() {.pragma.}
+when not defined(italkalotLibrary):
+  import whisky
+  when not defined(botHeadless):
+    import windy, crewrift/common/scales
+    import silky except measure
+const
+  VotingPrompt = staticRead("prompt.md")
+  InitialConnectWindowMs = 60_000
+  ReconnectWindowMs = 60_000
+  ReconnectAttemptMs = 1_000
+  PlayerScreenX = ScreenWidth div 2
+  PlayerScreenY = ScreenHeight div 2
+  PlayerWorldOffX = SpriteDrawOffX + PlayerScreenX - SpriteSize div 2
+  PlayerWorldOffY = SpriteDrawOffY + PlayerScreenY - SpriteSize div 2
+  FullFrameFitMaxErrors = 420
+  LocalFrameFitMaxErrors = 320
+  FrameFitMinCompared = 12000
+  LocalPatchSearchRadius = 8
+  PatchSize = 8
+  PatchGridW = ScreenWidth div PatchSize
+  PatchGridH = ScreenHeight div PatchSize
+  PatchHashBase = 16777619'u64
+  PatchHashSeed = 14695981039346656037'u64
+  PatchMaxMatches = 4096
+  PatchTopCandidates = 16
+  PatchMinVotes = 3
+  PlayerIgnoreRadius = 9
+  HomeSearchRadius = 20
+  PlayerDefaultPort = DefaultPort
+  CrewriftGameDir = currentSourcePath()
+    .parentDir()
+    .parentDir()
+    .parentDir()
+  TrueCrewWorkspaceDir = CrewriftGameDir.parentDir()
+  ExtractedCrewriftGameDir = TrueCrewWorkspaceDir / "coworld-crewrift"
+  ViewerWindowWidth = 1820
+  ViewerWindowHeight = 1060
+  ViewerMargin = 16.0'f
+  ViewerFrameScale = 4.0'f
+  ViewerMapScale = 1.25'f
+  ViewerBackground = rgbx(17, 20, 28, 255)
+  ViewerPanel = rgbx(33, 38, 50, 255)
+  ViewerPanelAlt = rgbx(25, 30, 41, 255)
+  ViewerText = rgbx(226, 231, 240, 255)
+  ViewerMutedText = rgbx(146, 155, 172, 255)
+  ViewerViewport = rgbx(142, 193, 255, 180)
+  ViewerButton = rgbx(255, 196, 88, 255)
+  ViewerPlayer = rgbx(120, 255, 170, 255)
+  ViewerCrew = rgbx(82, 168, 255, 255)
+  ViewerImp = rgbx(255, 84, 96, 255)
+  ViewerTask = rgbx(255, 132, 146, 255)
+  ViewerTaskGuess = rgbx(255, 220, 92, 255)
+  ViewerRadarLine = rgbx(255, 220, 92, 210)
+  ViewerPath = rgbx(119, 218, 255, 230)
+  ViewerWalk = rgbx(46, 61, 75, 255)
+  ViewerWall = rgbx(86, 50, 56, 255)
+  ViewerUnknown = rgbx(22, 26, 36, 255)
+  BotReceiveTimeoutMs = 1000
+  RadarTaskColor = 8'u8
+  RadarPeripheryMargin = 1
+  RadarMatchTolerance = 2
+  TaskIconSearchRadius = 2
+  TaskIconExpectedSearchRadius = 3
+  TaskIconMaxMisses = 4
+  TaskIconMaybeMisses = 12
+  TaskIconInspectSize = 16
+  TaskClearScreenMargin = 8
+  TaskIconMissThreshold = 24
+  PathLookahead = 18
+  PathReuseTicks = 60
+  PathDeviationLimit = 16
+  TaskInnerMargin = 6
+  TaskPreciseApproachRadius = 12
+  StuckFrameThreshold = 8
+  StuckCellSize = 8
+  StuckCellThreshold = sim.TargetFps * 2
+  UnstuckDuration = sim.TargetFps
+  UnstuckPulseTicks = 6
+  JiggleDuration = sim.TargetFps + sim.TargetFps div 2
+  TaskHoldPadding = 8
+  GhostWanderIntervalTicks = sim.TargetFps * 4
+  GhostWanderRadius = 48
+  GhostWanderArrivalRadius = 4
+  CrewmateSearchRadius = 1
+  CrewmateMaxMisses = 8
+  CrewmateMinStablePixels = 8
+  CrewmateMinBodyPixels = 8
+  KillIconX = 1
+  KillIconY = ScreenHeight - SpriteSize - 1
+  KillIconMaxMisses = 5
+  GhostIconMaxMisses = 3
+  GhostIconFrameThreshold = 2
+  KillApproachRadius = 3
+  BodySearchRadius = 1
+  BodyMaxMisses = 9
+  BodyMinStablePixels = 6
+  BodyMinTintPixels = 6
+  GhostSearchRadius = 1
+  GhostMaxMisses = 9
+  GhostMinStablePixels = 6
+  GhostMinTintPixels = 6
+  ChaseLeadTicks = 6
+  ChasePredictionSearchRadius = 12
+  PlayerTrackMemoryTicks = sim.TargetFps * 2
+  PlayerTrackResetDistance = 96
+  FollowingDetectRadius = 128
+  FollowingCloseRadius = 16
+  StalkerOverlapRadius = 16
+  KillerEvidenceRadius = 64
+  FollowingTriggerTicks = 2
+  RunawayTriggerRadius = 32
+  RunawayCooldownPercent = 80
+  MoveAwayTicks = 24
+  RunawayLoopTicks = MoveAwayTicks * 5
+  EscapeLoopArrivalRadius = 20
+  EscapeLoopSearchRadius = 48
+  PlayerColorCount = PlayerColors.len
+  VoteCellW = sim.VoteCellW
+  VoteCellH = sim.VoteCellH
+  VoteColsMax = sim.VoteColsMax
+  VoteStartY = sim.VoteStartY
+  VoteUnknown = -1
+  VoteSkip = -2
+  VoteDeadlineTicks = sim.VoteTimerTicks
+  VoteListenBaseTicks = VoteDeadlineTicks div 4
+  VoteListenJitterTicks = VoteDeadlineTicks div 16
+  VoteCrewmateMaxDelayTicks = sim.TargetFps * 5
+  VoteImposterSkipTicks = VoteListenBaseTicks + VoteListenJitterTicks
+  VoteRetryTicks = sim.TargetFps div 2
+  VoteLlmDeadlineFallbackTicks = sim.TargetFps * 3
+  VoteLlmMinSayCount = 2
+  SusVoteMinScore = 75
+  VotedAgainstSusWeight = 10
+  TaskerStationaryVelocity = 1
+  BodySuspectRange = 64
+  SafeHideSearchRadius = 48
+  SafeHideArrivalRadius = 4
+  ProtocolMapName = "sprite protocol map"
+  ProwlPointSearchRadius = 48
+  SafeHidePoints = [
+    (x: 827, y: 427),
+    (x: 485, y: 105),
+    (x: 648, y: 143),
+    (x: 823, y: 190),
+    (x: 170, y: 566)
+  ]
+  ProwlPoints = [
+    (x: 126, y: 6),
+    (x: 1, y: 194),
+    (x: 123, y: 341),
+    (x: 278, y: 341),
+    (x: 502, y: 352),
+    (x: 719, y: 302),
+    (x: 749, y: 157),
+    (x: 715, y: 1),
+    (x: 522, y: 64),
+    (x: 382, y: 53)
+  ]
+  UnstuckMasks = [
+    ButtonUp,
+    ButtonDown,
+    ButtonLeft,
+    ButtonRight,
+    ButtonUp or ButtonLeft,
+    ButtonUp or ButtonRight,
+    ButtonDown or ButtonLeft,
+    ButtonDown or ButtonRight
+  ]
+  EscapeLoopStarts = [0, 20, 41, 58]
+  EscapeLoopLengths = [20, 21, 17, 16]
+  EscapeLoopPoints = [
+    (x: 240, y: 369),
+    (x: 240, y: 324),
+    (x: 244, y: 314),
+    (x: 256, y: 303),
+    (x: 348, y: 275),
+    (x: 384, y: 275),
+    (x: 388, y: 277),
+    (x: 390, y: 280),
+    (x: 425, y: 316),
+    (x: 529, y: 358),
+    (x: 582, y: 409),
+    (x: 586, y: 421),
+    (x: 586, y: 434),
+    (x: 580, y: 440),
+    (x: 503, y: 439),
+    (x: 348, y: 429),
+    (x: 311, y: 411),
+    (x: 254, y: 390),
+    (x: 244, y: 380),
+    (x: 241, y: 375),
+    (x: 637, y: 393),
+    (x: 613, y: 410),
+    (x: 612, y: 433),
+    (x: 612, y: 489),
+    (x: 613, y: 492),
+    (x: 617, y: 494),
+    (x: 651, y: 494),
+    (x: 769, y: 510),
+    (x: 868, y: 510),
+    (x: 872, y: 506),
+    (x: 873, y: 478),
+    (x: 871, y: 462),
+    (x: 837, y: 441),
+    (x: 811, y: 417),
+    (x: 809, y: 413),
+    (x: 805, y: 411),
+    (x: 752, y: 388),
+    (x: 733, y: 363),
+    (x: 730, y: 358),
+    (x: 678, y: 358),
+    (x: 657, y: 371),
+    (x: 757, y: 356),
+    (x: 751, y: 363),
+    (x: 751, y: 385),
+    (x: 753, y: 389),
+    (x: 809, y: 413),
+    (x: 835, y: 437),
+    (x: 837, y: 442),
+    (x: 840, y: 443),
+    (x: 910, y: 443),
+    (x: 916, y: 440),
+    (x: 941, y: 418),
+    (x: 946, y: 413),
+    (x: 946, y: 378),
+    (x: 938, y: 360),
+    (x: 935, y: 356),
+    (x: 903, y: 347),
+    (x: 901, y: 347),
+    (x: 753, y: 327),
+    (x: 751, y: 324),
+    (x: 751, y: 298),
+    (x: 757, y: 293),
+    (x: 806, y: 272),
+    (x: 833, y: 224),
+    (x: 861, y: 199),
+    (x: 885, y: 163),
+    (x: 890, y: 158),
+    (x: 912, y: 158),
+    (x: 947, y: 210),
+    (x: 947, y: 253),
+    (x: 944, y: 265),
+    (x: 899, y: 316),
+    (x: 867, y: 329),
+    (x: 756, y: 329)
+  ]
+  VoteChatSpeakerSearch = 24
+  TaskRadarResetTicks = 100
+  SpriteTaskArrowObjectBase = 7000
+  ProtocolTextObjectBase = 9000
+  ProtocolChatIconObjectBase = 9200
+  ProtocolVoteIconObjectBase = 9300
+  ProtocolMeetingIconObjectBase = 9800
+  SpritePlayerKillProgressObjectId = 10004
+  SpritePlayerVoteDotObjectBase = 10100
+  SpritePlayerVoteSkipDotObjectBase = 10400
+
+when not defined(italkalotLibrary):
+  type ViewerApp = ref object
+    when not defined(botHeadless):
+      window: Window
+      silky: Silky
+      contentScale: float32
+
+type
+  TileKnowledge = enum
+    TileUnknown
+    TileOpen
+    TileWall
+
+  CameraLock = enum
+    NoLock
+    LocalPatchMapLock
+    FrameMapLock
+
+  TaskState = enum
+    TaskNotDoing
+    TaskMaybe
+    TaskMandatory
+    TaskCompleted
+
+  BotRole = enum
+    RoleUnknown
+    RoleCrewmate
+    RoleImposter
+
+  VoteLlmActionKind = enum
+    VoteLlmNone
+    VoteLlmSay
+    VoteLlmWait
+    VoteLlmVote
+
+  EvidenceEntry = object
+    colorIndex: int
+    score: int
+
+  VoteLlmAction = object
+    kind: VoteLlmActionKind
+    targetColor: int
+    message: string
+    reason: string
+    raw: string
+
+  PlayerTrack = object
+    colorIndex: int
+    x: int
+    y: int
+
+  CameraScore = object
+    score: int
+    errors: int
+    compared: int
+
+  PatchEntry = object
+    hash: uint64
+    cameraX: int
+    cameraY: int
+
+  PatchCandidate = object
+    votes: int
+    cameraX: int
+    cameraY: int
+
+  RadarDot = object
+    x: int
+    y: int
+
+  IconMatch = object
+    x: int
+    y: int
+
+  CrewmateMatch = object
+    x: int
+    y: int
+    colorIndex: int
+    flipH: bool
+
+  BodyMatch = object
+    x: int
+    y: int
+    colorIndex: int
+
+  GhostMatch = object
+    x: int
+    y: int
+    flipH: bool
+
+  VoteSlot = object
+    colorIndex: int
+    alive: bool
+
+  VoteChatSpeaker = object
+    colorIndex: int
+    y: int
+
+  VoteChatLine = ref object
+    speakerColor: int
+    y: int
+    text: string
+
+  Bot = ref object
+    sim: SimServer
+    playerSprite: Sprite
+    bodySprite: Sprite
+    ghostSprite: Sprite
+    taskSprite: Sprite
+    killButtonSprite: Sprite
+    ghostIconSprite: Sprite
+    rng: Rand
+    role: BotRole
+    isGhost: bool
+    ghostIconFrames: int
+    imposterKillReady: bool
+    imposterCooldownPercent: int
+    imposterGoalIndex: int
+    imposterProwlIndex: int
+    packed: seq[uint8]
+    unpacked: seq[uint8]
+    navigator: Navigator
+    mapTiles: seq[TileKnowledge]
+    patchEntries: seq[PatchEntry]
+    patchVotes: seq[uint16]
+    patchTouched: seq[int]
+    patchCandidates: seq[PatchCandidate]
+    cameraX: int
+    cameraY: int
+    lastCameraX: int
+    lastCameraY: int
+    cameraLock: CameraLock
+    cameraScore: int
+    localized: bool
+    interstitial: bool
+    interstitialText: string
+    lastGameOverText: string
+    lastGameInfoSummary: string
+    gameStarted: bool
+    serverTick: int
+    roundStartTick: int
+    roundStartServerTick: int
+    bodyReportColors: array[PlayerColorCount, bool]
+    meetingCallKind: VoteCallKind
+    meetingCallCallerColor: int
+    meetingCallBodyColor: int
+    meetingCallApplied: bool
+    homeSet: bool
+    homeX: int
+    homeY: int
+    ghostWanderGoalSet: bool
+    ghostWanderGoalX: int
+    ghostWanderGoalY: int
+    ghostWanderNextTick: int
+    haveMotionSample: bool
+    previousPlayerWorldX: int
+    previousPlayerWorldY: int
+    velocityX: int
+    velocityY: int
+    stuckFrames: int
+    stuckCellX: int
+    stuckCellY: int
+    stuckCellTicks: int
+    unstuckTicks: int
+    unstuckMaskIndex: int
+    jiggleTicks: int
+    jiggleSide: int
+    desiredMask: uint8
+    controllerMask: uint8
+    taskHoldTicks: int
+    taskHoldIndex: int
+    frameTick: int
+    centerMicros: int
+    spriteScanMicros: int
+    localizeLocalMicros: int
+    localizePatchMicros: int
+    localizeSpiralMicros: int
+    astarMicros: int
+    frameBufferLen: int
+    framesDropped: int
+    skippedFrames: int
+    lastDropLogTick: int
+    lastMask: uint8
+    lastThought: string
+    pendingChat: string
+    lastBodySeenX: int
+    lastBodySeenY: int
+    lastBodyReportX: int
+    lastBodyReportY: int
+    lastKillBodyX: int
+    lastKillBodyY: int
+    bodySusColor: int
+    lastSeenTicks: array[PlayerColorCount, int]
+    playerSeenX: array[PlayerColorCount, int]
+    playerSeenY: array[PlayerColorCount, int]
+    playerVelocityX: array[PlayerColorCount, int]
+    playerVelocityY: array[PlayerColorCount, int]
+    playerMotionSeen: array[PlayerColorCount, bool]
+    bodySeenTicks: array[PlayerColorCount, int]
+    stalkerScores: array[PlayerColorCount, int]
+    killerScores: array[PlayerColorCount, int]
+    taskerScores: array[PlayerColorCount, int]
+    votedAgainstScores: array[PlayerColorCount, int]
+    taskerTicks: array[PlayerColorCount, int]
+    taskerTaskIndex: array[PlayerColorCount, int]
+    taskerCredited: seq[bool]
+    selfColorIndex: int
+    knownImposters: array[PlayerColorCount, bool]
+    followingTicks: array[PlayerColorCount, int]
+    activeHunterColor: int
+    moveAwayUntilTick: int
+    runawayUntilTick: int
+    escapeLoopIndex: int
+    escapeLoopPointIndex: int
+    voting: bool
+    votePlayerCount: int
+    voteCursor: int
+    voteSelfSlot: int
+    voteTarget: int
+    voteStartTick: int
+    voteDelayTicks: int
+    voteRetryTarget: int
+    lastVoteRetryTick: int
+    voteChatText: string
+    voteChatLines: seq[VoteChatLine]
+    voteSlots: array[MaxPlayers, VoteSlot]
+    voteChoices: array[PlayerColorCount, int]
+    voteCreditedTargets: array[PlayerColorCount, int]
+    voteLoggedTarget: int
+    voteLoggedReason: string
+    voteEvidenceLogged: bool
+    voteSaidSomething: bool
+    voteLlmSayCount: int
+    voteLlmAction: VoteLlmAction
+    voteLlmWaiting: bool
+    voteLlmNeedsDecision: bool
+    voteLlmPromptChatText: string
+    voteLlmPromptSusText: string
+    voteLlmPreviousChatText: string
+    voteLlmPreviousSusText: string
+    intent: string
+    goalX: int
+    goalY: int
+    goalIndex: int
+    goalName: string
+    hasGoal: bool
+    hasPathStep: bool
+    pathStep: PathStep
+    path: seq[PathStep]
+    pathCursor: int
+    pathGoalX: int
+    pathGoalY: int
+    pathPlanTick: int
+    radarDots: seq[RadarDot]
+    spriteRadarDots: seq[RadarDot]
+    spriteTaskIcons: seq[IconMatch]
+    spriteRadarTasks: seq[bool]
+    spriteIconTasks: seq[bool]
+    spriteDetectionsReady: bool
+    protocolCameraReady: bool
+    protocolCameraX: int
+    protocolCameraY: int
+    protocolMapReady: bool
+    protocolWalkabilityReady: bool
+    protocolInterstitialReady: bool
+    protocolInterstitialText: string
+    protocolVotingReady: bool
+    protocolVoteScreenSeen: bool
+    radarTasks: seq[bool]
+    checkoutTasks: seq[bool]
+    taskStates: seq[TaskState]
+    taskIconMisses: seq[int]
+    lastTaskRadarResetTick: int
+    visibleTaskIcons: seq[IconMatch]
+    visibleCrewmates: seq[CrewmateMatch]
+    visibleBodies: seq[BodyMatch]
+    visibleGhosts: seq[GhostMatch]
+    hadVisibleBody: bool
+
+  VentGroupCount = object
+    key: string
+    count: int
+
+proc reconnectWindowMs(everConnected: bool): int =
+  ## Returns the allowed connection window for the current run state.
+  if everConnected:
+    ReconnectWindowMs
+  else:
+    InitialConnectWindowMs
+
+proc gameDir(): string =
+  ## Returns the Crewrift game directory.
+  let
+    sourceDir = currentSourcePath().parentDir().parentDir().parentDir()
+    cwd = getCurrentDir()
+    candidates = [sourceDir, cwd, cwd.parentDir(), cwd.parentDir().parentDir()]
+  for candidate in candidates:
+    if fileExists(candidate / "src" / "crewrift.nim"):
+      return candidate
+  sourceDir
+
+proc bitworldAtlasPath(rootDir: string): string =
+  ## Returns the BitWorld client atlas path near one workspace root.
+  rootDir / "bitworld" / "client" / "dist" / "atlas.png"
+
+proc atlasPath(): string =
+  ## Returns the shared Silky atlas path.
+  let
+    dir = gameDir()
+    cwd = getCurrentDir()
+  for candidate in [
+    clientDataDir() / "atlas.png",
+    bitworldAtlasPath(TrueCrewWorkspaceDir),
+    bitworldAtlasPath(CrewriftGameDir.parentDir()),
+    bitworldAtlasPath(dir.parentDir()),
+    bitworldAtlasPath(dir.parentDir().parentDir()),
+    bitworldAtlasPath(cwd.parentDir()),
+    bitworldAtlasPath(cwd.parentDir().parentDir()),
+    dir / "dist" / "atlas.png",
+    dir / ".." / "client" / "dist" / "atlas.png"
+  ]:
+    if fileExists(candidate):
+      return candidate
+  bitworldAtlasPath(cwd.parentDir())
+
+proc sampleColor(index: uint8): ColorRGBX =
+  ## Converts one palette index to a Silky color.
+  Palette[index and 0x0f].rgbx
+
+proc mapIndexSafe(x, y: int): int =
+  ## Returns the map pixel index.
+  y * MapWidth + x
+
+proc minCameraX(): int =
+  ## Returns the smallest possible centered camera X.
+  -ScreenWidth div 2 - SpriteSize
+
+proc maxCameraX(): int =
+  ## Returns the largest possible centered camera X.
+  MapWidth - ScreenWidth div 2 + SpriteSize
+
+proc minCameraY(): int =
+  ## Returns the smallest possible centered camera Y.
+  -ScreenHeight div 2 - SpriteSize
+
+proc maxCameraY(): int =
+  ## Returns the largest possible centered camera Y.
+  MapHeight - ScreenHeight div 2 + SpriteSize
+
+proc cameraIndex(x, y: int): int =
+  ## Returns the patch vote index for one camera.
+  (y - minCameraY()) * (maxCameraX() - minCameraX() + 1) +
+    (x - minCameraX())
+
+proc cameraIndexX(index: int): int =
+  ## Returns the camera X coordinate for one vote index.
+  minCameraX() + index mod (maxCameraX() - minCameraX() + 1)
+
+proc cameraIndexY(index: int): int =
+  ## Returns the camera Y coordinate for one vote index.
+  minCameraY() + index div (maxCameraX() - minCameraX() + 1)
+
+proc buttonCameraX(sim: SimServer): int =
+  ## Returns the initial camera X guess around the emergency button.
+  let button = sim.gameMap.button
+  clamp(
+    button.x + button.w div 2 - PlayerWorldOffX,
+    minCameraX(),
+    maxCameraX()
+  )
+
+proc buttonCameraY(sim: SimServer): int =
+  ## Returns the initial camera Y guess around the emergency button.
+  let button = sim.gameMap.button
+  clamp(
+    button.y + button.h div 2 - PlayerWorldOffY,
+    minCameraY(),
+    maxCameraY()
+  )
+
+proc cameraXForWorld(x: int): int =
+  ## Returns the camera X that centers one world X on the player.
+  clamp(x - PlayerWorldOffX, minCameraX(), maxCameraX())
+
+proc cameraYForWorld(y: int): int =
+  ## Returns the camera Y that centers one world Y on the player.
+  clamp(y - PlayerWorldOffY, minCameraY(), maxCameraY())
+
+proc centeredMapRect(centerX, centerY, width, height: int): MapRect =
+  ## Builds a map rectangle centered on one point and clamped to the map.
+  MapRect(
+    x: clamp(centerX - width div 2, 0, max(0, MapWidth - width)),
+    y: clamp(centerY - height div 2, 0, max(0, MapHeight - height)),
+    w: width,
+    h: height
+  )
+
+proc protocolMapHome(rooms: openArray[Room]): tuple[x: int, y: int] =
+  ## Returns the home point derived from protocol room markers.
+  if rooms.len == 0:
+    return (MapWidth div 2, MapHeight div 2)
+  var index = 0
+  for i, room in rooms:
+    if room.name.strip().toLowerAscii() == "bridge":
+      index = i
+      break
+  (
+    rooms[index].x + rooms[index].w div 2,
+    rooms[index].y + rooms[index].h div 2
+  )
+
+proc initialProtocolMap(): CrewriftMap =
+  ## Builds empty map metadata before the sprite protocol dump arrives.
+  let
+    homeX = MapWidth div 2
+    homeY = MapHeight div 2
+  CrewriftMap(
+    name: ProtocolMapName,
+    width: MapWidth,
+    height: MapHeight,
+    mapLayer: 0,
+    walkLayer: 1,
+    wallLayer: 2,
+    button: centeredMapRect(homeX, homeY, 28, 34),
+    home: MapPoint(x: homeX, y: homeY)
+  )
+
+proc inMap(x, y: int): bool =
+  ## Returns true when a world pixel is inside the Skeld map.
+  x >= 0 and y >= 0 and x < MapWidth and y < MapHeight
+
+proc cameraCanHoldPlayer(cameraX, cameraY: int): bool =
+  ## Returns true when a camera candidate can center a real player.
+  inMap(cameraX + PlayerWorldOffX, cameraY + PlayerWorldOffY)
+
+proc playerWorldX(bot: Bot): int =
+  ## Returns the inferred player collision X coordinate.
+  bot.cameraX + PlayerWorldOffX
+
+proc playerWorldY(bot: Bot): int =
+  ## Returns the inferred player collision Y coordinate.
+  bot.cameraY + PlayerWorldOffY
+
+proc detectionCameraX(bot: Bot): int =
+  ## Returns the camera X used to convert protocol detections.
+  if bot.protocolCameraReady:
+    bot.protocolCameraX
+  else:
+    bot.cameraX
+
+proc detectionCameraY(bot: Bot): int =
+  ## Returns the camera Y used to convert protocol detections.
+  if bot.protocolCameraReady:
+    bot.protocolCameraY
+  else:
+    bot.cameraY
+
+proc roomName(bot: Bot): string =
+  ## Returns the room containing the inferred player position.
+  if not bot.localized:
+    return "unknown"
+  let
+    px = bot.playerWorldX() + CollisionW div 2
+    py = bot.playerWorldY() + CollisionH div 2
+    room = nearestRoomAt(bot.sim.rooms, px, py)
+  if not room.found:
+    return "unknown"
+  if room.inside:
+    room.name
+  else:
+    "near " & room.name
+
+proc roomAt(
+  bot: Bot,
+  x, y: int
+): tuple[found: bool, inside: bool, name: string] =
+  ## Returns the containing or nearest room for one world point.
+  nearestRoomAt(bot.sim.rooms, x, y)
+
+proc chatRoomName(name: string): string =
+  ## Returns a compact room name for chat.
+  for ch in name:
+    if ch in {'A' .. 'Z'}:
+      result.add(char(ord(ch) - ord('A') + ord('a')))
+    elif ch in {'a' .. 'z'} or ch in {'0' .. '9'}:
+      result.add(ch)
+
+proc taskCenter(task: TaskStation): tuple[x: int, y: int] =
+  ## Returns the center pixel for a task station.
+  (task.x + task.w div 2, task.y + task.h div 2)
+
+proc markerNameKey(value: string): string =
+  ## Returns a normalized protocol marker label.
+  value.strip().toLowerAscii()
+
+proc protocolTaskMarker(label: string): bool =
+  ## Returns true when a sprite label identifies a task marker.
+  label.markerNameKey() == "task"
+
+proc protocolVentMarker(label: string): bool =
+  ## Returns true when a sprite label identifies a vent marker.
+  let key = label.markerNameKey()
+  key.startsWith("vent") and key != "vents"
+
+proc protocolRoomName(label: string): string =
+  ## Returns the room name carried by a sprite map marker.
+  if label.startsWith("Room ") and label.len > "Room ".len:
+    result = label["Room ".len .. ^1].strip()
+
+proc protocolVentGroupChar(label: string): char =
+  ## Returns the compact group id for one protocol vent label.
+  let key = label.markerNameKey()
+  for i in countdown(key.high, 0):
+    if key[i] in {'a' .. 'z', '0' .. '9'}:
+      return key[i]
+  'v'
+
+proc nextProtocolVentGroupIndex(
+  counts: var seq[VentGroupCount],
+  label: string
+): int =
+  ## Returns the next serial index for one repeated vent marker label.
+  let key = label.markerNameKey()
+  for count in counts.mitems:
+    if count.key == key:
+      inc count.count
+      return count.count
+  counts.add(VentGroupCount(key: key, count: 1))
+  1
+
+proc taskNameFromRooms(
+  rooms: openArray[Room],
+  task: TaskStation,
+  index: int
+): string =
+  ## Builds a useful task name from protocol room markers.
+  let room = nearestRoomAt(
+    rooms,
+    task.x + task.w div 2,
+    task.y + task.h div 2
+  )
+  if room.found:
+    "Task near " & room.name
+  else:
+    "Task " & $(index + 1)
+
+proc `<`(a, b: PatchEntry): bool =
+  ## Orders patch entries by hash and scan order.
+  if a.hash == b.hash:
+    if a.cameraY == b.cameraY:
+      a.cameraX < b.cameraX
+    else:
+      a.cameraY < b.cameraY
+  else:
+    a.hash < b.hash
+
+proc cmpPatchCandidate(a, b: PatchCandidate): int =
+  ## Sorts patch candidates by votes and scan order.
+  if a.votes != b.votes:
+    return cmp(b.votes, a.votes)
+  if a.cameraY != b.cameraY:
+    return cmp(a.cameraY, b.cameraY)
+  cmp(a.cameraX, b.cameraX)
+
+proc ignoreTaskIconPixel(bot: Bot, sx, sy: int): bool =
+  ## Returns true when a frame pixel belongs to a matched task icon.
+  for icon in bot.visibleTaskIcons:
+    let
+      ix = sx - icon.x
+      iy = sy - icon.y
+    if ix < 0 or iy < 0 or
+        ix >= bot.taskSprite.width or
+        iy >= bot.taskSprite.height:
+      continue
+    if bot.taskSprite.pixels[bot.taskSprite.spriteIndex(ix, iy)] !=
+        TransparentColorIndex:
+      return true
+
+proc ignoreCrewmatePixel(bot: Bot, sx, sy: int): bool =
+  ## Returns true when a frame pixel belongs to a matched crewmate.
+  for crewmate in bot.visibleCrewmates:
+    let
+      ix = sx - crewmate.x
+      iy = sy - crewmate.y
+    if ix < 0 or iy < 0 or
+        ix >= bot.playerSprite.width or
+        iy >= bot.playerSprite.height:
+      continue
+    let srcX =
+      if crewmate.flipH:
+        bot.playerSprite.width - 1 - ix
+      else:
+        ix
+    if bot.playerSprite.pixels[bot.playerSprite.spriteIndex(srcX, iy)] !=
+        TransparentColorIndex:
+      return true
+
+proc ignoreBodyPixel(bot: Bot, sx, sy: int): bool =
+  ## Returns true when a frame pixel belongs to a matched dead body.
+  for body in bot.visibleBodies:
+    let
+      ix = sx - body.x
+      iy = sy - body.y
+    if ix < 0 or iy < 0 or
+        ix >= bot.bodySprite.width or
+        iy >= bot.bodySprite.height:
+      continue
+    if bot.bodySprite.pixels[bot.bodySprite.spriteIndex(ix, iy)] !=
+        TransparentColorIndex:
+      return true
+
+proc ignoreGhostPixel(bot: Bot, sx, sy: int): bool =
+  ## Returns true when a frame pixel belongs to a matched ghost.
+  for ghost in bot.visibleGhosts:
+    let
+      ix = sx - ghost.x
+      iy = sy - ghost.y
+    if ix < 0 or iy < 0 or
+        ix >= bot.ghostSprite.width or
+        iy >= bot.ghostSprite.height:
+      continue
+    let srcX =
+      if ghost.flipH:
+        bot.ghostSprite.width - 1 - ix
+      else:
+        ix
+    if bot.ghostSprite.pixels[bot.ghostSprite.spriteIndex(srcX, iy)] !=
+        TransparentColorIndex:
+      return true
+
+proc ignoreKillIconPixel(bot: Bot, sx, sy: int): bool =
+  ## Returns true when a frame pixel belongs to the imposter kill icon.
+  if bot.role != RoleImposter:
+    return false
+  let
+    ix = sx - KillIconX
+    iy = sy - KillIconY
+  if ix < 0 or iy < 0 or
+      ix >= bot.killButtonSprite.width or
+      iy >= bot.killButtonSprite.height:
+    return false
+  bot.killButtonSprite.pixels[
+    bot.killButtonSprite.spriteIndex(ix, iy)
+  ] != TransparentColorIndex
+
+proc ignoreGhostIconPixel(bot: Bot, sx, sy: int): bool =
+  ## Returns true when a frame pixel belongs to the fixed ghost icon.
+  if not bot.isGhost and bot.ghostIconFrames == 0:
+    return false
+  let
+    ix = sx - KillIconX
+    iy = sy - KillIconY
+  if ix < 0 or iy < 0 or
+      ix >= bot.ghostIconSprite.width or
+      iy >= bot.ghostIconSprite.height:
+    return false
+  bot.ghostIconSprite.pixels[
+    bot.ghostIconSprite.spriteIndex(ix, iy)
+  ] != TransparentColorIndex
+
+proc ignoreFramePixel(bot: Bot, frameColor: uint8, sx, sy: int): bool =
+  ## Returns true for dynamic screen pixels that are not map evidence.
+  if frameColor == RadarTaskColor:
+    return true
+  if bot.ignoreKillIconPixel(sx, sy):
+    return true
+  if bot.ignoreGhostIconPixel(sx, sy):
+    return true
+  if bot.ignoreBodyPixel(sx, sy):
+    return true
+  if bot.ignoreGhostPixel(sx, sy):
+    return true
+  if bot.ignoreTaskIconPixel(sx, sy):
+    return true
+  if bot.ignoreCrewmatePixel(sx, sy):
+    return true
+  abs(sx - PlayerScreenX) <= PlayerIgnoreRadius and
+    abs(sy - PlayerScreenY) <= PlayerIgnoreRadius
+
+proc scoreCamera(
+  bot: Bot,
+  cameraX,
+  cameraY,
+  maxErrors: int
+): CameraScore {.measure.} =
+  ## Counts map-fit errors for a full 128x128 frame rectangle.
+  for sy in 0 ..< ScreenHeight:
+    for sx in 0 ..< ScreenWidth:
+      let frameColor = bot.unpacked[sy * ScreenWidth + sx]
+      if bot.ignoreFramePixel(frameColor, sx, sy):
+        continue
+      let
+        mx = cameraX + sx
+        my = cameraY + sy
+        mapColor =
+          if inMap(mx, my):
+            bot.sim.mapPixels[mapIndexSafe(mx, my)]
+          else:
+            MapVoidColor
+      if frameColor == mapColor:
+        inc result.compared
+      elif ShadowMap[mapColor and 0x0f] == frameColor:
+        inc result.compared
+      else:
+        inc result.compared
+        inc result.errors
+        if result.errors > maxErrors:
+          result.score = -result.errors
+          return
+  result.score = result.compared - result.errors * ScreenWidth
+
+proc patchHashAdd(hash: uint64, color: uint8): uint64 =
+  ## Adds one color to an 8 by 8 patch hash.
+  hash * PatchHashBase + uint64(color and 0x0f) + 1'u64
+
+proc patchMapColor(bot: Bot, x, y: int): uint8 =
+  ## Returns the map color used by patch localization.
+  if inMap(x, y):
+    bot.sim.mapPixels[mapIndexSafe(x, y)]
+  else:
+    MapVoidColor
+
+proc mapPatchHash(bot: Bot, x, y: int): uint64 =
+  ## Hashes one 8 by 8 map patch.
+  result = PatchHashSeed
+  for py in 0 ..< PatchSize:
+    for px in 0 ..< PatchSize:
+      result = patchHashAdd(result, bot.patchMapColor(x + px, y + py))
+
+proc framePatchHash(
+  bot: Bot,
+  sx,
+  sy: int,
+  hash: var uint64
+): bool =
+  ## Hashes one clean 8 by 8 frame patch.
+  hash = PatchHashSeed
+  for py in 0 ..< PatchSize:
+    for px in 0 ..< PatchSize:
+      let
+        x = sx + px
+        y = sy + py
+        color = bot.unpacked[y * ScreenWidth + x]
+      if bot.ignoreFramePixel(color, x, y):
+        return false
+      hash = patchHashAdd(hash, color)
+  true
+
+proc buildPatchEntries(bot: var Bot) {.measure.} =
+  ## Builds a map patch hash index for fast localization.
+  let
+    minX = minCameraX()
+    maxX = maxCameraX() + ScreenWidth - PatchSize
+    minY = minCameraY()
+    maxY = maxCameraY() + ScreenHeight - PatchSize
+    width = maxCameraX() - minCameraX() + 1
+    height = maxCameraY() - minCameraY() + 1
+  bot.patchEntries = @[]
+  bot.patchEntries.setLen((maxX - minX + 1) * (maxY - minY + 1))
+  var i = 0
+  for y in minY .. maxY:
+    for x in minX .. maxX:
+      bot.patchEntries[i] = PatchEntry(
+        hash: bot.mapPatchHash(x, y),
+        cameraX: x,
+        cameraY: y
+      )
+      inc i
+  bot.patchEntries.sort()
+  bot.patchVotes = newSeq[uint16](width * height)
+  bot.patchTouched = @[]
+  bot.patchCandidates = @[]
+
+proc patchHashRange(
+  entries: openArray[PatchEntry],
+  hash: uint64
+): tuple[first, last: int] =
+  ## Returns the sorted range with a matching patch hash.
+  var
+    lo = 0
+    hi = entries.len
+  while lo < hi:
+    let mid = (lo + hi) div 2
+    if entries[mid].hash < hash:
+      lo = mid + 1
+    else:
+      hi = mid
+  result.first = lo
+  hi = entries.len
+  while lo < hi:
+    let mid = (lo + hi) div 2
+    if entries[mid].hash > hash:
+      hi = mid
+    else:
+      lo = mid + 1
+  result.last = lo
+
+proc addPatchVote(bot: var Bot, x, y: int) =
+  ## Adds one patch vote for a camera candidate.
+  if x < minCameraX() or x > maxCameraX() or
+      y < minCameraY() or y > maxCameraY():
+    return
+  if not cameraCanHoldPlayer(x, y):
+    return
+  let index = cameraIndex(x, y)
+  if bot.patchVotes[index] == 0:
+    bot.patchTouched.add(index)
+  bot.patchVotes[index] = bot.patchVotes[index] + 1
+
+proc addNearPatchVote(
+  bot: var Bot,
+  x,
+  y,
+  minX,
+  maxX,
+  minY,
+  maxY: int
+) =
+  ## Adds one patch vote inside a local camera search window.
+  if x < minX or x > maxX or y < minY or y > maxY:
+    return
+  bot.addPatchVote(x, y)
+
+proc collectPatchCandidates(bot: var Bot) =
+  ## Collects the best voted camera candidates.
+  bot.patchCandidates.setLen(0)
+  for index in bot.patchTouched:
+    let votes = bot.patchVotes[index].int
+    if votes < PatchMinVotes:
+      continue
+    bot.patchCandidates.add(PatchCandidate(
+      votes: votes,
+      cameraX: cameraIndexX(index),
+      cameraY: cameraIndexY(index)
+    ))
+  bot.patchCandidates.sort(cmpPatchCandidate)
+  if bot.patchCandidates.len > PatchTopCandidates:
+    bot.patchCandidates.setLen(PatchTopCandidates)
+
+proc clearPatchVotes(bot: var Bot) =
+  ## Clears patch vote counters touched by the last localization pass.
+  for index in bot.patchTouched:
+    bot.patchVotes[index] = 0
+  bot.patchTouched.setLen(0)
+
+proc acceptCameraScore(score: CameraScore, maxErrors: int): bool
+
+proc setCameraLock(
+  bot: var Bot,
+  x,
+  y: int,
+  score: CameraScore,
+  lock: CameraLock
+)
+
+proc locateByPatches(bot: var Bot): bool {.measure.} =
+  ## Locates the camera using 8 by 8 map patch votes.
+  if bot.patchEntries.len == 0:
+    return false
+  bot.clearPatchVotes()
+  for py in 0 ..< PatchGridH:
+    for px in 0 ..< PatchGridW:
+      let
+        sx = px * PatchSize
+        sy = py * PatchSize
+      var hash = 0'u64
+      if not bot.framePatchHash(sx, sy, hash):
+        continue
+      let range = patchHashRange(bot.patchEntries, hash)
+      if range.last - range.first > PatchMaxMatches:
+        continue
+      for i in range.first ..< range.last:
+        let
+          entry = bot.patchEntries[i]
+          x = entry.cameraX - sx
+          y = entry.cameraY - sy
+        bot.addPatchVote(x, y)
+  bot.collectPatchCandidates()
+  var
+    bestScore = CameraScore(score: low(int), errors: high(int), compared: 0)
+    bestX = 0
+    bestY = 0
+  for candidate in bot.patchCandidates:
+    let score = bot.scoreCamera(
+      candidate.cameraX,
+      candidate.cameraY,
+      FullFrameFitMaxErrors
+    )
+    if score.errors < bestScore.errors or
+        (score.errors == bestScore.errors and
+        score.compared > bestScore.compared):
+      bestScore = score
+      bestX = candidate.cameraX
+      bestY = candidate.cameraY
+  bot.clearPatchVotes()
+  if not acceptCameraScore(bestScore, FullFrameFitMaxErrors):
+    return false
+  bot.setCameraLock(bestX, bestY, bestScore, FrameMapLock)
+  true
+
+proc acceptCameraScore(score: CameraScore, maxErrors: int): bool =
+  ## Returns true when a camera score is good enough to trust.
+  score.errors <= maxErrors and score.compared >= FrameFitMinCompared
+
+proc setCameraLock(
+  bot: var Bot,
+  x,
+  y: int,
+  score: CameraScore,
+  lock: CameraLock
+) =
+  ## Stores one accepted camera lock.
+  bot.cameraX = x
+  bot.cameraY = y
+  bot.cameraScore = score.score
+  bot.cameraLock = lock
+  bot.localized = true
+
+proc scanTaskIcons(bot: var Bot)
+
+proc scanCrewmates(bot: var Bot)
+
+proc scanBodies(bot: var Bot)
+
+proc scanGhosts(bot: var Bot)
+
+proc updateRole(bot: var Bot)
+
+proc updateSelfColor(bot: var Bot)
+
+proc applyMeetingCallToVoting(bot: var Bot)
+
+proc applyVotedAgainstEvidence(bot: var Bot)
+
+proc updateVotingLlmSnapshots(
+  bot: var Bot,
+  hadVoting: bool,
+  previousChat,
+  previousSus: string
+)
+
+proc rememberMeetingCall(
+  bot: var Bot,
+  callerColor,
+  bodyColor: int,
+  buttonSeen: bool
+)
+
+proc voteChatTextFromLines(lines: openArray[VoteChatLine]): string
+
+proc voteSlotForColor(bot: Bot, colorIndex: int): int
+
+proc voteTargetName(bot: Bot, target: int): string
+
+proc votingEvidenceText(bot: Bot): string
+
+proc randomVoteDelay(bot: var Bot): int
+
+proc passable(bot: Bot, x, y: int): bool
+
+proc pathDistance(bot: var Bot, goalX, goalY: int): int
+
+proc isGameOverText(text: string): bool =
+  ## Returns true when interstitial text means the round has ended.
+  text == "CREW WINS" or text == "IMPS WIN" or text == "DRAW"
+
+proc clearVotingState(bot: var Bot) =
+  ## Clears the parsed voting screen state.
+  bot.voting = false
+  bot.votePlayerCount = 0
+  bot.voteCursor = VoteUnknown
+  bot.voteSelfSlot = VoteUnknown
+  bot.voteTarget = VoteUnknown
+  bot.voteStartTick = -1
+  bot.voteDelayTicks = -1
+  bot.voteRetryTarget = VoteUnknown
+  bot.lastVoteRetryTick = -1
+  bot.voteChatText = ""
+  bot.voteChatLines.setLen(0)
+  for i in 0 ..< bot.voteSlots.len:
+    bot.voteSlots[i].colorIndex = VoteUnknown
+    bot.voteSlots[i].alive = false
+  for i in 0 ..< bot.voteChoices.len:
+    bot.voteChoices[i] = VoteUnknown
+  for i in 0 ..< bot.voteCreditedTargets.len:
+    bot.voteCreditedTargets[i] = VoteUnknown
+  bot.voteLoggedTarget = VoteUnknown
+  bot.voteLoggedReason = ""
+  bot.voteEvidenceLogged = false
+  bot.voteSaidSomething = false
+  bot.voteLlmSayCount = 0
+  bot.voteLlmAction = VoteLlmAction(
+    kind: VoteLlmNone,
+    targetColor: VoteUnknown
+  )
+  bot.voteLlmWaiting = false
+  bot.voteLlmNeedsDecision = false
+  bot.voteLlmPromptChatText = ""
+  bot.voteLlmPromptSusText = ""
+  bot.voteLlmPreviousChatText = ""
+  bot.voteLlmPreviousSusText = ""
+
+proc clearPath(bot: var Bot) =
+  ## Clears the cached A* route.
+  bot.hasPathStep = false
+  bot.path.setLen(0)
+  bot.pathCursor = 0
+  bot.pathGoalX = low(int)
+  bot.pathGoalY = low(int)
+  bot.pathPlanTick = -1
+
+proc navigationReady(bot: Bot): bool =
+  ## Returns true when the server walkability map has built navigation data.
+  bot.navigator.ready()
+
+proc rebuildNavigation(bot: var Bot) =
+  ## Builds the shared navigation maps from server walkability data.
+  bot.navigator = initNavigator(bot.sim.walkMask, bot.sim.config)
+  bot.clearPath()
+
+proc motionState(bot: Bot): MotionState =
+  ## Converts observed bot motion into the shared navigation motion state.
+  let
+    scale = max(1, bot.sim.config.motionScale)
+    maxSpeed = bot.sim.config.maxSpeed
+  MotionState(
+    x: bot.playerWorldX(),
+    y: bot.playerWorldY(),
+    velX: clamp(bot.velocityX * scale, -maxSpeed, maxSpeed),
+    velY: clamp(bot.velocityY * scale, -maxSpeed, maxSpeed),
+    carryX: 0,
+    carryY: 0
+  )
+
+proc activePlayerTrack(bot: Bot, colorIndex: int): bool =
+  ## Returns true when one player has a fresh inferred position.
+  colorIndex >= 0 and
+    colorIndex < PlayerColorCount and
+    bot.playerMotionSeen[colorIndex] and
+    bot.frameTick - bot.lastSeenTicks[colorIndex] <= PlayerTrackMemoryTicks
+
+proc trackedPlayerWorld(
+  bot: Bot,
+  colorIndex: int
+): tuple[found: bool, x: int, y: int] =
+  ## Returns one player's inferred current world position.
+  if not bot.activePlayerTrack(colorIndex):
+    return
+  let age = max(0, bot.frameTick - bot.lastSeenTicks[colorIndex])
+  (
+    true,
+    bot.playerSeenX[colorIndex] + bot.playerVelocityX[colorIndex] * age,
+    bot.playerSeenY[colorIndex] + bot.playerVelocityY[colorIndex] * age
+  )
+
+proc rememberPlayerMotion(
+  bot: var Bot,
+  colorIndex,
+  worldX,
+  worldY: int
+) =
+  ## Records one player's observed position and velocity.
+  if colorIndex < 0 or colorIndex >= PlayerColorCount:
+    return
+  if bot.playerMotionSeen[colorIndex] and
+      bot.lastSeenTicks[colorIndex] < bot.frameTick:
+    let ticks = max(1, bot.frameTick - bot.lastSeenTicks[colorIndex])
+    let
+      projectedX = bot.playerSeenX[colorIndex] +
+        bot.playerVelocityX[colorIndex] * ticks
+      projectedY = bot.playerSeenY[colorIndex] +
+        bot.playerVelocityY[colorIndex] * ticks
+    if abs(worldX - projectedX) + abs(worldY - projectedY) >
+        PlayerTrackResetDistance:
+      bot.playerVelocityX[colorIndex] = 0
+      bot.playerVelocityY[colorIndex] = 0
+    else:
+      bot.playerVelocityX[colorIndex] =
+        (worldX - bot.playerSeenX[colorIndex]) div ticks
+      bot.playerVelocityY[colorIndex] =
+        (worldY - bot.playerSeenY[colorIndex]) div ticks
+  bot.playerSeenX[colorIndex] = worldX
+  bot.playerSeenY[colorIndex] = worldY
+  bot.playerMotionSeen[colorIndex] = true
+  bot.lastSeenTicks[colorIndex] = bot.frameTick
+
+proc playerMovingTowardSelf(bot: Bot, colorIndex: int): bool =
+  ## Returns true when a visible player's velocity points toward this bot.
+  if colorIndex < 0 or colorIndex >= PlayerColorCount:
+    return false
+  if colorIndex == bot.selfColorIndex:
+    return false
+  if bot.lastSeenTicks[colorIndex] != bot.frameTick:
+    return false
+  let
+    dx = bot.playerWorldX() - bot.playerSeenX[colorIndex]
+    dy = bot.playerWorldY() - bot.playerSeenY[colorIndex]
+    distanceSq = dx * dx + dy * dy
+  if distanceSq <= 0 or
+      distanceSq > FollowingDetectRadius * FollowingDetectRadius:
+    return false
+  let
+    vx = bot.playerVelocityX[colorIndex]
+    vy = bot.playerVelocityY[colorIndex]
+    velocitySq = vx * vx + vy * vy
+  if velocitySq <= 0:
+    return false
+  let dot = vx * dx + vy * dy
+  dot > 0 and dot * dot * 2 >= velocitySq * distanceSq
+
+proc playerPointSeen(
+  bot: Bot,
+  colorIndex: int
+): tuple[found: bool, x: int, y: int] =
+  ## Returns one currently visible player point.
+  if colorIndex < 0 or colorIndex >= PlayerColorCount:
+    return
+  if colorIndex == bot.selfColorIndex and bot.localized:
+    return (true, bot.playerWorldX(), bot.playerWorldY())
+  if not bot.playerMotionSeen[colorIndex]:
+    return
+  if bot.lastSeenTicks[colorIndex] != bot.frameTick:
+    return
+  (true, bot.playerSeenX[colorIndex], bot.playerSeenY[colorIndex])
+
+proc playerMovingTowardPoint(
+  bot: Bot,
+  colorIndex,
+  targetX,
+  targetY,
+  radius: int
+): bool =
+  ## Returns true when one visible player's velocity points at a target point.
+  if colorIndex < 0 or colorIndex >= PlayerColorCount:
+    return false
+  if not bot.playerMotionSeen[colorIndex]:
+    return false
+  if bot.lastSeenTicks[colorIndex] != bot.frameTick:
+    return false
+  let
+    dx = targetX - bot.playerSeenX[colorIndex]
+    dy = targetY - bot.playerSeenY[colorIndex]
+    distanceSq = dx * dx + dy * dy
+  if distanceSq <= 0 or distanceSq > radius * radius:
+    return false
+  let
+    vx = bot.playerVelocityX[colorIndex]
+    vy = bot.playerVelocityY[colorIndex]
+    velocitySq = vx * vx + vy * vy
+  if velocitySq <= 0:
+    return false
+  let dot = vx * dx + vy * dy
+  dot > 0 and dot * dot * 2 >= velocitySq * distanceSq
+
+proc updateStalkerTracking(bot: var Bot) =
+  ## Updates per-player stalker evidence from close directed movement.
+  if bot.interstitial or bot.role == RoleImposter:
+    return
+  for stalker in 0 ..< PlayerColorCount:
+    if stalker == bot.selfColorIndex:
+      continue
+    if not bot.playerMotionSeen[stalker]:
+      continue
+    if bot.lastSeenTicks[stalker] != bot.frameTick:
+      continue
+    for target in 0 ..< PlayerColorCount:
+      if target == stalker:
+        continue
+      let point = bot.playerPointSeen(target)
+      if not point.found:
+        continue
+      if bot.playerMovingTowardPoint(
+        stalker,
+        point.x,
+        point.y,
+        StalkerOverlapRadius
+      ):
+        inc bot.stalkerScores[stalker]
+        break
+
+proc taskerCreditIndex(colorIndex, taskIndex: int): int =
+  ## Returns the flat credited-task index for one player and task.
+  taskIndex * PlayerColorCount + colorIndex
+
+proc resetTaskerProgress(bot: var Bot, colorIndex: int) =
+  ## Clears in-progress tasker timing for one player color.
+  bot.taskerTicks[colorIndex] = 0
+  bot.taskerTaskIndex[colorIndex] = -1
+
+proc taskIndexAtPoint(bot: Bot, x, y: int): int =
+  ## Returns the task rectangle containing a world point.
+  for i in 0 ..< bot.sim.tasks.len:
+    let task = bot.sim.tasks[i]
+    if x >= task.x and x < task.x + task.w and
+        y >= task.y and y < task.y + task.h:
+      return i
+  -1
+
+proc playerStationaryForTask(bot: Bot, colorIndex: int): bool =
+  ## Returns true when a player is still enough to be doing a task.
+  if colorIndex == bot.selfColorIndex:
+    return abs(bot.velocityX) + abs(bot.velocityY) <=
+      TaskerStationaryVelocity
+  if colorIndex < 0 or colorIndex >= PlayerColorCount:
+    return false
+  if bot.lastSeenTicks[colorIndex] != bot.frameTick:
+    return false
+  abs(bot.playerVelocityX[colorIndex]) +
+    abs(bot.playerVelocityY[colorIndex]) <= TaskerStationaryVelocity
+
+proc resetTaskerTracking(bot: var Bot) =
+  ## Clears per-task helper evidence progress.
+  bot.taskerCredited = newSeq[bool](bot.sim.tasks.len * PlayerColorCount)
+  for colorIndex in 0 ..< PlayerColorCount:
+    bot.resetTaskerProgress(colorIndex)
+
+proc updateTaskerTracking(bot: var Bot) =
+  ## Updates tasker evidence from stationary players inside task rectangles.
+  if bot.interstitial or bot.role == RoleImposter:
+    return
+  if bot.taskerCredited.len != bot.sim.tasks.len * PlayerColorCount:
+    bot.resetTaskerTracking()
+  for colorIndex in 0 ..< PlayerColorCount:
+    let point = bot.playerPointSeen(colorIndex)
+    if not point.found:
+      bot.resetTaskerProgress(colorIndex)
+      continue
+    let taskIndex = bot.taskIndexAtPoint(point.x, point.y)
+    if taskIndex < 0 or not bot.playerStationaryForTask(colorIndex):
+      bot.resetTaskerProgress(colorIndex)
+      continue
+    if bot.taskerTaskIndex[colorIndex] != taskIndex:
+      bot.taskerTaskIndex[colorIndex] = taskIndex
+      bot.taskerTicks[colorIndex] = 0
+    let creditIndex = taskerCreditIndex(colorIndex, taskIndex)
+    if creditIndex < 0 or creditIndex >= bot.taskerCredited.len:
+      continue
+    if bot.taskerCredited[creditIndex]:
+      continue
+    inc bot.taskerTicks[colorIndex]
+    if bot.taskerTicks[colorIndex] >= bot.sim.config.taskCompleteTicks:
+      inc bot.taskerScores[colorIndex]
+      bot.taskerCredited[creditIndex] = true
+      bot.taskerTicks[colorIndex] = 0
+
+proc playerCloseToSelf(bot: Bot, colorIndex: int): bool =
+  ## Returns true when a tracked player is crowding this bot.
+  if colorIndex < 0 or colorIndex >= PlayerColorCount:
+    return false
+  if colorIndex == bot.selfColorIndex:
+    return false
+  let track = bot.trackedPlayerWorld(colorIndex)
+  if not track.found:
+    return false
+  let
+    dx = bot.playerWorldX() - track.x
+    dy = bot.playerWorldY() - track.y
+  dx * dx + dy * dy <= FollowingCloseRadius * FollowingCloseRadius
+
+proc roundTimingKnown(bot: Bot): bool =
+  ## Returns true when this bot knows the start of the active round.
+  bot.roundStartTick >= 0 or (
+    bot.serverTick >= 0 and
+    bot.roundStartServerTick >= 0
+  )
+
+proc roundElapsedTicks(bot: Bot): int =
+  ## Returns elapsed active-round ticks using the server clock when available.
+  if bot.serverTick >= 0 and bot.roundStartServerTick >= 0:
+    return max(0, bot.serverTick - bot.roundStartServerTick)
+  if bot.roundStartTick >= 0:
+    return max(0, bot.frameTick - bot.roundStartTick)
+  0
+
+proc cooldownPastPercent(bot: Bot, percent: int): bool =
+  ## Returns true once the kill cooldown has passed one percent.
+  if bot.imposterCooldownPercent >= percent:
+    return true
+  if bot.imposterCooldownPercent >= 0:
+    return false
+  if not bot.roundTimingKnown() or bot.sim.config.killCooldownTicks <= 0:
+    return false
+  bot.roundElapsedTicks() * 100 >= bot.sim.config.killCooldownTicks * percent
+
+proc cooldownPastRunawayThreshold(bot: Bot): bool =
+  ## Returns true once the kill cooldown is near ready.
+  bot.cooldownPastPercent(RunawayCooldownPercent)
+
+proc playerDistanceSqToSelf(bot: Bot, colorIndex: int): int =
+  ## Returns the squared distance to one tracked player.
+  if colorIndex == bot.selfColorIndex:
+    return high(int)
+  let track = bot.trackedPlayerWorld(colorIndex)
+  if not track.found:
+    return high(int)
+  let
+    dx = bot.playerWorldX() - track.x
+    dy = bot.playerWorldY() - track.y
+  dx * dx + dy * dy
+
+proc closestPlayerWithin(bot: Bot, radius: int): int =
+  ## Returns the closest tracked player inside one radius.
+  var bestDistance = radius * radius + 1
+  result = VoteUnknown
+  for colorIndex in 0 ..< PlayerColorCount:
+    let distance = bot.playerDistanceSqToSelf(colorIndex)
+    if distance > radius * radius:
+      continue
+    if distance < bestDistance:
+      bestDistance = distance
+      result = colorIndex
+
+proc activateEscapeLoop(bot: var Bot, colorIndex: int)
+
+proc updateFollowerTracking(bot: var Bot) =
+  ## Updates follower counters without deciding escape behavior.
+  if bot.role != RoleCrewmate or bot.isGhost:
+    return
+  for colorIndex in 0 ..< PlayerColorCount:
+    if colorIndex == bot.selfColorIndex:
+      continue
+    if bot.playerMovingTowardSelf(colorIndex) or
+        bot.playerCloseToSelf(colorIndex):
+      if bot.followingTicks[colorIndex] < FollowingTriggerTicks:
+        inc bot.followingTicks[colorIndex]
+    elif bot.followingTicks[colorIndex] > 0:
+      dec bot.followingTicks[colorIndex]
+
+proc resetTaskKnowledge(bot: var Bot) =
+  ## Resizes task-derived state after protocol map metadata changes.
+  bot.radarTasks = newSeq[bool](bot.sim.tasks.len)
+  bot.checkoutTasks = newSeq[bool](bot.sim.tasks.len)
+  bot.taskStates = newSeq[TaskState](bot.sim.tasks.len)
+  bot.taskIconMisses = newSeq[int](bot.sim.tasks.len)
+  bot.spriteRadarTasks = newSeq[bool](bot.sim.tasks.len)
+  bot.spriteIconTasks = newSeq[bool](bot.sim.tasks.len)
+  bot.taskHoldTicks = 0
+  bot.taskHoldIndex = -1
+  bot.resetTaskerTracking()
+  bot.goalIndex = -1
+  bot.goalName = ""
+  bot.hasGoal = false
+  bot.clearPath()
+
+proc resetProtocolMap(bot: var Bot) =
+  ## Clears map metadata that must arrive from the sprite protocol.
+  bot.lastGameInfoSummary = ""
+  bot.protocolMapReady = false
+  bot.protocolWalkabilityReady = false
+  bot.sim.gameMap = initialProtocolMap()
+  bot.sim.tasks.setLen(0)
+  bot.sim.vents.setLen(0)
+  bot.sim.rooms.setLen(0)
+  bot.sim.mapPixels = newSeq[uint8](MapWidth * MapHeight)
+  bot.sim.walkMask = newSeq[bool](MapWidth * MapHeight)
+  bot.sim.wallMask = newSeq[bool](MapWidth * MapHeight)
+  bot.mapTiles = newSeq[TileKnowledge](MapWidth * MapHeight)
+  bot.resetTaskKnowledge()
+  bot.cameraX = bot.sim.buttonCameraX()
+  bot.cameraY = bot.sim.buttonCameraY()
+  bot.lastCameraX = bot.cameraX
+  bot.lastCameraY = bot.cameraY
+  bot.cameraLock = NoLock
+  bot.localized = false
+
+proc clearMeetingCallState(bot: var Bot) =
+  ## Clears the remembered cause for the current meeting.
+  bot.meetingCallKind = VoteCalledUnknown
+  bot.meetingCallCallerColor = VoteUnknown
+  bot.meetingCallBodyColor = VoteUnknown
+  bot.meetingCallApplied = false
+
+proc gameTicksLogText(ticks: int): string =
+  ## Returns log text for the total game timer.
+  if ticks > 0:
+    $ticks
+  else:
+    "none"
+
+proc gameInfoSummary(settings: GameInfoSettings): string =
+  ## Returns a compact log summary for learned game settings.
+  "game info updated: kill cool down " &
+    $settings.killCooldownTicks &
+    ", tasks " & $settings.tasksPerPlayer &
+    ", vote " & $settings.voteTimerTicks &
+    ", game ticks " & settings.maxTicks.gameTicksLogText()
+
+proc applyGameInfoSettings(
+  bot: var Bot,
+  settings: GameInfoSettings
+) =
+  ## Applies complete game-info settings learned from the interstitial.
+  if not settings.complete:
+    return
+  bot.sim.config.killCooldownTicks = settings.killCooldownTicks
+  bot.sim.config.tasksPerPlayer = settings.tasksPerPlayer
+  bot.sim.config.voteTimerTicks = settings.voteTimerTicks
+  bot.sim.config.maxTicks = settings.maxTicks
+  let summary = settings.gameInfoSummary()
+  if summary == bot.lastGameInfoSummary:
+    return
+  bot.lastGameInfoSummary = summary
+  echo summary
+
+proc applyProtocolMap(
+  bot: var Bot,
+  tasks: seq[TaskStation],
+  vents: seq[Vent],
+  rooms: seq[Room]
+) =
+  ## Applies map metadata parsed from the initial sprite dump.
+  var gameMap = initialProtocolMap()
+  let home = protocolMapHome(rooms)
+  gameMap.rooms = rooms
+  gameMap.tasks = tasks
+  gameMap.vents = vents
+  gameMap.home = MapPoint(x: home.x, y: home.y)
+  gameMap.button = centeredMapRect(home.x, home.y, 28, 34)
+  bot.sim.gameMap = gameMap
+  bot.sim.tasks = tasks
+  bot.sim.vents = vents
+  bot.sim.rooms = rooms
+  bot.protocolMapReady = true
+  bot.resetTaskKnowledge()
+  if not bot.localized:
+    bot.cameraX = bot.sim.buttonCameraX()
+    bot.cameraY = bot.sim.buttonCameraY()
+    bot.lastCameraX = bot.cameraX
+    bot.lastCameraY = bot.cameraY
+
+proc updateProtocolMap(bot: var Bot, client: ProtocolClient) {.measure.} =
+  ## Parses static map markers and optional map pixels from Sprite v1 state.
+  var
+    tasks: seq[TaskStation]
+    vents: seq[Vent]
+    rooms: seq[Room]
+    ventCounts: seq[VentGroupCount]
+  for item in client.spriteObjectRefs():
+    let label = item.sprite.label
+    if label == "map" and item.sprite.pixels.len == MapWidth * MapHeight:
+      if bot.sim.mapPixels.len != item.sprite.pixels.len:
+        bot.sim.mapPixels.setLen(item.sprite.pixels.len)
+      for i, color in item.sprite.pixels:
+        bot.sim.mapPixels[i] = color
+    elif label.protocolTaskMarker():
+      tasks.add(TaskStation(
+        resourceName: label,
+        x: item.x,
+        y: item.y,
+        w: item.sprite.width,
+        h: item.sprite.height
+      ))
+    elif label.protocolVentMarker():
+      vents.add(Vent(
+        resourceName: label,
+        x: item.x,
+        y: item.y,
+        w: item.sprite.width,
+        h: item.sprite.height,
+        group: label.protocolVentGroupChar(),
+        groupIndex: ventCounts.nextProtocolVentGroupIndex(label)
+      ))
+    else:
+      let roomName = label.protocolRoomName()
+      if roomName.len > 0:
+        rooms.add(Room(
+          name: roomName,
+          x: item.x,
+          y: item.y,
+          w: item.sprite.width,
+          h: item.sprite.height
+        ))
+  if tasks.len == 0 or vents.len == 0 or rooms.len == 0:
+    return
+  for i in 0 ..< tasks.len:
+    tasks[i].name = taskNameFromRooms(rooms, tasks[i], i)
+  bot.applyProtocolMap(tasks, vents, rooms)
+
+proc resetRoundState(bot: var Bot) =
+  ## Clears per-round bot state after a detected game-over screen.
+  bot.localized = false
+  bot.gameStarted = false
+  bot.serverTick = -1
+  bot.roundStartTick = -1
+  bot.roundStartServerTick = -1
+  bot.clearMeetingCallState()
+  bot.homeSet = false
+  bot.homeX = 0
+  bot.homeY = 0
+  bot.ghostWanderGoalSet = false
+  bot.ghostWanderGoalX = 0
+  bot.ghostWanderGoalY = 0
+  bot.ghostWanderNextTick = 0
+  bot.role = RoleCrewmate
+  bot.isGhost = false
+  bot.ghostIconFrames = 0
+  bot.imposterKillReady = false
+  bot.imposterCooldownPercent = -1
+  bot.imposterGoalIndex = -1
+  bot.imposterProwlIndex = -1
+  bot.cameraLock = NoLock
+  bot.cameraScore = 0
+  bot.haveMotionSample = false
+  bot.velocityX = 0
+  bot.velocityY = 0
+  bot.stuckFrames = 0
+  bot.jiggleTicks = 0
+  bot.jiggleSide = 0
+  bot.desiredMask = 0
+  bot.controllerMask = 0
+  bot.taskHoldTicks = 0
+  bot.taskHoldIndex = -1
+  bot.pendingChat = ""
+  bot.lastBodySeenX = low(int)
+  bot.lastBodySeenY = low(int)
+  bot.lastBodyReportX = low(int)
+  bot.lastBodyReportY = low(int)
+  bot.lastKillBodyX = low(int)
+  bot.lastKillBodyY = low(int)
+  bot.bodySusColor = VoteUnknown
+  bot.selfColorIndex = -1
+  bot.activeHunterColor = VoteUnknown
+  bot.moveAwayUntilTick = -1
+  bot.runawayUntilTick = -1
+  bot.escapeLoopIndex = -1
+  bot.escapeLoopPointIndex = -1
+  bot.clearVotingState()
+  for i in 0 ..< bot.lastSeenTicks.len:
+    bot.lastSeenTicks[i] = 0
+    bot.playerSeenX[i] = 0
+    bot.playerSeenY[i] = 0
+    bot.playerVelocityX[i] = 0
+    bot.playerVelocityY[i] = 0
+    bot.playerMotionSeen[i] = false
+    bot.followingTicks[i] = 0
+    bot.stalkerScores[i] = 0
+    bot.killerScores[i] = 0
+    bot.taskerScores[i] = 0
+    bot.votedAgainstScores[i] = 0
+    bot.taskerTicks[i] = 0
+    bot.taskerTaskIndex[i] = -1
+  bot.taskerCredited = newSeq[bool](bot.sim.tasks.len * PlayerColorCount)
+  for i in 0 ..< bot.bodySeenTicks.len:
+    bot.bodySeenTicks[i] = 0
+  for i in 0 ..< bot.knownImposters.len:
+    bot.knownImposters[i] = false
+  bot.goalIndex = -1
+  bot.goalName = ""
+  bot.hasGoal = false
+  bot.clearPath()
+  bot.lastTaskRadarResetTick = -TaskRadarResetTicks
+  bot.radarDots.setLen(0)
+  bot.hadVisibleBody = false
+  bot.spriteRadarDots.setLen(0)
+  bot.spriteTaskIcons.setLen(0)
+  bot.spriteRadarTasks.setLen(0)
+  bot.spriteIconTasks.setLen(0)
+  bot.spriteDetectionsReady = false
+  bot.protocolCameraReady = false
+  bot.protocolWalkabilityReady = false
+  bot.protocolInterstitialReady = false
+  bot.protocolInterstitialText = ""
+  bot.protocolVotingReady = false
+  bot.protocolVoteScreenSeen = false
+  bot.visibleTaskIcons.setLen(0)
+  bot.visibleCrewmates.setLen(0)
+  bot.visibleBodies.setLen(0)
+  bot.visibleGhosts.setLen(0)
+  if bot.radarTasks.len != bot.sim.tasks.len:
+    bot.radarTasks = newSeq[bool](bot.sim.tasks.len)
+  else:
+    for i in 0 ..< bot.radarTasks.len:
+      bot.radarTasks[i] = false
+  if bot.checkoutTasks.len != bot.sim.tasks.len:
+    bot.checkoutTasks = newSeq[bool](bot.sim.tasks.len)
+  else:
+    for i in 0 ..< bot.checkoutTasks.len:
+      bot.checkoutTasks[i] = false
+  if bot.taskStates.len != bot.sim.tasks.len:
+    bot.taskStates = newSeq[TaskState](bot.sim.tasks.len)
+  else:
+    for i in 0 ..< bot.taskStates.len:
+      bot.taskStates[i] = TaskNotDoing
+  if bot.taskIconMisses.len != bot.sim.tasks.len:
+    bot.taskIconMisses = newSeq[int](bot.sim.tasks.len)
+  else:
+    for i in 0 ..< bot.taskIconMisses.len:
+      bot.taskIconMisses[i] = 0
+
+proc reseedLocalizationAtHome(bot: var Bot) =
+  ## Re-seeds localization around the remembered home point.
+  if bot.homeSet:
+    bot.cameraX = cameraXForWorld(bot.homeX)
+    bot.cameraY = cameraYForWorld(bot.homeY)
+  else:
+    bot.cameraX = bot.sim.buttonCameraX()
+    bot.cameraY = bot.sim.buttonCameraY()
+  bot.lastCameraX = bot.cameraX
+  bot.lastCameraY = bot.cameraY
+  bot.cameraLock = NoLock
+  bot.cameraScore = 0
+  bot.localized = false
+  bot.haveMotionSample = false
+  bot.velocityX = 0
+  bot.velocityY = 0
+  bot.stuckFrames = 0
+  bot.jiggleTicks = 0
+  bot.jiggleSide = 0
+  bot.desiredMask = 0
+  bot.controllerMask = 0
+  bot.taskHoldTicks = 0
+  bot.taskHoldIndex = -1
+  bot.ghostWanderGoalSet = false
+  bot.ghostWanderGoalX = 0
+  bot.ghostWanderGoalY = 0
+  bot.ghostWanderNextTick = 0
+  bot.goalIndex = -1
+  bot.goalName = ""
+  bot.hasGoal = false
+  bot.clearPath()
+
+proc locateNearByPatches(bot: var Bot): bool {.measure.} =
+  ## Tracks camera near the previous lock using 8 by 8 patch votes.
+  if not bot.localized:
+    return false
+  if bot.patchEntries.len == 0:
+    return false
+  let
+    minX = max(minCameraX(), bot.cameraX - LocalPatchSearchRadius)
+    maxX = min(maxCameraX(), bot.cameraX + LocalPatchSearchRadius)
+    minY = max(minCameraY(), bot.cameraY - LocalPatchSearchRadius)
+    maxY = min(maxCameraY(), bot.cameraY + LocalPatchSearchRadius)
+  bot.clearPatchVotes()
+  for py in 0 ..< PatchGridH:
+    for px in 0 ..< PatchGridW:
+      let
+        sx = px * PatchSize
+        sy = py * PatchSize
+      var hash = 0'u64
+      if not bot.framePatchHash(sx, sy, hash):
+        continue
+      let range = patchHashRange(bot.patchEntries, hash)
+      if range.last - range.first > PatchMaxMatches:
+        continue
+      for i in range.first ..< range.last:
+        let
+          entry = bot.patchEntries[i]
+          x = entry.cameraX - sx
+          y = entry.cameraY - sy
+        bot.addNearPatchVote(x, y, minX, maxX, minY, maxY)
+  bot.collectPatchCandidates()
+  var
+    bestScore = CameraScore(score: low(int), errors: high(int), compared: 0)
+    bestX = bot.cameraX
+    bestY = bot.cameraY
+  for candidate in bot.patchCandidates:
+    let score = bot.scoreCamera(
+      candidate.cameraX,
+      candidate.cameraY,
+      LocalFrameFitMaxErrors
+    )
+    if score.errors < bestScore.errors or
+        (score.errors == bestScore.errors and
+        score.compared > bestScore.compared):
+      bestScore = score
+      bestX = candidate.cameraX
+      bestY = candidate.cameraY
+      if bestScore.errors == 0 and
+          bestScore.compared >= FrameFitMinCompared:
+        break
+  bot.clearPatchVotes()
+  if not acceptCameraScore(bestScore, LocalFrameFitMaxErrors):
+    return false
+  bot.setCameraLock(bestX, bestY, bestScore, LocalPatchMapLock)
+  true
+
+proc locateByFrame(bot: var Bot): bool {.measure.} =
+  ## Locates the camera by spiraling out from the best prior.
+  let patchStart = getMonoTime()
+  if bot.locateByPatches():
+    bot.localizePatchMicros = int((getMonoTime() - patchStart).inMicroseconds)
+    bot.localizeSpiralMicros = 0
+    return true
+  bot.localizePatchMicros = int((getMonoTime() - patchStart).inMicroseconds)
+  let spiralStart = getMonoTime()
+  var
+    bestScore = CameraScore(
+      score: low(int),
+      errors: high(int),
+      compared: 0
+    )
+    bestX =
+      if bot.gameStarted:
+        bot.cameraX
+      else:
+        bot.sim.buttonCameraX()
+    bestY =
+      if bot.gameStarted:
+        bot.cameraY
+      else:
+        bot.sim.buttonCameraY()
+  let
+    minX = minCameraX()
+    maxX = maxCameraX()
+    minY = minCameraY()
+    maxY = maxCameraY()
+    seedX = clamp(bestX, minX, maxX)
+    seedY = clamp(bestY, minY, maxY)
+    maxRadius = max(
+      max(abs(seedX - minX), abs(seedX - maxX)),
+      max(abs(seedY - minY), abs(seedY - maxY))
+    )
+  bestX = seedX
+  bestY = seedY
+
+  template tryCamera(x, y: int): bool =
+    ## Scores one camera candidate if the player could be there.
+    if x < minX or x > maxX or y < minY or y > maxY:
+      false
+    elif not cameraCanHoldPlayer(x, y):
+      false
+    else:
+      let score = bot.scoreCamera(x, y, FullFrameFitMaxErrors)
+      if score.errors < bestScore.errors or
+          (score.errors == bestScore.errors and
+          score.compared > bestScore.compared):
+        bestScore = score
+        bestX = x
+        bestY = y
+        bestScore.errors == 0 and
+          bestScore.compared >= FrameFitMinCompared
+      else:
+        false
+
+  var done = tryCamera(seedX, seedY)
+  for radius in 1 .. maxRadius:
+    if done:
+      break
+    for dx in -radius .. radius:
+      if tryCamera(seedX + dx, seedY - radius):
+        done = true
+        break
+      if tryCamera(seedX + dx, seedY + radius):
+        done = true
+        break
+    if done:
+      break
+    for dy in -radius + 1 .. radius - 1:
+      if tryCamera(seedX - radius, seedY + dy):
+        done = true
+        break
+      if tryCamera(seedX + radius, seedY + dy):
+        done = true
+        break
+  if not acceptCameraScore(bestScore, FullFrameFitMaxErrors):
+    bot.cameraLock = NoLock
+    bot.cameraScore = bestScore.score
+    bot.localized = false
+    bot.localizeSpiralMicros =
+      int((getMonoTime() - spiralStart).inMicroseconds)
+    return false
+  bot.setCameraLock(bestX, bestY, bestScore, FrameMapLock)
+  bot.localizeSpiralMicros =
+    int((getMonoTime() - spiralStart).inMicroseconds)
+  true
+
+proc updateLocation(bot: var Bot) {.measure.} =
+  ## Updates the camera and player world estimate from the frame.
+  let wasInterstitial = bot.interstitial
+  bot.spriteScanMicros = 0
+  bot.localizeLocalMicros = 0
+  bot.localizePatchMicros = 0
+  bot.localizeSpiralMicros = 0
+  bot.lastCameraX = bot.cameraX
+  bot.lastCameraY = bot.cameraY
+  let protocolMapReady =
+    bot.spriteDetectionsReady and bot.protocolCameraReady
+  let protocolTextReady =
+    bot.spriteDetectionsReady and bot.protocolInterstitialReady
+  let protocolVoteReady =
+    bot.spriteDetectionsReady and (
+      bot.protocolVotingReady or bot.protocolVoteScreenSeen
+    )
+  bot.interstitial =
+    if protocolMapReady:
+      false
+    elif protocolTextReady or protocolVoteReady:
+      true
+    elif bot.spriteDetectionsReady:
+      true
+    else:
+      false
+  if bot.interstitial:
+    bot.interstitialText =
+      if protocolVoteReady:
+        "SKIP"
+      elif protocolTextReady:
+        bot.protocolInterstitialText
+      else:
+        ""
+    bot.visibleTaskIcons.setLen(0)
+    bot.visibleCrewmates.setLen(0)
+    bot.visibleBodies.setLen(0)
+    bot.visibleGhosts.setLen(0)
+    if bot.interstitialText.isGameOverText() and
+        bot.lastGameOverText != bot.interstitialText:
+      bot.resetRoundState()
+      bot.lastGameOverText = bot.interstitialText
+    elif protocolVoteReady:
+      discard
+    elif protocolTextReady:
+      if bot.voting:
+        bot.clearVotingState()
+      if bot.interstitialText == "CREWMATE" and bot.role == RoleUnknown:
+        bot.role = RoleCrewmate
+      elif bot.interstitialText == "IMPS":
+        bot.role = RoleImposter
+    elif bot.spriteDetectionsReady:
+      if bot.voting:
+        bot.clearVotingState()
+    return
+  bot.interstitialText = ""
+  bot.lastGameOverText = ""
+  if bot.voting:
+    bot.clearVotingState()
+    bot.bodySusColor = VoteUnknown
+  if wasInterstitial:
+    bot.roundStartTick = bot.frameTick
+    bot.roundStartServerTick = bot.serverTick
+    if not protocolMapReady:
+      bot.reseedLocalizationAtHome()
+  if protocolMapReady:
+    bot.cameraX = bot.protocolCameraX
+    bot.cameraY = bot.protocolCameraY
+    bot.cameraLock = FrameMapLock
+    bot.cameraScore = 0
+    bot.localized = true
+    return
+  let spriteStart = getMonoTime()
+  bot.updateRole()
+  bot.updateSelfColor()
+  bot.scanBodies()
+  bot.scanGhosts()
+  bot.scanCrewmates()
+  if bot.role == RoleImposter and not bot.isGhost:
+    bot.visibleTaskIcons.setLen(0)
+  else:
+    bot.scanTaskIcons()
+  bot.spriteScanMicros = int((getMonoTime() - spriteStart).inMicroseconds)
+  let localStart = getMonoTime()
+  if bot.locateNearByPatches():
+    bot.localizeLocalMicros =
+      int((getMonoTime() - localStart).inMicroseconds)
+    return
+  bot.localizeLocalMicros =
+    int((getMonoTime() - localStart).inMicroseconds)
+  discard bot.locateByFrame()
+
+proc rememberVisibleMap(bot: var Bot) {.measure.} =
+  ## Copies visible walk and wall knowledge into the coarse map model.
+  if not bot.localized:
+    return
+  for sy in 0 ..< ScreenHeight:
+    for sx in 0 ..< ScreenWidth:
+      let
+        mx = bot.cameraX + sx
+        my = bot.cameraY + sy
+      if not inMap(mx, my):
+        continue
+      let idx = mapIndexSafe(mx, my)
+      if bot.sim.wallMask[idx]:
+        bot.mapTiles[idx] = TileWall
+      elif bot.sim.walkMask[idx]:
+        bot.mapTiles[idx] = TileOpen
+
+proc isRadarPeriphery(x, y: int): bool =
+  ## Returns true for pixels in the task radar strip.
+  x <= RadarPeripheryMargin or y <= RadarPeripheryMargin or
+    x >= ScreenWidth - 1 - RadarPeripheryMargin or
+    y >= ScreenHeight - 1 - RadarPeripheryMargin
+
+proc addRadarDot(dots: var seq[RadarDot], x, y: int) =
+  ## Adds one radar dot unless a nearby dot is already present.
+  for dot in dots:
+    if abs(dot.x - x) <= 1 and abs(dot.y - y) <= 1:
+      return
+  dots.add(RadarDot(x: x, y: y))
+
+proc scanRadarDots(bot: var Bot) {.measure.} =
+  ## Scans screen periphery for yellow task radar pixels.
+  bot.radarDots.setLen(0)
+  if bot.spriteDetectionsReady:
+    for dot in bot.spriteRadarDots:
+      bot.radarDots.addRadarDot(dot.x, dot.y)
+    return
+  for y in 0 ..< ScreenHeight:
+    for x in 0 ..< ScreenWidth:
+      if not isRadarPeriphery(x, y):
+        continue
+      if bot.unpacked[y * ScreenWidth + x] == RadarTaskColor:
+        bot.radarDots.addRadarDot(x, y)
+
+proc spriteMisses(
+  frame: openArray[uint8],
+  sprite: Sprite,
+  x,
+  y: int
+): tuple[misses: int, opaque: int] =
+  ## Counts opaque sprite pixels that do not match the frame.
+  var
+    misses = 0
+    opaque = 0
+  for sy in 0 ..< sprite.height:
+    for sx in 0 ..< sprite.width:
+      let color = sprite.pixels[sprite.spriteIndex(sx, sy)]
+      if color == TransparentColorIndex:
+        continue
+      inc opaque
+      let
+        fx = x + sx
+        fy = y + sy
+      if fx < 0 or fy < 0 or fx >= ScreenWidth or fy >= ScreenHeight:
+        inc misses
+      elif frame[fy * ScreenWidth + fx] == color:
+        discard
+      else:
+        inc misses
+  (misses, opaque)
+
+proc matchesSprite(
+  frame: openArray[uint8],
+  sprite: Sprite,
+  x,
+  y: int
+): bool =
+  ## Returns true if a sprite stringently matches the frame.
+  let score = spriteMisses(frame, sprite, x, y)
+  score.opaque > 0 and score.misses <= TaskIconMaxMisses
+
+proc maybeMatchesSprite(
+  frame: openArray[uint8],
+  sprite: Sprite,
+  x,
+  y: int
+): bool =
+  ## Returns true when a sprite may be present but imperfect.
+  let score = spriteMisses(frame, sprite, x, y)
+  score.opaque > 0 and score.misses <= TaskIconMaybeMisses
+
+proc matchesSpriteShadowed(
+  frame: openArray[uint8],
+  sprite: Sprite,
+  x,
+  y: int
+): bool =
+  ## Returns true if a shadowed sprite matches the frame.
+  var
+    misses = 0
+    opaque = 0
+  for sy in 0 ..< sprite.height:
+    for sx in 0 ..< sprite.width:
+      let color = sprite.pixels[sprite.spriteIndex(sx, sy)]
+      if color == TransparentColorIndex:
+        continue
+      inc opaque
+      let
+        fx = x + sx
+        fy = y + sy
+      if fx < 0 or fy < 0 or fx >= ScreenWidth or fy >= ScreenHeight:
+        inc misses
+      elif frame[fy * ScreenWidth + fx] == ShadowMap[color and 0x0f]:
+        discard
+      else:
+        inc misses
+      if misses > KillIconMaxMisses:
+        return false
+  opaque > 0 and misses <= KillIconMaxMisses
+
+proc updateRole(bot: var Bot) {.measure.} =
+  ## Updates the known role from fixed status icons.
+  let ghostScore = spriteMisses(
+    bot.unpacked,
+    bot.ghostIconSprite,
+    KillIconX,
+    KillIconY
+  )
+  if ghostScore.opaque > 0 and ghostScore.misses <= GhostIconMaxMisses:
+    inc bot.ghostIconFrames
+    bot.imposterKillReady = false
+    if bot.ghostIconFrames >= GhostIconFrameThreshold:
+      bot.isGhost = true
+      if bot.role == RoleUnknown:
+        bot.role = RoleCrewmate
+    return
+  elif not bot.isGhost:
+    bot.ghostIconFrames = 0
+
+  let lit = matchesSprite(
+    bot.unpacked,
+    bot.killButtonSprite,
+    KillIconX,
+    KillIconY
+  )
+  let shaded = matchesSpriteShadowed(
+    bot.unpacked,
+    bot.killButtonSprite,
+    KillIconX,
+    KillIconY
+  )
+  bot.imposterKillReady = lit
+  if lit or shaded:
+    bot.role = RoleImposter
+  elif bot.role == RoleUnknown:
+    bot.role = RoleCrewmate
+
+proc addIconMatch(matches: var seq[IconMatch], x, y: int) =
+  ## Adds one icon match unless a nearby icon already exists.
+  for match in matches:
+    if abs(match.x - x) <= 1 and abs(match.y - y) <= 1:
+      return
+  matches.add(IconMatch(x: x, y: y))
+
+proc protocolBodyColorIndex(label: string): int =
+  ## Returns the color index for one sprite protocol body label.
+  for i, colorName in PlayerColorNames:
+    if label == "body " & colorName:
+      return i
+  -1
+
+proc protocolActorLabel(
+  label: string
+): tuple[found: bool, ghost: bool, colorIndex: int, flipH: bool] =
+  ## Parses one sprite protocol player or ghost label.
+  for i, colorName in PlayerColorNames:
+    let playerPrefix = "player " & colorName & " "
+    if label == playerPrefix & "right":
+      return (true, false, i, false)
+    if label == playerPrefix & "left":
+      return (true, false, i, true)
+    let ghostPrefix = "ghost " & colorName & " "
+    if label == ghostPrefix & "right":
+      return (true, true, i, false)
+    if label == ghostPrefix & "left":
+      return (true, true, i, true)
+
+proc protocolSelfObject(x, y, width, height: int): bool =
+  ## Returns true when a sprite protocol object is centered on this bot.
+  let
+    centerX = x + width div 2
+    centerY = y + height div 2
+  abs(centerX - PlayerScreenX) <= SpriteSize and
+    abs(centerY - PlayerScreenY) <= SpriteSize
+
+proc protocolVoteDotColorIndex(label: string): int =
+  ## Returns the voter color encoded in a vote dot sprite label.
+  for i, colorName in PlayerColorNames:
+    if label == "vote dot " & colorName:
+      return i
+  VoteUnknown
+
+proc protocolVoteMarkerColorIndex(label: string): int =
+  ## Returns the local color encoded in a vote self marker label.
+  for i, colorName in PlayerColorNames:
+    if label == "vote self marker " & colorName:
+      return i
+  VoteUnknown
+
+proc protocolVoteCellAt(count, x, y: int): int =
+  ## Returns the voting slot containing one protocol object point.
+  if count <= 0:
+    return VoteUnknown
+  let
+    cols = min(count, VoteColsMax)
+    rows = (count + cols - 1) div cols
+    totalW = cols * VoteCellW
+    startX = (ScreenWidth - totalW) div 2
+    col = (x - startX + VoteCellW div 2) div VoteCellW
+    row = (y - (VoteStartY - 1) + VoteCellH div 2) div VoteCellH
+  if col < 0 or col >= cols or row < 0 or row >= rows:
+    return VoteUnknown
+  result = row * cols + col
+  if result >= count:
+    return VoteUnknown
+
+proc protocolInterstitialLabel(label: string): bool =
+  ## Returns true when a text sprite label identifies a modal screen.
+  case label
+  of "WAITING", "NEED MORE!", "GAME", "STARTING", "GAME IN",
+      "PROGRESS", "IMPS", "CREWMATE", "NO ONE", "DIED",
+      "WAS KILLED", "DRAW", "CREW WINS", "IMPS WIN":
+    true
+  else:
+    label.startsWith("IN ") or label.gameInfoLabel()
+
+proc protocolProgressBarPercent(label: string): int =
+  ## Returns the percent encoded in a protocol progress bar label.
+  const Prefix = "progress bar "
+  if not label.startsWith(Prefix) or not label.endsWith("%"):
+    return -1
+  let start = Prefix.len
+  if start >= label.high:
+    return -1
+  result = 0
+  for i in start ..< label.high:
+    if label[i] notin {'0' .. '9'}:
+      return -1
+    result = result * 10 + ord(label[i]) - ord('0')
+  if result < 0 or result > 100:
+    return -1
+
+proc applyProtocolVotingState(
+  bot: var Bot,
+  playerCount,
+  cursor,
+  selfSlot: int,
+  slots: array[MaxPlayers, VoteSlot],
+  choices: array[PlayerColorCount, int],
+  chatLines: openArray[VoteChatLine]
+): bool {.measure.} =
+  ## Applies a voting screen parsed from sprite protocol metadata.
+  if playerCount <= 0 or playerCount > MaxPlayers:
+    return false
+  var seenColors: array[PlayerColorCount, bool]
+  for i in 0 ..< playerCount:
+    let colorIndex = slots[i].colorIndex
+    if colorIndex < 0 or colorIndex >= PlayerColorCount:
+      return false
+    if seenColors[colorIndex]:
+      return false
+    seenColors[colorIndex] = true
+  let
+    hadVoting = bot.voting and bot.voteStartTick >= 0
+    previousChat = bot.voteChatText
+    previousSus = bot.votingEvidenceText()
+    startTick =
+      if hadVoting:
+        bot.voteStartTick
+      else:
+        bot.frameTick
+    previousDelay = bot.voteDelayTicks
+    previousRetryTarget = bot.voteRetryTarget
+    previousRetryTick = bot.lastVoteRetryTick
+    previousLoggedTarget = bot.voteLoggedTarget
+    previousLoggedReason = bot.voteLoggedReason
+    previousEvidenceLogged = bot.voteEvidenceLogged
+    previousSaidSomething = bot.voteSaidSomething
+    previousLlmSayCount = bot.voteLlmSayCount
+    previousLlmAction = bot.voteLlmAction
+    previousLlmWaiting = bot.voteLlmWaiting
+    previousLlmNeedsDecision = bot.voteLlmNeedsDecision
+    previousLlmPromptChatText = bot.voteLlmPromptChatText
+    previousLlmPromptSusText = bot.voteLlmPromptSusText
+    previousLlmPreviousChatText = bot.voteLlmPreviousChatText
+    previousLlmPreviousSusText = bot.voteLlmPreviousSusText
+  var previousVoteCredits: array[PlayerColorCount, int]
+  for i in 0 ..< previousVoteCredits.len:
+    previousVoteCredits[i] = VoteUnknown
+  if hadVoting:
+    previousVoteCredits = bot.voteCreditedTargets
+  bot.clearVotingState()
+  bot.voting = true
+  bot.votePlayerCount = playerCount
+  bot.voteStartTick = startTick
+  bot.voteDelayTicks =
+    if previousDelay >= 0:
+      previousDelay
+    else:
+      bot.randomVoteDelay()
+  bot.voteRetryTarget = previousRetryTarget
+  bot.lastVoteRetryTick = previousRetryTick
+  bot.voteLoggedTarget = previousLoggedTarget
+  bot.voteLoggedReason = previousLoggedReason
+  bot.voteEvidenceLogged = previousEvidenceLogged
+  bot.voteSaidSomething = previousSaidSomething
+  bot.voteLlmSayCount = previousLlmSayCount
+  bot.voteCreditedTargets = previousVoteCredits
+  bot.voteLlmAction = previousLlmAction
+  bot.voteLlmWaiting = previousLlmWaiting
+  bot.voteLlmNeedsDecision = previousLlmNeedsDecision
+  bot.voteLlmPromptChatText = previousLlmPromptChatText
+  bot.voteLlmPromptSusText = previousLlmPromptSusText
+  bot.voteLlmPreviousChatText = previousLlmPreviousChatText
+  bot.voteLlmPreviousSusText = previousLlmPreviousSusText
+  bot.voteCursor = cursor
+  bot.voteSelfSlot = selfSlot
+  for i in 0 ..< playerCount:
+    bot.voteSlots[i] = slots[i]
+  for i in 0 ..< bot.voteChoices.len:
+    bot.voteChoices[i] = choices[i]
+  if selfSlot >= 0 and selfSlot < playerCount:
+    bot.selfColorIndex = slots[selfSlot].colorIndex
+  for line in chatLines:
+    bot.voteChatLines.add(line)
+  bot.voteChatText = voteChatTextFromLines(bot.voteChatLines)
+  bot.applyMeetingCallToVoting()
+  bot.applyVotedAgainstEvidence()
+  bot.updateVotingLlmSnapshots(hadVoting, previousChat, previousSus)
+  if not hadVoting:
+    echo "truecrew voting protocol detected: count=", playerCount,
+      " cursor=", bot.voteTargetName(cursor),
+      " self=", bot.voteTargetName(selfSlot),
+      " chat=", bot.voteChatText.len
+  true
+
+proc updateProtocolDetections(bot: var Bot, client: ProtocolClient) {.measure.} =
+  ## Caches structured task objects from the current sprite frame.
+  let currentServerTick = client.serverTick()
+  if currentServerTick >= 0:
+    bot.serverTick = currentServerTick
+  bot.applyGameInfoSettings(client.gameInfoSettings())
+  bot.spriteDetectionsReady = true
+  bot.protocolCameraReady = false
+  bot.protocolInterstitialReady = false
+  bot.protocolInterstitialText = ""
+  bot.protocolVotingReady = false
+  bot.imposterCooldownPercent = -1
+  bot.spriteRadarDots.setLen(0)
+  bot.spriteTaskIcons.setLen(0)
+  if bot.spriteDetectionsReady:
+    bot.visibleCrewmates.setLen(0)
+    bot.visibleBodies.setLen(0)
+    bot.visibleGhosts.setLen(0)
+  if bot.spriteRadarTasks.len != bot.sim.tasks.len:
+    bot.spriteRadarTasks = newSeq[bool](bot.sim.tasks.len)
+  else:
+    for i in 0 ..< bot.spriteRadarTasks.len:
+      bot.spriteRadarTasks[i] = false
+  if bot.spriteIconTasks.len != bot.sim.tasks.len:
+    bot.spriteIconTasks = newSeq[bool](bot.sim.tasks.len)
+  else:
+    for i in 0 ..< bot.spriteIconTasks.len:
+      bot.spriteIconTasks[i] = false
+  if not bot.spriteDetectionsReady:
+    return
+  if not bot.protocolMapReady:
+    bot.updateProtocolMap(client)
+  if client.walkabilityReady and not bot.protocolWalkabilityReady:
+    if client.walkabilityWidth != MapWidth or
+        client.walkabilityHeight != MapHeight or
+        client.walkabilityMask.len != MapWidth * MapHeight:
+      raise newException(
+        ValueError,
+        "sprite protocol walkability map size did not match the game map"
+      )
+    if bot.sim.walkMask.len != client.walkabilityMask.len:
+      bot.sim.walkMask.setLen(client.walkabilityMask.len)
+    if bot.sim.wallMask.len != client.walkabilityMask.len:
+      bot.sim.wallMask.setLen(client.walkabilityMask.len)
+    for i in 0 ..< client.walkabilityMask.len:
+      bot.sim.walkMask[i] = client.walkabilityMask[i]
+      bot.sim.wallMask[i] = not client.walkabilityMask[i]
+    bot.rebuildNavigation()
+    bot.protocolWalkabilityReady = true
+  if client.mapCameraReady:
+    if not bot.protocolMapReady:
+      raise newException(
+        ValueError,
+        "sprite protocol did not include required task, vent, and room " &
+          "map marker sprites"
+      )
+    if not bot.protocolWalkabilityReady:
+      raise newException(
+        ValueError,
+        "sprite protocol did not include required sprite labeled " &
+          "\"walkability map\""
+      )
+    bot.protocolCameraReady = true
+    bot.protocolCameraX = client.mapCameraX
+    bot.protocolCameraY = client.mapCameraY
+  var
+    voteSlots: array[MaxPlayers, VoteSlot]
+    voteChoices: array[PlayerColorCount, int]
+    votePlayerCount = 0
+    voteCursor = VoteUnknown
+    voteCursorSeen = false
+    voteCursorIsSkip = false
+    voteCursorX = 0
+    voteCursorY = 0
+    voteSelfSlot = VoteUnknown
+    voteSelfSeen = false
+    voteSelfX = 0
+    voteSelfY = 0
+    voteSelfColor = VoteUnknown
+    voteScreenSeen = false
+    meetingCallerColor = VoteUnknown
+    meetingBodyColor = VoteUnknown
+    meetingButtonSeen = false
+    voteGeometryFallbackUsed = false
+    chatSpeakers: array[VoteChatVisibleMessages, VoteChatSpeaker]
+    chatSpeakerCount = 0
+    chatLines: seq[VoteChatLine]
+  for i in 0 ..< voteSlots.len:
+    voteSlots[i].colorIndex = VoteUnknown
+  for i in 0 ..< voteChoices.len:
+    voteChoices[i] = VoteUnknown
+  for item in client.spriteObjectRefs():
+    let label = item.sprite.label
+    case label
+    of "task bubble":
+      bot.spriteTaskIcons.addIconMatch(item.x, item.y)
+      let index = item.objectId - TaskObjectBase
+      if index >= 0 and index < bot.spriteIconTasks.len:
+        bot.spriteIconTasks[index] = true
+    of "task arrow":
+      bot.spriteRadarDots.addRadarDot(item.x, item.y)
+      let index = item.objectId - SpriteTaskArrowObjectBase
+      if index >= 0 and index < bot.spriteRadarTasks.len:
+        bot.spriteRadarTasks[index] = true
+    of "imposter icon":
+      bot.role = RoleImposter
+      bot.isGhost = false
+      bot.imposterKillReady = true
+      bot.imposterCooldownPercent = 100
+    of "imposter icon cooldown":
+      bot.role = RoleImposter
+      bot.isGhost = false
+      bot.imposterKillReady = false
+    of "ghost icon":
+      bot.isGhost = true
+    of "SKIP":
+      voteScreenSeen = true
+    of "vote timer", "vote chat background":
+      voteScreenSeen = true
+    else:
+      if item.objectId == SpritePlayerKillProgressObjectId:
+        let percent = protocolProgressBarPercent(label)
+        if percent >= 0:
+          bot.imposterCooldownPercent = percent
+      if protocolInterstitialLabel(label) and
+          bot.protocolInterstitialText.len == 0:
+        bot.protocolInterstitialReady = true
+        bot.protocolInterstitialText = label
+      let actor = protocolActorLabel(label)
+      if actor.found:
+        let
+          voteIconObject =
+            item.objectId >= ProtocolVoteIconObjectBase and
+              item.objectId < ProtocolVoteIconObjectBase + MaxPlayers
+          voteSlot = protocolVoteCellAt(MaxPlayers, item.x, item.y)
+        if not voteIconObject and
+            voteSlot != VoteUnknown and
+            voteSlot < voteSlots.len and
+            voteSlots[voteSlot].colorIndex == VoteUnknown:
+          voteSlots[voteSlot].colorIndex = actor.colorIndex
+          voteSlots[voteSlot].alive = true
+          votePlayerCount = max(votePlayerCount, voteSlot + 1)
+          voteGeometryFallbackUsed = true
+        if protocolSelfObject(
+          item.x,
+          item.y,
+          item.sprite.width,
+          item.sprite.height
+        ):
+          bot.selfColorIndex = actor.colorIndex
+          bot.isGhost = actor.ghost
+        if actor.ghost:
+          bot.visibleGhosts.add(GhostMatch(
+            x: item.x,
+            y: item.y,
+            flipH: actor.flipH
+          ))
+        else:
+          bot.visibleCrewmates.add(CrewmateMatch(
+            x: item.x,
+            y: item.y,
+            colorIndex: actor.colorIndex,
+            flipH: actor.flipH
+          ))
+          if item.objectId == ProtocolMeetingIconObjectBase:
+            meetingCallerColor = actor.colorIndex
+          bot.rememberPlayerMotion(
+            actor.colorIndex,
+            bot.detectionCameraX() + item.x + SpriteDrawOffX,
+            bot.detectionCameraY() + item.y + SpriteDrawOffY
+          )
+      if item.objectId >= ProtocolVoteIconObjectBase and
+          item.objectId < ProtocolVoteIconObjectBase + MaxPlayers:
+        let slot = item.objectId - ProtocolVoteIconObjectBase
+        if actor.found:
+          voteSlots[slot].colorIndex = actor.colorIndex
+          voteSlots[slot].alive = true
+          votePlayerCount = max(votePlayerCount, slot + 1)
+      if item.objectId >= ProtocolChatIconObjectBase and
+          item.objectId < ProtocolChatIconObjectBase + VoteChatVisibleMessages:
+        if actor.found and chatSpeakerCount < chatSpeakers.len:
+          chatSpeakers[chatSpeakerCount] = VoteChatSpeaker(
+            colorIndex: actor.colorIndex,
+            y: item.y
+          )
+          inc chatSpeakerCount
+      let bodyColor = protocolBodyColorIndex(label)
+      if bodyColor >= 0:
+        let
+          voteIconObject =
+            item.objectId >= ProtocolVoteIconObjectBase and
+              item.objectId < ProtocolVoteIconObjectBase + MaxPlayers
+          voteSlot = protocolVoteCellAt(MaxPlayers, item.x, item.y)
+        if not voteIconObject and
+            voteSlot != VoteUnknown and
+            voteSlot < voteSlots.len and
+            voteSlots[voteSlot].colorIndex == VoteUnknown:
+          voteSlots[voteSlot].colorIndex = bodyColor
+          voteSlots[voteSlot].alive = false
+          votePlayerCount = max(votePlayerCount, voteSlot + 1)
+          voteGeometryFallbackUsed = true
+        bot.visibleBodies.add(BodyMatch(
+          x: item.x,
+          y: item.y,
+          colorIndex: bodyColor
+        ))
+        if bodyColor < bot.bodySeenTicks.len:
+          bot.bodySeenTicks[bodyColor] = bot.frameTick
+        if item.objectId == ProtocolMeetingIconObjectBase + 1:
+          meetingBodyColor = bodyColor
+        if item.objectId >= ProtocolVoteIconObjectBase and
+            item.objectId < ProtocolVoteIconObjectBase + MaxPlayers:
+          let slot = item.objectId - ProtocolVoteIconObjectBase
+          voteSlots[slot].colorIndex = bodyColor
+          voteSlots[slot].alive = false
+          votePlayerCount = max(votePlayerCount, slot + 1)
+      let voteDotColor = protocolVoteDotColorIndex(label)
+      if voteDotColor >= 0:
+        voteScreenSeen = true
+        if item.objectId >= SpritePlayerVoteDotObjectBase and
+            item.objectId < SpritePlayerVoteDotObjectBase +
+              MaxPlayers * MaxPlayers:
+          let target = (item.objectId - SpritePlayerVoteDotObjectBase) div
+            MaxPlayers
+          if target >= 0 and target < MaxPlayers:
+            voteChoices[voteDotColor] = target
+        elif item.objectId >= SpritePlayerVoteSkipDotObjectBase and
+            item.objectId < SpritePlayerVoteSkipDotObjectBase + MaxPlayers:
+          voteChoices[voteDotColor] = VoteSkip
+      if label == "vote cursor" or label == "vote skip cursor":
+        voteScreenSeen = true
+        voteCursorSeen = true
+        voteCursorIsSkip = label == "vote skip cursor"
+        voteCursorX = item.x
+        voteCursorY = item.y
+      let markerColor = protocolVoteMarkerColorIndex(label)
+      if markerColor >= 0:
+        voteScreenSeen = true
+        voteSelfSeen = true
+        voteSelfColor = markerColor
+        voteSelfX = item.x
+        voteSelfY = item.y
+      if item.objectId == ProtocolMeetingIconObjectBase + 1 and
+          label == "meeting button":
+        meetingButtonSeen = true
+      if item.objectId >= ProtocolTextObjectBase and
+          item.objectId < ProtocolTextObjectBase + VoteChatVisibleMessages +
+            2 and
+          label.len > 0 and label != "SKIP" and
+          not protocolInterstitialLabel(label):
+        chatLines.add(VoteChatLine(
+          speakerColor: VoteUnknown,
+          y: item.y,
+          text: label
+        ))
+  if meetingCallerColor != VoteUnknown or
+      meetingBodyColor != VoteUnknown or
+      meetingButtonSeen:
+    bot.rememberMeetingCall(
+      meetingCallerColor,
+      meetingBodyColor,
+      meetingButtonSeen
+    )
+  if bot.protocolInterstitialText == "IMPS":
+    for crewmate in bot.visibleCrewmates:
+      if crewmate.colorIndex >= 0 and
+          crewmate.colorIndex < bot.knownImposters.len:
+        bot.knownImposters[crewmate.colorIndex] = true
+  bot.protocolVoteScreenSeen = voteScreenSeen
+  if voteScreenSeen and votePlayerCount > 0:
+    if voteGeometryFallbackUsed:
+      echo "truecrew voting geometry fallback ready: cursorSeen=",
+        voteCursorSeen,
+        " selfSeen=", voteSelfSeen
+    if voteCursorSeen:
+      voteCursor =
+        if voteCursorIsSkip:
+          votePlayerCount
+        else:
+          protocolVoteCellAt(votePlayerCount, voteCursorX, voteCursorY)
+    if voteSelfSeen:
+      voteSelfSlot = protocolVoteCellAt(votePlayerCount, voteSelfX, voteSelfY)
+      if voteSelfColor >= 0 and voteSelfColor < PlayerColorCount:
+        bot.selfColorIndex = voteSelfColor
+    for line in chatLines:
+      var
+        bestColor = VoteUnknown
+        bestDistance = high(int)
+      for i in 0 ..< chatSpeakerCount:
+        let distance = abs(chatSpeakers[i].y - line.y)
+        if distance < bestDistance:
+          bestDistance = distance
+          bestColor = chatSpeakers[i].colorIndex
+      if bestDistance <= VoteChatSpeakerSearch:
+        line.speakerColor = bestColor
+    bot.protocolVotingReady = bot.applyProtocolVotingState(
+      votePlayerCount,
+      voteCursor,
+      voteSelfSlot,
+      voteSlots,
+      voteChoices,
+      chatLines
+    )
+  elif voteScreenSeen and bot.voting:
+    bot.protocolVotingReady = true
+
+proc stableCrewmateColor(color: uint8): bool =
+  ## Returns true for non-body crewmate sprite pixels.
+  color != TransparentColorIndex and
+    color != TintColor and
+    color != ShadeTintColor
+
+proc playerBodyColor(color: uint8): bool =
+  ## Returns true when a frame color can be a crewmate body.
+  for playerColor in PlayerColors:
+    if color == playerColor:
+      return true
+    if color == ShadowMap[playerColor and 0x0f]:
+      return true
+
+proc playerColorIndex(color: uint8): int =
+  ## Returns the tracked player color index for a palette color.
+  for i, playerColor in PlayerColors:
+    if color == playerColor:
+      return i
+  -1
+
+proc crewmatePixelMatches(spriteColor, frameColor: uint8): bool =
+  ## Returns true when one crewmate sprite pixel matches the frame.
+  if spriteColor == TintColor or spriteColor == ShadeTintColor:
+    return playerBodyColor(frameColor)
+  frameColor == spriteColor
+
+proc crewmateColorIndex(bot: Bot, x, y: int, flipH: bool): int =
+  ## Returns the most likely visible color for a crewmate match.
+  var counts: array[PlayerColorCount, int]
+  for sy in 0 ..< bot.playerSprite.height:
+    for sx in 0 ..< bot.playerSprite.width:
+      let srcX =
+        if flipH:
+          bot.playerSprite.width - 1 - sx
+        else:
+          sx
+      let color = bot.playerSprite.pixels[
+        bot.playerSprite.spriteIndex(srcX, sy)
+      ]
+      if color != TintColor:
+        continue
+      let
+        fx = x + sx
+        fy = y + sy
+      if fx < 0 or fy < 0 or fx >= ScreenWidth or fy >= ScreenHeight:
+        continue
+      let index = playerColorIndex(bot.unpacked[fy * ScreenWidth + fx])
+      if index >= 0:
+        inc counts[index]
+  var bestCount = 0
+  result = -1
+  for i, count in counts:
+    if count > bestCount:
+      bestCount = count
+      result = i
+
+proc matchesCrewmate(
+  bot: Bot,
+  x,
+  y: int,
+  flipH: bool
+): bool =
+  ## Returns true when stable crewmate pixels match the frame.
+  var
+    bodyMatched = 0
+    bodyPixels = 0
+    matchedStable = 0
+    misses = 0
+    stablePixels = 0
+  for sy in 0 ..< bot.playerSprite.height:
+    for sx in 0 ..< bot.playerSprite.width:
+      let srcX =
+        if flipH:
+          bot.playerSprite.width - 1 - sx
+        else:
+          sx
+      let color = bot.playerSprite.pixels[
+        bot.playerSprite.spriteIndex(srcX, sy)
+      ]
+      if color == TransparentColorIndex:
+        continue
+      if stableCrewmateColor(color):
+        inc stablePixels
+      else:
+        inc bodyPixels
+      let
+        fx = x + sx
+        fy = y + sy
+      if fx < 0 or fy < 0 or fx >= ScreenWidth or fy >= ScreenHeight:
+        inc misses
+      elif crewmatePixelMatches(color, bot.unpacked[fy * ScreenWidth + fx]):
+        if stableCrewmateColor(color):
+          inc matchedStable
+        else:
+          inc bodyMatched
+      else:
+        inc misses
+      if misses > CrewmateMaxMisses:
+        return false
+  stablePixels >= CrewmateMinStablePixels and
+    matchedStable >= CrewmateMinStablePixels and
+    bodyPixels >= CrewmateMinBodyPixels and
+    bodyMatched >= CrewmateMinBodyPixels
+
+proc addCrewmateMatch(
+  matches: var seq[CrewmateMatch],
+  x,
+  y: int,
+  colorIndex: int,
+  flipH: bool
+) =
+  ## Adds one crewmate match unless a nearby match already exists.
+  for i in 0 ..< matches.len:
+    if abs(matches[i].x - x) <= CrewmateSearchRadius and
+        abs(matches[i].y - y) <= CrewmateSearchRadius:
+      if matches[i].colorIndex < 0 and colorIndex >= 0:
+        matches[i].colorIndex = colorIndex
+      return
+  matches.add(CrewmateMatch(
+    x: x,
+    y: y,
+    colorIndex: colorIndex,
+    flipH: flipH
+  ))
+
+proc scanCrewmates(bot: var Bot) {.measure.} =
+  ## Scans the current frame for crewmates by stable sprite pixels.
+  bot.visibleCrewmates.setLen(0)
+  for y in 0 .. ScreenHeight - bot.playerSprite.height:
+    for x in 0 .. ScreenWidth - bot.playerSprite.width:
+      if abs(x + SpriteSize div 2 - PlayerScreenX) <= PlayerIgnoreRadius and
+          abs(y + SpriteSize div 2 - PlayerScreenY) <= PlayerIgnoreRadius:
+        continue
+      if bot.matchesCrewmate(x, y, false):
+        let colorIndex = bot.crewmateColorIndex(x, y, false)
+        bot.visibleCrewmates.addCrewmateMatch(x, y, colorIndex, false)
+      elif bot.matchesCrewmate(x, y, true):
+        let colorIndex = bot.crewmateColorIndex(x, y, true)
+        bot.visibleCrewmates.addCrewmateMatch(x, y, colorIndex, true)
+  for crewmate in bot.visibleCrewmates:
+    bot.rememberPlayerMotion(
+      crewmate.colorIndex,
+      bot.cameraX + crewmate.x + SpriteDrawOffX,
+      bot.cameraY + crewmate.y + SpriteDrawOffY
+    )
+
+proc updateSelfColor(bot: var Bot) {.measure.} =
+  ## Learns the local player's color from the centered player sprite.
+  let
+    x = PlayerScreenX - bot.playerSprite.width div 2
+    y = PlayerScreenY - bot.playerSprite.height div 2
+  var colorIndex = -1
+  if bot.matchesCrewmate(x, y, false):
+    colorIndex = bot.crewmateColorIndex(x, y, false)
+  elif bot.matchesCrewmate(x, y, true):
+    colorIndex = bot.crewmateColorIndex(x, y, true)
+  if colorIndex >= 0 and colorIndex < PlayerColorCount:
+    bot.selfColorIndex = colorIndex
+
+proc matchesActorSprite(
+  bot: Bot,
+  sprite: Sprite,
+  x,
+  y: int,
+  flipH: bool,
+  maxMisses,
+  minStablePixels,
+  minTintPixels: int
+): bool =
+  ## Returns true when a tinted actor sprite matches the frame.
+  var
+    tintMatched = 0
+    tintPixels = 0
+    stableMatched = 0
+    misses = 0
+    stablePixels = 0
+  for sy in 0 ..< sprite.height:
+    for sx in 0 ..< sprite.width:
+      let srcX =
+        if flipH:
+          sprite.width - 1 - sx
+        else:
+          sx
+      let color = sprite.pixels[sprite.spriteIndex(srcX, sy)]
+      if color == TransparentColorIndex:
+        continue
+      if stableCrewmateColor(color):
+        inc stablePixels
+      else:
+        inc tintPixels
+      let
+        fx = x + sx
+        fy = y + sy
+      if fx < 0 or fy < 0 or fx >= ScreenWidth or fy >= ScreenHeight:
+        inc misses
+      elif crewmatePixelMatches(color, bot.unpacked[fy * ScreenWidth + fx]):
+        if stableCrewmateColor(color):
+          inc stableMatched
+        else:
+          inc tintMatched
+      else:
+        inc misses
+      if misses > maxMisses:
+        return false
+  stablePixels >= minStablePixels and
+    stableMatched >= minStablePixels and
+    tintPixels >= minTintPixels and
+    tintMatched >= minTintPixels
+
+proc actorColorIndex(
+  bot: Bot,
+  sprite: Sprite,
+  x,
+  y: int,
+  flipH: bool
+): int =
+  ## Returns the most likely tint color for an actor sprite.
+  var counts: array[PlayerColorCount, int]
+  for sy in 0 ..< sprite.height:
+    for sx in 0 ..< sprite.width:
+      let srcX =
+        if flipH:
+          sprite.width - 1 - sx
+        else:
+          sx
+      let color = sprite.pixels[sprite.spriteIndex(srcX, sy)]
+      if color != TintColor:
+        continue
+      let
+        fx = x + sx
+        fy = y + sy
+      if fx < 0 or fy < 0 or fx >= ScreenWidth or fy >= ScreenHeight:
+        continue
+      let index = playerColorIndex(bot.unpacked[fy * ScreenWidth + fx])
+      if index >= 0:
+        inc counts[index]
+  var bestCount = 0
+  result = VoteUnknown
+  for i, count in counts:
+    if count > bestCount:
+      bestCount = count
+      result = i
+
+proc voteChatTextFromLines(lines: openArray[VoteChatLine]): string =
+  ## Flattens parsed voting chat lines into one text string.
+  for line in lines:
+    if result.len > 0:
+      result.add(' ')
+    result.add(line.text)
+
+proc normalizeChatText(text: string): string =
+  ## Normalizes chat text for simple word matching.
+  var hadSpace = true
+  for ch in text:
+    var outCh = ch
+    if ch in {'A' .. 'Z'}:
+      outCh = char(ord(ch) - ord('A') + ord('a'))
+    if outCh in {'a' .. 'z'} or outCh in {'0' .. '9'}:
+      result.add(outCh)
+      hadSpace = false
+    elif not hadSpace:
+      result.add(' ')
+      hadSpace = true
+  result = result.strip()
+
+proc markBodyReporter(bot: var Bot, colorIndex: int) =
+  ## Records that one player color has reported a dead body.
+  if colorIndex >= 0 and colorIndex < bot.bodyReportColors.len:
+    bot.bodyReportColors[colorIndex] = true
+
+proc rememberMeetingCall(
+  bot: var Bot,
+  callerColor,
+  bodyColor: int,
+  buttonSeen: bool
+) =
+  ## Records the caller and cause shown on the meeting-call screen.
+  let nextKind =
+    if bodyColor != VoteUnknown:
+      VoteCalledBody
+    elif buttonSeen:
+      VoteCalledButton
+    else:
+      VoteCalledUnknown
+  if bot.meetingCallKind != nextKind or
+      bot.meetingCallCallerColor != callerColor or
+      bot.meetingCallBodyColor != bodyColor:
+    bot.meetingCallApplied = false
+  bot.meetingCallKind = nextKind
+  bot.meetingCallCallerColor = callerColor
+  bot.meetingCallBodyColor = bodyColor
+
+proc applyMeetingCallToVoting(bot: var Bot) =
+  ## Applies the remembered meeting-call cause once voting is visible.
+  if bot.meetingCallApplied or not bot.voting:
+    return
+  case bot.meetingCallKind
+  of VoteCalledButton:
+    discard
+  of VoteCalledBody:
+    bot.markBodyReporter(bot.meetingCallCallerColor)
+    if bot.meetingCallBodyColor != VoteUnknown:
+      let slot = bot.voteSlotForColor(bot.meetingCallBodyColor)
+      if slot >= 0 and slot < bot.votePlayerCount:
+        bot.voteSlots[slot].alive = false
+  of VoteCalledUnknown:
+    discard
+  bot.meetingCallApplied = true
+
+proc applyVotedAgainstEvidence(bot: var Bot) =
+  ## Credits visible player votes against their current targets once.
+  if bot.role == RoleImposter:
+    return
+  for voterColor, targetSlot in bot.voteChoices:
+    if targetSlot < 0 or targetSlot >= bot.votePlayerCount:
+      continue
+    let voterSlot = bot.voteSlotForColor(voterColor)
+    if voterSlot < 0 or voterSlot >= bot.votePlayerCount:
+      continue
+    let targetColor = bot.voteSlots[targetSlot].colorIndex
+    if targetColor < 0 or targetColor >= bot.votedAgainstScores.len:
+      continue
+    if bot.voteCreditedTargets[voterColor] == targetColor:
+      continue
+    inc bot.votedAgainstScores[targetColor]
+    bot.voteCreditedTargets[voterColor] = targetColor
+
+proc voteSlotForColor(bot: Bot, colorIndex: int): int =
+  ## Returns the voting slot index for one player color.
+  for i in 0 ..< bot.votePlayerCount:
+    if bot.voteSlots[i].colorIndex == colorIndex:
+      return i
+  VoteUnknown
+
+proc voteTargetCanBeSus(bot: Bot, target: int): bool =
+  ## Returns true when a voting target is a living non-self player.
+  target >= 0 and
+    target < bot.votePlayerCount and
+    target != bot.voteSelfSlot and
+    bot.voteSlots[target].alive
+
+proc randomVoteDelay(bot: var Bot): int =
+  ## Returns this meeting's randomized vote delay in ticks.
+  if bot.role != RoleImposter:
+    return bot.rng.rand(VoteCrewmateMaxDelayTicks)
+  VoteListenBaseTicks - VoteListenJitterTicks +
+    bot.rng.rand(VoteListenJitterTicks * 2)
+
+proc addBodyMatch(
+  matches: var seq[BodyMatch],
+  x,
+  y: int,
+  colorIndex = VoteUnknown
+) =
+  ## Adds one body match unless a nearby match already exists.
+  for match in matches:
+    if abs(match.x - x) <= BodySearchRadius and
+        abs(match.y - y) <= BodySearchRadius:
+      return
+  matches.add(BodyMatch(x: x, y: y, colorIndex: colorIndex))
+
+proc scanBodies(bot: var Bot) {.measure.} =
+  ## Scans the current frame for visible dead bodies.
+  bot.visibleBodies.setLen(0)
+  for y in 0 .. ScreenHeight - bot.bodySprite.height:
+    for x in 0 .. ScreenWidth - bot.bodySprite.width:
+      if bot.matchesActorSprite(
+        bot.bodySprite,
+        x,
+        y,
+        false,
+        BodyMaxMisses,
+        BodyMinStablePixels,
+        BodyMinTintPixels
+      ):
+        bot.visibleBodies.addBodyMatch(x, y)
+
+proc addGhostMatch(matches: var seq[GhostMatch], x, y: int, flipH: bool) =
+  ## Adds one ghost match unless a nearby match already exists.
+  for match in matches:
+    if abs(match.x - x) <= GhostSearchRadius and
+        abs(match.y - y) <= GhostSearchRadius:
+      return
+  matches.add(GhostMatch(x: x, y: y, flipH: flipH))
+
+proc scanGhosts(bot: var Bot) {.measure.} =
+  ## Scans the current frame for visible ghosts.
+  bot.visibleGhosts.setLen(0)
+  for y in 0 .. ScreenHeight - bot.ghostSprite.height:
+    for x in 0 .. ScreenWidth - bot.ghostSprite.width:
+      if bot.matchesActorSprite(
+        bot.ghostSprite,
+        x,
+        y,
+        false,
+        GhostMaxMisses,
+        GhostMinStablePixels,
+        GhostMinTintPixels
+      ):
+        bot.visibleGhosts.addGhostMatch(x, y, false)
+      elif bot.matchesActorSprite(
+        bot.ghostSprite,
+        x,
+        y,
+        true,
+        GhostMaxMisses,
+        GhostMinStablePixels,
+        GhostMinTintPixels
+      ):
+        bot.visibleGhosts.addGhostMatch(x, y, true)
+
+proc scanTaskIcons(bot: var Bot) {.measure.} =
+  ## Scans expected task icon positions for visible task icons.
+  bot.visibleTaskIcons.setLen(0)
+  if not bot.localized:
+    return
+  if bot.spriteDetectionsReady:
+    for icon in bot.spriteTaskIcons:
+      bot.visibleTaskIcons.addIconMatch(icon.x, icon.y)
+    return
+  for task in bot.sim.tasks:
+    let
+      baseX = task.x + task.w div 2 - SpriteSize div 2 - bot.cameraX
+      baseY = task.y - SpriteSize - 2 - bot.cameraY
+    for bobY in -1 .. 1:
+      let expectedY = baseY + bobY
+      for dy in -TaskIconExpectedSearchRadius .. TaskIconExpectedSearchRadius:
+        for dx in -TaskIconExpectedSearchRadius .. TaskIconExpectedSearchRadius:
+          let
+            x = baseX + dx
+            y = expectedY + dy
+          if matchesSprite(bot.unpacked, bot.taskSprite, x, y):
+            bot.visibleTaskIcons.addIconMatch(x, y)
+
+proc projectedRadarDot(
+  bot: Bot,
+  task: TaskStation
+): tuple[visible: bool, x: int, y: int] =
+  ## Projects an offscreen task icon to its expected radar edge pixel.
+  if not bot.localized:
+    return
+  let
+    iconSx = task.x + task.w div 2 - SpriteSize div 2 - bot.cameraX
+    iconSy = task.y - SpriteSize - 2 - bot.cameraY
+    iconX = iconSx + SpriteSize div 2
+    iconY = iconSy + SpriteSize div 2
+  if iconSx + SpriteSize > 0 and iconSy + SpriteSize > 0 and
+      iconSx < ScreenWidth and iconSy < ScreenHeight:
+    return (true, iconX, iconY)
+  let
+    px = float(bot.playerWorldX() + CollisionW div 2 - bot.cameraX)
+    py = float(bot.playerWorldY() + CollisionH div 2 - bot.cameraY)
+    dx = float(iconX) - px
+    dy = float(iconY) - py
+  if abs(dx) < 0.5 and abs(dy) < 0.5:
+    return
+  let
+    minX = 0.0
+    maxX = float(ScreenWidth - 1)
+    minY = 0.0
+    maxY = float(ScreenHeight - 1)
+  var
+    ex: float
+    ey: float
+  if abs(dx) > abs(dy):
+    if dx > 0:
+      ex = maxX
+    else:
+      ex = minX
+    ey = py + dy * (ex - px) / dx
+    ey = clamp(ey, minY, maxY)
+  else:
+    if dy > 0:
+      ey = maxY
+    else:
+      ey = minY
+    ex = px + dx * (ey - py) / dy
+    ex = clamp(ex, minX, maxX)
+  (false, int(ex), int(ey))
+
+proc updateTaskGuesses(bot: var Bot) {.measure.} =
+  ## Updates ephemeral task candidates from radar dots.
+  if bot.taskStates.len != bot.sim.tasks.len:
+    bot.taskStates = newSeq[TaskState](bot.sim.tasks.len)
+  if bot.radarTasks.len != bot.sim.tasks.len:
+    bot.radarTasks = newSeq[bool](bot.sim.tasks.len)
+  if bot.checkoutTasks.len != bot.sim.tasks.len:
+    bot.checkoutTasks = newSeq[bool](bot.sim.tasks.len)
+  for i in 0 ..< bot.radarTasks.len:
+    bot.radarTasks[i] = false
+  if not bot.localized:
+    return
+  bot.scanRadarDots()
+  if bot.spriteDetectionsReady and
+      bot.spriteRadarTasks.len == bot.sim.tasks.len:
+    for i in 0 ..< bot.sim.tasks.len:
+      if not bot.spriteRadarTasks[i]:
+        continue
+      bot.radarTasks[i] = true
+      bot.checkoutTasks[i] = true
+      if bot.taskStates[i] == TaskCompleted:
+        bot.taskStates[i] = TaskMaybe
+    return
+  if bot.radarDots.len == 0:
+    return
+  for dot in bot.radarDots:
+    var
+      matches = 0
+      matchIndex = -1
+    for i in 0 ..< bot.sim.tasks.len:
+      let projected = bot.projectedRadarDot(bot.sim.tasks[i])
+      if projected.visible:
+        continue
+      if abs(dot.x - projected.x) <= RadarMatchTolerance and
+          abs(dot.y - projected.y) <= RadarMatchTolerance:
+        inc matches
+        matchIndex = i
+        if matches > 1:
+          break
+    if matches == 1:
+      bot.radarTasks[matchIndex] = true
+      bot.checkoutTasks[matchIndex] = true
+      if bot.taskStates[matchIndex] == TaskCompleted:
+        bot.taskStates[matchIndex] = TaskMaybe
+
+proc taskHasCurrentRadar(bot: Bot, index: int): bool =
+  ## Returns true when a current radar dot points at one task.
+  index >= 0 and index < bot.sim.tasks.len and
+    bot.radarTasks.len == bot.sim.tasks.len and bot.radarTasks[index]
+
+proc taskMayBeOnScreen(bot: Bot, index: int): bool =
+  ## Returns true when a task is onscreen enough to hide radar dots.
+  if index < 0 or index >= bot.sim.tasks.len:
+    return false
+  bot.projectedRadarDot(bot.sim.tasks[index]).visible
+
+proc taskHasFreshClue(bot: Bot, index: int): bool =
+  ## Returns true when radar or visibility still supports one task.
+  bot.taskHasCurrentRadar(index) or bot.taskMayBeOnScreen(index)
+
+proc resetTasksFromRadar(bot: var Bot) {.measure.} =
+  ## Rebuilds remembered task candidates from current radar dots.
+  if not bot.localized:
+    return
+  if bot.frameTick - bot.lastTaskRadarResetTick < TaskRadarResetTicks:
+    return
+  bot.lastTaskRadarResetTick = bot.frameTick
+  if bot.radarTasks.len != bot.sim.tasks.len:
+    bot.radarTasks = newSeq[bool](bot.sim.tasks.len)
+  if bot.checkoutTasks.len != bot.sim.tasks.len:
+    bot.checkoutTasks = newSeq[bool](bot.sim.tasks.len)
+  if bot.taskStates.len != bot.sim.tasks.len:
+    bot.taskStates = newSeq[TaskState](bot.sim.tasks.len)
+  if bot.taskIconMisses.len != bot.sim.tasks.len:
+    bot.taskIconMisses = newSeq[int](bot.sim.tasks.len)
+  for i in 0 ..< bot.sim.tasks.len:
+    if bot.taskHoldTicks > 0 and bot.taskHoldIndex == i:
+      continue
+    if bot.radarTasks[i]:
+      bot.checkoutTasks[i] = true
+      if bot.taskStates[i] in {TaskNotDoing, TaskCompleted}:
+        bot.taskStates[i] = TaskMaybe
+      bot.taskIconMisses[i] = 0
+    elif bot.taskMayBeOnScreen(i):
+      continue
+    else:
+      bot.checkoutTasks[i] = false
+      if bot.taskStates[i] != TaskCompleted:
+        bot.taskStates[i] = TaskNotDoing
+      bot.taskIconMisses[i] = 0
+
+proc projectedTaskIcon(
+  bot: Bot,
+  task: TaskStation,
+  bobY: int
+): tuple[visible: bool, x: int, y: int] =
+  ## Returns the expected screen position for a visible task icon.
+  if not bot.localized:
+    return
+  let
+    iconX = task.x + task.w div 2 - SpriteSize div 2 - bot.cameraX
+    iconY = task.y - SpriteSize - 2 + bobY - bot.cameraY
+  if iconX + SpriteSize < 0 or iconY + SpriteSize < 0 or
+      iconX >= ScreenWidth or iconY >= ScreenHeight:
+    return
+  (true, iconX, iconY)
+
+proc taskIconInspectRect(
+  bot: Bot,
+  task: TaskStation
+): tuple[x: int, y: int, w: int, h: int] =
+  ## Returns the expected screen rectangle for inspecting a task icon.
+  (
+    task.x + task.w div 2 - TaskIconInspectSize div 2 - bot.cameraX,
+    task.y - TaskIconInspectSize - bot.cameraY,
+    TaskIconInspectSize,
+    TaskIconInspectSize
+  )
+
+proc taskIconRenderable(bot: Bot, task: TaskStation): bool =
+  ## Returns true when the server could render the task icon.
+  let
+    center = task.taskCenter()
+    sx = center.x - bot.cameraX
+    sy = center.y - bot.cameraY
+  sx >= 0 and sx < ScreenWidth and sy >= 0 and sy < ScreenHeight
+
+proc taskIconClearAreaVisible(bot: Bot, task: TaskStation): bool =
+  ## Returns true when the whole icon inspection area is visible.
+  let rect = bot.taskIconInspectRect(task)
+  rect.x >= TaskClearScreenMargin and
+    rect.y >= TaskClearScreenMargin and
+    rect.x + rect.w + TaskClearScreenMargin <= ScreenWidth and
+    rect.y + rect.h + TaskClearScreenMargin <= ScreenHeight
+
+proc taskIconMaybeVisibleFor(bot: Bot, task: TaskStation): bool =
+  ## Returns true when expected icon pixels look plausibly present.
+  let
+    baseX = task.x + task.w div 2 - SpriteSize div 2 - bot.cameraX
+    baseY = task.y - SpriteSize - 2 - bot.cameraY
+  for bobY in -1 .. 1:
+    let expectedY = baseY + bobY
+    for dy in -TaskIconExpectedSearchRadius .. TaskIconExpectedSearchRadius:
+      for dx in -TaskIconExpectedSearchRadius .. TaskIconExpectedSearchRadius:
+        if maybeMatchesSprite(
+          bot.unpacked,
+          bot.taskSprite,
+          baseX + dx,
+          expectedY + dy
+        ):
+          return true
+
+proc iconMatchesTask(
+  bot: Bot,
+  icon: IconMatch,
+  task: TaskStation
+): bool =
+  ## Returns true when one visible icon can belong to a task.
+  for bobY in -1 .. 1:
+    let projected = bot.projectedTaskIcon(task, bobY)
+    if not projected.visible:
+      continue
+    if abs(icon.x - projected.x) <= TaskIconSearchRadius and
+        abs(icon.y - projected.y) <= TaskIconSearchRadius:
+      return true
+
+proc matchingTaskCount(bot: Bot, icon: IconMatch): int =
+  ## Counts task stations that could explain one visible task icon.
+  for task in bot.sim.tasks:
+    if bot.iconMatchesTask(icon, task):
+      inc result
+      if result > 1:
+        return
+
+proc taskIconVisibleFor(bot: Bot, task: TaskStation): bool =
+  ## Returns true if a visible task station has a unique icon on screen.
+  for icon in bot.visibleTaskIcons:
+    if bot.iconMatchesTask(icon, task) and
+        bot.matchingTaskCount(icon) == 1:
+      return true
+
+proc updateTaskIcons(bot: var Bot) {.measure.} =
+  ## Updates task states from visible task icons.
+  if bot.taskStates.len != bot.sim.tasks.len:
+    bot.taskStates = newSeq[TaskState](bot.sim.tasks.len)
+  if bot.taskIconMisses.len != bot.sim.tasks.len:
+    bot.taskIconMisses = newSeq[int](bot.sim.tasks.len)
+  if bot.checkoutTasks.len != bot.sim.tasks.len:
+    bot.checkoutTasks = newSeq[bool](bot.sim.tasks.len)
+  if not bot.localized:
+    return
+  bot.scanTaskIcons()
+  for i in 0 ..< bot.sim.tasks.len:
+    let task = bot.sim.tasks[i]
+    if bot.spriteDetectionsReady and
+        bot.spriteIconTasks.len == bot.sim.tasks.len and
+        bot.spriteIconTasks[i]:
+      bot.taskStates[i] = TaskMandatory
+      bot.taskIconMisses[i] = 0
+    elif bot.taskIconVisibleFor(task):
+      bot.taskStates[i] = TaskMandatory
+      bot.taskIconMisses[i] = 0
+    elif bot.taskHoldTicks == 0 and
+        bot.taskIconClearAreaVisible(task) and
+        (
+          if bot.spriteDetectionsReady and
+              bot.spriteIconTasks.len == bot.sim.tasks.len:
+            not bot.spriteIconTasks[i]
+          else:
+            not bot.taskIconMaybeVisibleFor(task)
+        ) and
+        (bot.radarTasks.len != bot.sim.tasks.len or not bot.radarTasks[i]) and
+        bot.taskHoldIndex != i:
+      if bot.taskStates[i] == TaskMandatory:
+        inc bot.taskIconMisses[i]
+        if bot.taskIconMisses[i] >= TaskIconMissThreshold:
+          bot.taskStates[i] = TaskCompleted
+          bot.checkoutTasks[i] = false
+          bot.taskIconMisses[i] = 0
+      elif bot.checkoutTasks[i]:
+        inc bot.taskIconMisses[i]
+        if bot.taskIconMisses[i] >= TaskIconMissThreshold:
+          bot.checkoutTasks[i] = false
+          bot.taskIconMisses[i] = 0
+    else:
+      bot.taskIconMisses[i] = 0
+
+proc thought(bot: var Bot, text: string) =
+  ## Stores changed bot thoughts for the GUI.
+  if text != bot.lastThought:
+    bot.lastThought = text
+
+proc movementName(mask: uint8): string =
+  ## Returns a compact movement label for one input mask.
+  if (mask and ButtonLeft) != 0:
+    return "left"
+  if (mask and ButtonRight) != 0:
+    return "right"
+  if (mask and ButtonUp) != 0:
+    return "up"
+  if (mask and ButtonDown) != 0:
+    return "down"
+  "idle"
+
+proc hasMovement(mask: uint8): bool =
+  ## Returns true when an input mask contains directional movement.
+  (mask and (ButtonUp or ButtonDown or ButtonLeft or ButtonRight)) != 0
+
+proc taskHoldActive(bot: Bot): bool =
+  ## Returns true while this bot is intentionally holding a task.
+  bot.taskHoldTicks > 0 or bot.taskHoldIndex >= 0
+
+proc resetCellStuck(bot: var Bot) =
+  ## Clears 8x8-cell stuck tracking.
+  bot.stuckCellX = low(int)
+  bot.stuckCellY = low(int)
+  bot.stuckCellTicks = 0
+  bot.unstuckTicks = 0
+
+proc updateCellStuck(bot: var Bot, x, y: int) =
+  ## Starts an escape burst after staying in one 8x8 cell too long.
+  if bot.taskHoldActive() or not bot.lastMask.hasMovement():
+    bot.resetCellStuck()
+    return
+  let
+    cellX = x div StuckCellSize
+    cellY = y div StuckCellSize
+  if cellX == bot.stuckCellX and cellY == bot.stuckCellY:
+    inc bot.stuckCellTicks
+  else:
+    bot.stuckCellX = cellX
+    bot.stuckCellY = cellY
+    bot.stuckCellTicks = 1
+  if bot.stuckCellTicks < StuckCellThreshold:
+    return
+  bot.clearPath()
+  bot.stuckCellTicks = 0
+  bot.unstuckTicks = UnstuckDuration
+  bot.unstuckMaskIndex =
+    (bot.unstuckMaskIndex + 1) mod UnstuckMasks.len
+  bot.jiggleTicks = 0
+
+proc updateMotionState(bot: var Bot) =
+  ## Tracks current frame-to-frame player velocity.
+  if not bot.localized:
+    bot.haveMotionSample = false
+    bot.velocityX = 0
+    bot.velocityY = 0
+    bot.stuckFrames = 0
+    bot.resetCellStuck()
+    bot.jiggleTicks = 0
+    return
+
+  let
+    x = bot.playerWorldX()
+    y = bot.playerWorldY()
+  if bot.taskHoldActive():
+    bot.velocityX = 0
+    bot.velocityY = 0
+    bot.stuckFrames = 0
+    bot.resetCellStuck()
+    bot.jiggleTicks = 0
+    bot.haveMotionSample = true
+    bot.previousPlayerWorldX = x
+    bot.previousPlayerWorldY = y
+    return
+  if bot.haveMotionSample and bot.lastMask.hasMovement():
+    bot.velocityX = x - bot.previousPlayerWorldX
+    bot.velocityY = y - bot.previousPlayerWorldY
+    let moved = abs(bot.velocityX) + abs(bot.velocityY)
+    if moved == 0:
+      inc bot.stuckFrames
+    else:
+      bot.stuckFrames = 0
+    if bot.stuckFrames >= StuckFrameThreshold:
+      bot.clearPath()
+      bot.stuckFrames = 0
+      bot.jiggleTicks = JiggleDuration
+      bot.jiggleSide = 1 - bot.jiggleSide
+    bot.updateCellStuck(x, y)
+  else:
+    bot.velocityX = 0
+    bot.velocityY = 0
+    bot.stuckFrames = 0
+    bot.resetCellStuck()
+
+  bot.haveMotionSample = true
+  bot.previousPlayerWorldX = x
+  bot.previousPlayerWorldY = y
+
+proc applyJiggle(bot: var Bot, mask: uint8): uint8 =
+  ## Adds a short perpendicular correction while keeping intent held.
+  result = mask
+  if bot.taskHoldActive():
+    bot.unstuckTicks = 0
+    bot.jiggleTicks = 0
+    return
+  if bot.unstuckTicks > 0 and mask.hasMovement():
+    let elapsed = UnstuckDuration - bot.unstuckTicks
+    result = UnstuckMasks[
+      (bot.unstuckMaskIndex + elapsed div UnstuckPulseTicks) mod
+        UnstuckMasks.len
+    ]
+    dec bot.unstuckTicks
+    return
+  if bot.jiggleTicks <= 0 or not mask.hasMovement():
+    return
+  dec bot.jiggleTicks
+  let
+    vertical = (mask and (ButtonUp or ButtonDown)) != 0
+    horizontal = (mask and (ButtonLeft or ButtonRight)) != 0
+  if vertical and not horizontal:
+    if bot.jiggleSide == 0:
+      result = result or ButtonLeft
+    else:
+      result = result or ButtonRight
+  elif horizontal and not vertical:
+    if bot.jiggleSide == 0:
+      result = result or ButtonUp
+    else:
+      result = result or ButtonDown
+  elif bot.jiggleSide == 0:
+    result = result or ButtonLeft
+  else:
+    result = result or ButtonRight
+
+proc inputMaskSummary(mask: uint8): string =
+  ## Returns a human-readable input mask.
+  var parts: seq[string] = @[]
+  if (mask and ButtonUp) != 0: parts.add("up")
+  if (mask and ButtonDown) != 0: parts.add("down")
+  if (mask and ButtonLeft) != 0: parts.add("left")
+  if (mask and ButtonRight) != 0: parts.add("right")
+  if (mask and ButtonA) != 0: parts.add("a")
+  if (mask and ButtonB) != 0: parts.add("b")
+  if (mask and ButtonSelect) != 0: parts.add("select")
+  if parts.len == 0:
+    return "idle"
+  parts.join(", ")
+
+proc taskStateCount(bot: Bot, state: TaskState): int =
+  ## Returns the number of tasks in one state.
+  for taskState in bot.taskStates:
+    if taskState == state:
+      inc result
+
+proc radarTaskCount(bot: Bot): int =
+  ## Returns the number of current radar task candidates.
+  for radarTask in bot.radarTasks:
+    if radarTask:
+      inc result
+
+proc checkoutTaskCount(bot: Bot): int =
+  ## Returns the number of persistent checkout task candidates.
+  for checkoutTask in bot.checkoutTasks:
+    if checkoutTask:
+      inc result
+
+proc completedTaskCount(bot: Bot): int =
+  ## Returns the number of tasks believed to be completed.
+  bot.taskStateCount(TaskCompleted)
+
+proc allTasksComplete(bot: Bot): bool =
+  ## Returns true when no task work remains for this bot.
+  bot.sim.tasks.len > 0 and
+    bot.completedTaskCount() >= bot.sim.tasks.len
+
+proc emergencyButtonSpent(bot: Bot): bool =
+  ## Returns true because this bot treats emergency buttons as spent.
+  discard bot
+  true
+
+proc buttonFallbackReady(bot: Bot): bool =
+  ## Returns true when home is the only useful remaining goal.
+  bot.radarDots.len == 0 and
+    bot.radarTaskCount() == 0 and
+    bot.checkoutTaskCount() == 0 and
+    bot.taskStateCount(TaskMandatory) == 0
+
+proc safeHideReady(bot: Bot): bool =
+  ## Returns true when this crewmate should hide instead of doing tasks.
+  bot.role == RoleCrewmate and
+    not bot.isGhost and
+    bot.emergencyButtonSpent() and
+    (
+      bot.allTasksComplete() or
+      bot.buttonFallbackReady()
+    )
+
+proc pendingChatReady(bot: Bot): bool =
+  ## Returns true when pending chat is safe to send.
+  if bot.pendingChat.len == 0 or not bot.interstitial:
+    return false
+  if bot.interstitialText.isGameOverText() or not bot.voting:
+    return false
+  true
+
+proc markPendingChatSent(bot: var Bot) =
+  ## Records a sent pending chat packet and clears the buffer.
+  if bot.voting and bot.interstitial:
+    bot.voteSaidSomething = true
+    inc bot.voteLlmSayCount
+  bot.pendingChat = ""
+
+proc readyMessageReady(bot: Bot): bool =
+  ## Returns true when no pending chat must be sent before ready.
+  if bot.voting and
+      bot.interstitial and
+      not bot.interstitialText.isGameOverText():
+    if bot.pendingChat.len > 0:
+      return false
+  true
+
+proc rememberHome(bot: var Bot) =
+  ## Records the first reliable round position as this bot's home.
+  if not bot.localized or bot.interstitial:
+    return
+  if not bot.gameStarted:
+    bot.roundStartTick = bot.frameTick
+    bot.roundStartServerTick = bot.serverTick
+    bot.gameStarted = true
+  if bot.homeSet:
+    return
+  bot.homeX = bot.playerWorldX()
+  bot.homeY = bot.playerWorldY()
+  bot.homeSet = true
+
+proc roleName(role: BotRole): string =
+  ## Returns a human-readable role name.
+  case role
+  of RoleUnknown: "unknown"
+  of RoleCrewmate: "crewmate"
+  of RoleImposter: "imposter"
+
+proc knownImposterColor(bot: Bot, colorIndex: int): bool =
+  ## Returns true if the color was shown as an imposter teammate.
+  colorIndex >= 0 and
+    colorIndex < bot.knownImposters.len and
+    bot.knownImposters[colorIndex]
+
+proc playerColorName(colorIndex: int): string =
+  ## Returns the visible player color name.
+  if colorIndex >= 0 and colorIndex < PlayerColorNames.len:
+    PlayerColorNames[colorIndex]
+  else:
+    "unknown"
+
+proc voteTargetSafeForRole(bot: Bot, target: int): bool =
+  ## Returns true when this role should be willing to vote for a target.
+  if not bot.voteTargetCanBeSus(target):
+    return false
+  if bot.role == RoleImposter:
+    let colorIndex = bot.voteSlots[target].colorIndex
+    if bot.knownImposterColor(colorIndex):
+      return false
+  true
+
+proc knownImposterSummary(bot: Bot): string =
+  ## Returns a compact debug string for known imposter colors.
+  for i, known in bot.knownImposters:
+    if not known:
+      continue
+    if result.len > 0:
+      result.add(", ")
+    result.add(playerColorName(i))
+  if result.len == 0:
+    result = "none"
+
+proc cameraLockName(lock: CameraLock): string =
+  ## Returns a human-readable camera lock name.
+  case lock
+  of NoLock: "none"
+  of LocalPatchMapLock: "local patch"
+  of FrameMapLock: "frame map"
+
+proc passable(bot: Bot, x, y: int): bool =
+  ## Returns true when a collision-sized body can occupy a pixel.
+  if bot.navigationReady():
+    return bot.navigator.passable(x, y)
+  if x < 0 or y < 0 or x + CollisionW >= MapWidth or
+      y + CollisionH >= MapHeight:
+    return false
+  for dy in 0 ..< CollisionH:
+    for dx in 0 ..< CollisionW:
+      if not bot.sim.walkMask[mapIndexSafe(x + dx, y + dy)]:
+        return false
+  true
+
+proc heuristic(ax, ay, bx, by: int): int =
+  ## Returns Manhattan distance between two world points.
+  abs(ax - bx) + abs(ay - by)
+
+proc findPath(bot: var Bot, goalX, goalY: int): seq[PathStep] {.measure.} =
+  ## Finds a direct JPS+ path toward a goal.
+  if not bot.navigationReady():
+    return
+  let
+    startX = bot.playerWorldX()
+    startY = bot.playerWorldY()
+  if not bot.passable(startX, startY) or not bot.passable(goalX, goalY):
+    return
+  bot.navigator.findPath(startX, startY, goalX, goalY)
+
+proc pathDistance(bot: var Bot, goalX, goalY: int): int =
+  ## Returns the real JPS+ path distance to a goal.
+  if bot.playerWorldX() == goalX and bot.playerWorldY() == goalY:
+    return 0
+  bot.navigator.pathDistance(
+    bot.playerWorldX(),
+    bot.playerWorldY(),
+    goalX,
+    goalY
+  )
+
+proc pathGoalMatches(bot: Bot, goalX, goalY: int): bool =
+  ## Returns true when the cached route targets the requested goal.
+  bot.path.len > 0 and bot.pathGoalX == goalX and bot.pathGoalY == goalY
+
+proc advancePathCursor(bot: var Bot) =
+  ## Advances the cached route cursor to the current player position.
+  if bot.path.len == 0:
+    bot.pathCursor = 0
+    return
+  if bot.pathCursor < 0:
+    bot.pathCursor = 0
+  if bot.pathCursor > bot.path.high:
+    bot.pathCursor = bot.path.high
+  if bot.navigationReady():
+    bot.pathCursor = bot.navigator.advancePathCursor(
+      bot.path,
+      bot.pathCursor,
+      bot.playerWorldX(),
+      bot.playerWorldY()
+    )
+
+proc cachedPathUsable(bot: var Bot, goalX, goalY: int): bool =
+  ## Returns true when the cached route can still be followed.
+  if not bot.navigationReady():
+    return false
+  if not bot.pathGoalMatches(goalX, goalY):
+    return false
+  if bot.frameTick - bot.pathPlanTick >= PathReuseTicks:
+    return false
+  if bot.stuckFrames >= StuckFrameThreshold:
+    return false
+  bot.advancePathCursor()
+  let
+    x = bot.playerWorldX()
+    y = bot.playerWorldY()
+    step = bot.path[bot.pathCursor]
+    motion = bot.motionState()
+  if motion.waypointBehindMotion(step):
+    return false
+  heuristic(x, y, step.x, step.y) <= PathDeviationLimit
+
+proc ensurePathTo(bot: var Bot, goalX, goalY: int): bool =
+  ## Reuses or rebuilds the cached JPS+ route to one goal.
+  if not bot.navigationReady():
+    bot.astarMicros = 0
+    return false
+  if bot.cachedPathUsable(goalX, goalY):
+    bot.astarMicros = 0
+    return true
+  let astarStart = getMonoTime()
+  bot.path = bot.findPath(goalX, goalY)
+  bot.astarMicros = int((getMonoTime() - astarStart).inMicroseconds)
+  bot.pathCursor = 0
+  bot.pathGoalX = goalX
+  bot.pathGoalY = goalY
+  bot.pathPlanTick = bot.frameTick
+  if bot.path.len == 0:
+    return false
+  bot.advancePathCursor()
+  true
+
+proc goalDistance(bot: Bot, goalX, goalY: int): int =
+  ## Returns the distance metric for choosing the next goal.
+  heuristic(bot.playerWorldX(), bot.playerWorldY(), goalX, goalY)
+
+proc taskGoalFor(
+  bot: Bot,
+  index: int,
+  state: TaskState
+): tuple[found: bool, index: int, x: int, y: int, name: string, state: TaskState] =
+  ## Returns a reachable task goal inside one task rectangle.
+  if index < 0 or index >= bot.sim.tasks.len:
+    return
+  let
+    task = bot.sim.tasks[index]
+    center = task.taskCenter()
+  var
+    bestDistance = high(int)
+    bestX = 0
+    bestY = 0
+  proc iconVisibleAt(x, y: int): bool =
+    let
+      cameraX = x - PlayerWorldOffX
+      cameraY = y - PlayerWorldOffY
+      iconWorldX = task.x + task.w div 2 - SpriteSize div 2
+      iconWorldY = task.y - SpriteSize - 2
+    for bobY in -1 .. 1:
+      let
+        iconX = iconWorldX - cameraX
+        iconY = iconWorldY + bobY - cameraY
+      if iconX < 0 or iconY < 0 or
+          iconX + SpriteSize > ScreenWidth or
+          iconY + SpriteSize > ScreenHeight:
+        return false
+    true
+  template considerRange(x0, y0, x1, y1: int, requireIcon: bool) =
+    for y in max(task.y, y0) ..< min(task.y + task.h, y1):
+      for x in max(task.x, x0) ..< min(task.x + task.w, x1):
+        if not bot.passable(x, y):
+          continue
+        if requireIcon and not iconVisibleAt(x, y):
+          continue
+        let distance = heuristic(center.x, center.y, x, y)
+        if distance < bestDistance:
+          bestDistance = distance
+          bestX = x
+          bestY = y
+  considerRange(
+    task.x + TaskInnerMargin,
+    task.y + TaskInnerMargin,
+    task.x + task.w - TaskInnerMargin,
+    task.y + task.h - TaskInnerMargin,
+    true
+  )
+  if bestDistance == high(int):
+    considerRange(
+      task.x + TaskInnerMargin,
+      task.y + TaskInnerMargin,
+      task.x + task.w - TaskInnerMargin,
+      task.y + task.h - TaskInnerMargin,
+      false
+    )
+  if bestDistance == high(int):
+    considerRange(
+      task.x,
+      task.y,
+      task.x + task.w,
+      task.y + task.h,
+      false
+    )
+  if bestDistance == high(int):
+    return
+  (true, index, bestX, bestY, task.name, state)
+
+proc buttonGoal(
+  bot: Bot
+): tuple[found: bool, index: int, x: int, y: int, name: string, state: TaskState] =
+  ## Returns a reachable point inside the emergency button rectangle.
+  let
+    button = bot.sim.gameMap.button
+    centerX = button.x + button.w div 2
+    centerY = button.y + button.h div 2
+  var
+    bestDistance = high(int)
+    bestX = 0
+    bestY = 0
+  for y in button.y ..< button.y + button.h:
+    for x in button.x ..< button.x + button.w:
+      if not bot.passable(x, y):
+        continue
+      let distance = heuristic(centerX, centerY, x, y)
+      if distance < bestDistance:
+        bestDistance = distance
+        bestX = x
+        bestY = y
+  if bestDistance == high(int):
+    return
+  (true, -1, bestX, bestY, "Button", TaskMaybe)
+
+proc homeGoal(
+  bot: Bot
+): tuple[found: bool, index: int, x: int, y: int, name: string, state: TaskState] =
+  ## Returns this bot's remembered cafeteria home point.
+  if not bot.homeSet:
+    return bot.buttonGoal()
+  if bot.isGhost or bot.passable(bot.homeX, bot.homeY):
+    return (true, -1, bot.homeX, bot.homeY, "Home", TaskMaybe)
+  var
+    bestDistance = high(int)
+    bestX = 0
+    bestY = 0
+  for y in max(0, bot.homeY - HomeSearchRadius) ..
+      min(MapHeight - 1, bot.homeY + HomeSearchRadius):
+    for x in max(0, bot.homeX - HomeSearchRadius) ..
+        min(MapWidth - 1, bot.homeX + HomeSearchRadius):
+      if not bot.passable(x, y):
+        continue
+      let distance = heuristic(bot.homeX, bot.homeY, x, y)
+      if distance < bestDistance:
+        bestDistance = distance
+        bestX = x
+        bestY = y
+  if bestDistance == high(int):
+    return bot.buttonGoal()
+  (true, -1, bestX, bestY, "Home", TaskMaybe)
+
+proc buttonCenter(bot: Bot): tuple[x, y: int] =
+  ## Returns the center point of the emergency button.
+  let button = bot.sim.gameMap.button
+  (
+    button.x + button.w div 2,
+    button.y + button.h div 2
+  )
+
+proc ghostWanderReady(bot: Bot): bool =
+  ## Returns true when a ghost should wander after finishing tasks.
+  bot.isGhost and bot.buttonFallbackReady()
+
+proc chooseGhostWanderGoal(bot: var Bot) =
+  ## Chooses a random ghost wander point near the emergency button.
+  let center = bot.buttonCenter()
+  var
+    dx = bot.rng.rand(GhostWanderRadius * 2) - GhostWanderRadius
+    dy = bot.rng.rand(GhostWanderRadius * 2) - GhostWanderRadius
+  if abs(dx) + abs(dy) <= GhostWanderArrivalRadius:
+    dx = GhostWanderRadius div 2
+  bot.ghostWanderGoalX = clamp(center.x + dx, 0, MapWidth - CollisionW)
+  bot.ghostWanderGoalY = clamp(center.y + dy, 0, MapHeight - CollisionH)
+  bot.ghostWanderGoalSet = true
+  bot.ghostWanderNextTick = bot.frameTick + GhostWanderIntervalTicks
+
+proc fakeTargetCount(bot: Bot): int =
+  ## Returns the number of imposter fake target areas.
+  bot.sim.tasks.len + 1
+
+proc fakeTargetGoalFor(
+  bot: Bot,
+  index: int
+): tuple[found: bool, index: int, x: int, y: int, name: string, state: TaskState] =
+  ## Returns an imposter fake goal for a task or the button.
+  if index == bot.sim.tasks.len:
+    return bot.buttonGoal()
+  bot.taskGoalFor(index, TaskMaybe)
+
+proc randomFakeTargetIndex(bot: var Bot): int =
+  ## Returns a random imposter fake target index.
+  let count = bot.fakeTargetCount()
+  if count == 0:
+    return -1
+  bot.rng.rand(count - 1)
+
+proc fakeTargetCenter(
+  bot: Bot,
+  index: int
+): tuple[x: int, y: int] =
+  ## Returns the center point for an imposter fake target.
+  if index == bot.sim.tasks.len:
+    let button = bot.sim.gameMap.button
+    return (button.x + button.w div 2, button.y + button.h div 2)
+  bot.sim.tasks[index].taskCenter()
+
+proc farthestFakeTargetIndexFrom(bot: Bot, originX, originY: int): int =
+  ## Returns the fake target farthest from an origin point.
+  var bestDistance = low(int)
+  result = -1
+  for i in 0 ..< bot.fakeTargetCount():
+    let center = bot.fakeTargetCenter(i)
+    let distance = heuristic(originX, originY, center.x, center.y)
+    if distance > bestDistance:
+      bestDistance = distance
+      result = i
+
+proc farthestFakeTargetIndex(bot: Bot): int =
+  ## Returns the fake target farthest from the current player location.
+  bot.farthestFakeTargetIndexFrom(bot.playerWorldX(), bot.playerWorldY())
+
+proc safeHidePointCount(bot: Bot): int =
+  ## Returns the number of known crewmate hiding points.
+  SafeHidePoints.len
+
+proc safeHideGoalFor(
+  bot: Bot,
+  index: int
+): tuple[found: bool, index: int, x: int, y: int, name: string, state: TaskState] =
+  ## Returns a reachable goal near one safe hiding marker.
+  if index < 0 or index >= SafeHidePoints.len:
+    return
+  let point = SafeHidePoints[index]
+  if bot.passable(point.x, point.y):
+    return (
+      true,
+      index,
+      point.x,
+      point.y,
+      "Safe hide " & $(index + 1),
+      TaskMaybe
+    )
+  var
+    bestDistance = high(int)
+    bestX = 0
+    bestY = 0
+  for y in max(0, point.y - SafeHideSearchRadius) ..
+      min(MapHeight - 1, point.y + SafeHideSearchRadius):
+    for x in max(0, point.x - SafeHideSearchRadius) ..
+        min(MapWidth - 1, point.x + SafeHideSearchRadius):
+      if not bot.passable(x, y):
+        continue
+      let distance = heuristic(point.x, point.y, x, y)
+      if distance < bestDistance:
+        bestDistance = distance
+        bestX = x
+        bestY = y
+  if bestDistance == high(int):
+    return
+  (
+    true,
+    index,
+    bestX,
+    bestY,
+    "Safe hide " & $(index + 1),
+    TaskMaybe
+  )
+
+proc closestSafeHidePointIndex(bot: Bot): int =
+  ## Returns the safe hiding point closest to the current player.
+  let count = bot.safeHidePointCount()
+  if count == 0:
+    return -1
+  let
+    px = bot.playerWorldX()
+    py = bot.playerWorldY()
+  var bestDistance = high(int)
+  result = 0
+  for i in 0 ..< count:
+    let
+      point = SafeHidePoints[i]
+      distance = heuristic(px, py, point.x, point.y)
+    if distance < bestDistance:
+      bestDistance = distance
+      result = i
+
+proc preferredSafeHidePointIndex(bot: Bot): int =
+  ## Returns the stable safe hiding point for this bot.
+  let count = bot.safeHidePointCount()
+  if count == 0:
+    return -1
+  if bot.selfColorIndex >= 0:
+    return bot.selfColorIndex mod count
+  bot.closestSafeHidePointIndex()
+
+proc currentSafeHideGoal(
+  bot: Bot
+): tuple[found: bool, index: int, x: int, y: int, name: string, state: TaskState] =
+  ## Returns this bot's preferred reachable safe hiding goal.
+  let count = bot.safeHidePointCount()
+  if count == 0:
+    return
+  let startIndex = bot.preferredSafeHidePointIndex()
+  if startIndex < 0:
+    return
+  for attempt in 0 ..< count:
+    let index = (startIndex + attempt) mod count
+    result = bot.safeHideGoalFor(index)
+    if result.found:
+      return
+
+proc escapeLoopCount(bot: Bot): int =
+  ## Returns the number of known crewmate escape loops.
+  EscapeLoopStarts.len
+
+proc escapeLoopPointCount(bot: Bot, loopIndex: int): int =
+  ## Returns the number of points in one escape loop.
+  if loopIndex < 0 or loopIndex >= bot.escapeLoopCount():
+    return 0
+  EscapeLoopLengths[loopIndex]
+
+proc escapeLoopPoint(
+  bot: Bot,
+  loopIndex,
+  pointIndex: int
+): tuple[x: int, y: int] =
+  ## Returns one escape loop point in fixed loop direction.
+  let
+    count = bot.escapeLoopPointCount(loopIndex)
+    index = (pointIndex mod count + count) mod count
+    flatIndex = EscapeLoopStarts[loopIndex] + index
+  EscapeLoopPoints[flatIndex]
+
+proc nextEscapeLoopPointIndex(bot: Bot, loopIndex, pointIndex: int): int =
+  ## Returns the next point in one escape loop.
+  let count = bot.escapeLoopPointCount(loopIndex)
+  if count == 0:
+    return -1
+  if pointIndex < 0 or pointIndex >= count:
+    return 0
+  (pointIndex + 1) mod count
+
+proc escapeLoopGoalFor(
+  bot: Bot,
+  loopIndex,
+  pointIndex: int
+): tuple[found: bool, index: int, x: int, y: int, name: string, state: TaskState] =
+  ## Returns a reachable goal near one escape loop marker.
+  if loopIndex < 0 or loopIndex >= bot.escapeLoopCount():
+    return
+  if pointIndex < 0 or pointIndex >= bot.escapeLoopPointCount(loopIndex):
+    return
+  let point = bot.escapeLoopPoint(loopIndex, pointIndex)
+  if bot.passable(point.x, point.y):
+    return (
+      true,
+      pointIndex,
+      point.x,
+      point.y,
+      "Escape loop " & $(loopIndex + 1) & "." & $(pointIndex + 1),
+      TaskMaybe
+    )
+  var
+    bestDistance = high(int)
+    bestX = 0
+    bestY = 0
+  for y in max(0, point.y - EscapeLoopSearchRadius) ..
+      min(MapHeight - 1, point.y + EscapeLoopSearchRadius):
+    for x in max(0, point.x - EscapeLoopSearchRadius) ..
+        min(MapWidth - 1, point.x + EscapeLoopSearchRadius):
+      if not bot.passable(x, y):
+        continue
+      let distance = heuristic(point.x, point.y, x, y)
+      if distance < bestDistance:
+        bestDistance = distance
+        bestX = x
+        bestY = y
+  if bestDistance == high(int):
+    return
+  (
+    true,
+    pointIndex,
+    bestX,
+    bestY,
+    "Escape loop " & $(loopIndex + 1) & "." & $(pointIndex + 1),
+    TaskMaybe
+  )
+
+proc closestEscapeLoopPoint(
+  bot: Bot
+): tuple[found: bool, loopIndex: int, pointIndex: int] =
+  ## Returns the nearest point on the nearest escape loop.
+  var bestDistance = high(int)
+  for loopIndex in 0 ..< bot.escapeLoopCount():
+    for pointIndex in 0 ..< bot.escapeLoopPointCount(loopIndex):
+      let point = bot.escapeLoopPoint(loopIndex, pointIndex)
+      let distance = heuristic(
+        bot.playerWorldX(),
+        bot.playerWorldY(),
+        point.x,
+        point.y
+      )
+      if distance < bestDistance:
+        bestDistance = distance
+        result = (true, loopIndex, pointIndex)
+
+proc activateEscapeLoop(bot: var Bot, colorIndex: int) =
+  ## Starts runaway mode from the nearest point of the nearest loop.
+  bot.activeHunterColor = colorIndex
+  let start = bot.closestEscapeLoopPoint()
+  if start.found:
+    bot.escapeLoopIndex = start.loopIndex
+    bot.escapeLoopPointIndex = start.pointIndex
+  else:
+    bot.escapeLoopIndex = -1
+    bot.escapeLoopPointIndex = -1
+  bot.clearPath()
+
+proc clearRunawayState(bot: var Bot) =
+  ## Clears all close-threat movement state.
+  bot.activeHunterColor = VoteUnknown
+  bot.moveAwayUntilTick = -1
+  bot.runawayUntilTick = -1
+  bot.escapeLoopIndex = -1
+  bot.escapeLoopPointIndex = -1
+  bot.clearPath()
+
+proc moveAwayActive(bot: Bot): bool =
+  ## Returns true while the bot should move directly away.
+  bot.role == RoleCrewmate and
+    not bot.isGhost and
+    bot.activeHunterColor != VoteUnknown and
+    bot.frameTick < bot.moveAwayUntilTick
+
+proc runawayActive(bot: Bot): bool =
+  ## Returns true while the bot should run an escape loop.
+  bot.role == RoleCrewmate and
+    not bot.isGhost and
+    bot.activeHunterColor != VoteUnknown and
+    bot.frameTick < bot.runawayUntilTick
+
+proc startMoveAway(bot: var Bot, colorIndex: int) =
+  ## Starts the direct move-away phase for one close player.
+  bot.activeHunterColor = colorIndex
+  bot.moveAwayUntilTick = bot.frameTick + MoveAwayTicks
+  bot.runawayUntilTick = -1
+  bot.escapeLoopIndex = -1
+  bot.escapeLoopPointIndex = -1
+  bot.clearPath()
+
+proc updateRunawayState(bot: var Bot) =
+  ## Updates close-threat move-away and escape-loop timers.
+  if bot.role != RoleCrewmate or
+      bot.isGhost or
+      not bot.emergencyButtonSpent() or
+      not bot.cooldownPastRunawayThreshold():
+    if bot.activeHunterColor != VoteUnknown:
+      bot.clearRunawayState()
+    return
+  let closeColor = bot.closestPlayerWithin(RunawayTriggerRadius)
+  if bot.runawayActive():
+    return
+  if bot.moveAwayActive():
+    if closeColor != VoteUnknown:
+      bot.activeHunterColor = closeColor
+    return
+  if bot.activeHunterColor != VoteUnknown and bot.moveAwayUntilTick >= 0:
+    if closeColor != VoteUnknown:
+      bot.activateEscapeLoop(closeColor)
+      bot.runawayUntilTick = bot.frameTick + RunawayLoopTicks
+      bot.moveAwayUntilTick = -1
+    else:
+      bot.clearRunawayState()
+    return
+  if bot.activeHunterColor != VoteUnknown and bot.runawayUntilTick >= 0:
+    if closeColor != VoteUnknown:
+      bot.startMoveAway(closeColor)
+    else:
+      bot.clearRunawayState()
+    return
+  if closeColor != VoteUnknown:
+    bot.startMoveAway(closeColor)
+
+proc currentEscapeLoopGoal(
+  bot: var Bot
+): tuple[found: bool, index: int, x: int, y: int, name: string, state: TaskState] =
+  ## Returns the current reachable escape loop goal.
+  if bot.escapeLoopIndex < 0 or
+      bot.escapeLoopIndex >= bot.escapeLoopCount():
+    let start = bot.closestEscapeLoopPoint()
+    if not start.found:
+      return
+    bot.escapeLoopIndex = start.loopIndex
+    bot.escapeLoopPointIndex = start.pointIndex
+  let count = bot.escapeLoopPointCount(bot.escapeLoopIndex)
+  if count == 0:
+    return
+  if bot.escapeLoopPointIndex < 0 or bot.escapeLoopPointIndex >= count:
+    bot.escapeLoopPointIndex = 0
+  for attempt in 0 ..< count:
+    result = bot.escapeLoopGoalFor(
+      bot.escapeLoopIndex,
+      bot.escapeLoopPointIndex
+    )
+    if result.found:
+      return
+    bot.escapeLoopPointIndex = bot.nextEscapeLoopPointIndex(
+      bot.escapeLoopIndex,
+      bot.escapeLoopPointIndex
+    )
+
+proc prowlPointCount(bot: Bot): int =
+  ## Returns the number of imposter prowl points.
+  ProwlPoints.len
+
+proc prowlGoalFor(
+  bot: Bot,
+  index: int
+): tuple[found: bool, index: int, x: int, y: int, name: string, state: TaskState] =
+  ## Returns a reachable goal near one prowl marker.
+  if index < 0 or index >= ProwlPoints.len:
+    return
+  let point = ProwlPoints[index]
+  if bot.isGhost or bot.passable(point.x, point.y):
+    return (
+      true,
+      index,
+      point.x,
+      point.y,
+      "Prowl " & $(index + 1),
+      TaskMaybe
+    )
+  var
+    bestDistance = high(int)
+    bestX = 0
+    bestY = 0
+  for y in max(0, point.y - ProwlPointSearchRadius) ..
+      min(MapHeight - 1, point.y + ProwlPointSearchRadius):
+    for x in max(0, point.x - ProwlPointSearchRadius) ..
+        min(MapWidth - 1, point.x + ProwlPointSearchRadius):
+      if not bot.passable(x, y):
+        continue
+      let distance = heuristic(point.x, point.y, x, y)
+      if distance < bestDistance:
+        bestDistance = distance
+        bestX = x
+        bestY = y
+  if bestDistance == high(int):
+    return
+  (
+    true,
+    index,
+    bestX,
+    bestY,
+    "Prowl " & $(index + 1),
+    TaskMaybe
+  )
+
+proc nextProwlPointIndex(bot: Bot, index: int): int =
+  ## Returns the next prowl point index in path order.
+  let count = bot.prowlPointCount()
+  if count == 0:
+    return -1
+  if index < 0 or index >= count:
+    return 0
+  (index + 1) mod count
+
+proc closestProwlPointIndex(bot: Bot): int =
+  ## Returns the prowl point closest to the current player.
+  let count = bot.prowlPointCount()
+  if count == 0:
+    return -1
+  let
+    px = bot.playerWorldX()
+    py = bot.playerWorldY()
+  var bestDistance = high(int)
+  result = 0
+  for i in 0 ..< count:
+    let
+      point = ProwlPoints[i]
+      distance = heuristic(px, py, point.x, point.y)
+    if distance < bestDistance:
+      bestDistance = distance
+      result = i
+
+proc currentProwlGoal(
+  bot: var Bot
+): tuple[found: bool, index: int, x: int, y: int, name: string, state: TaskState] =
+  ## Returns the current reachable prowl goal in path order.
+  let count = bot.prowlPointCount()
+  if count == 0:
+    return
+  if bot.imposterProwlIndex < 0 or bot.imposterProwlIndex >= count:
+    bot.imposterProwlIndex = bot.closestProwlPointIndex()
+  for attempt in 0 ..< count:
+    result = bot.prowlGoalFor(bot.imposterProwlIndex)
+    if result.found:
+      return
+    bot.imposterProwlIndex = bot.nextProwlPointIndex(
+      bot.imposterProwlIndex
+    )
+
+proc visibleCrewmateWorld(
+  bot: Bot,
+  crewmate: CrewmateMatch
+): tuple[x: int, y: int] =
+  ## Converts one visible crewmate match into world coordinates.
+  (
+    bot.cameraX + crewmate.x + SpriteDrawOffX,
+    bot.cameraY + crewmate.y + SpriteDrawOffY
+  )
+
+proc chasePointNear(
+  bot: Bot,
+  x,
+  y,
+  fallbackX,
+  fallbackY: int
+): tuple[x: int, y: int] =
+  ## Returns a nearby passable chase point for one predicted position.
+  let
+    targetX = clamp(x, 0, MapWidth - CollisionW)
+    targetY = clamp(y, 0, MapHeight - CollisionH)
+  if bot.passable(targetX, targetY):
+    return (targetX, targetY)
+  var bestDistance = high(int)
+  result = (fallbackX, fallbackY)
+  for yy in max(0, targetY - ChasePredictionSearchRadius) ..
+      min(MapHeight - CollisionH, targetY + ChasePredictionSearchRadius):
+    for xx in max(0, targetX - ChasePredictionSearchRadius) ..
+        min(MapWidth - CollisionW, targetX + ChasePredictionSearchRadius):
+      if not bot.passable(xx, yy):
+        continue
+      let distance = heuristic(targetX, targetY, xx, yy)
+      if distance < bestDistance:
+        bestDistance = distance
+        result = (xx, yy)
+
+proc predictedTrackWorld(
+  bot: Bot,
+  track: PlayerTrack
+): tuple[x: int, y: int] =
+  ## Returns the predicted chase point for a tracked player.
+  if track.colorIndex < 0 or track.colorIndex >= PlayerColorCount:
+    return bot.chasePointNear(track.x, track.y, track.x, track.y)
+  bot.chasePointNear(
+    track.x + bot.playerVelocityX[track.colorIndex] * ChaseLeadTicks,
+    track.y + bot.playerVelocityY[track.colorIndex] * ChaseLeadTicks,
+    track.x,
+    track.y
+  )
+
+proc playerTrackDistanceFrom(
+  track: PlayerTrack,
+  x,
+  y: int
+): int =
+  ## Returns one tracked player's distance from a world point.
+  heuristic(x, y, track.x, track.y)
+
+proc nearestCrewmateFrom(
+  bot: Bot,
+  x,
+  y: int
+): tuple[found: bool, track: PlayerTrack, distance: int] =
+  ## Returns the nearest tracked non-imposter crewmate from one world point.
+  result.distance = high(int)
+  for colorIndex in 0 ..< PlayerColorCount:
+    if colorIndex == bot.selfColorIndex:
+      continue
+    if bot.knownImposterColor(colorIndex):
+      continue
+    let world = bot.trackedPlayerWorld(colorIndex)
+    if not world.found:
+      continue
+    let track = PlayerTrack(colorIndex: colorIndex, x: world.x, y: world.y)
+    let distance = track.playerTrackDistanceFrom(x, y)
+    if distance < result.distance:
+      result = (true, track, distance)
+
+proc imposterClaimsCrewmate(
+  bot: Bot,
+  imposter,
+  candidate: PlayerTrack,
+  selfDistance: int
+): bool =
+  ## Returns true when another imposter has first claim on a crewmate.
+  let claimed = bot.nearestCrewmateFrom(imposter.x, imposter.y)
+  claimed.found and
+    claimed.track.colorIndex == candidate.colorIndex and
+    claimed.distance <= selfDistance
+
+proc nearestUnclaimedCrewmate(
+  bot: Bot
+): tuple[found: bool, track: PlayerTrack] =
+  ## Returns the nearest tracked crewmate not claimed by another imposter.
+  let
+    selfX = bot.playerWorldX()
+    selfY = bot.playerWorldY()
+  var bestDistance = high(int)
+  for colorIndex in 0 ..< PlayerColorCount:
+    if colorIndex == bot.selfColorIndex:
+      continue
+    if bot.knownImposterColor(colorIndex):
+      continue
+    let world = bot.trackedPlayerWorld(colorIndex)
+    if not world.found:
+      continue
+    let track = PlayerTrack(colorIndex: colorIndex, x: world.x, y: world.y)
+    let selfDistance = track.playerTrackDistanceFrom(selfX, selfY)
+    var claimed = false
+    for imposterColor in 0 ..< PlayerColorCount:
+      if imposterColor == bot.selfColorIndex:
+        continue
+      if not bot.knownImposterColor(imposterColor):
+        continue
+      let imposterWorld = bot.trackedPlayerWorld(imposterColor)
+      if not imposterWorld.found:
+        continue
+      let imposter = PlayerTrack(
+        colorIndex: imposterColor,
+        x: imposterWorld.x,
+        y: imposterWorld.y
+      )
+      if bot.imposterClaimsCrewmate(imposter, track, selfDistance):
+        claimed = true
+        break
+    if claimed:
+      continue
+    if selfDistance < bestDistance:
+      bestDistance = selfDistance
+      result = (true, track)
+
+proc visibleBodyWorld(bot: Bot, body: BodyMatch): tuple[x: int, y: int] =
+  ## Converts one visible body match into world coordinates.
+  (
+    bot.cameraX + body.x + SpriteDrawOffX,
+    bot.cameraY + body.y + SpriteDrawOffY
+  )
+
+proc nearestBody(bot: Bot): tuple[found: bool, x: int, y: int] =
+  ## Returns the nearest visible body in world coordinates.
+  var bestDistance = high(int)
+  for body in bot.visibleBodies:
+    let world = bot.visibleBodyWorld(body)
+    let distance = heuristic(
+      bot.playerWorldX(),
+      bot.playerWorldY(),
+      world.x,
+      world.y
+    )
+    if distance < bestDistance:
+      bestDistance = distance
+      result = (true, world.x, world.y)
+
+proc sameBody(ax, ay, bx, by: int): bool =
+  ## Returns true when two body sightings are probably the same body.
+  if bx == low(int) or by == low(int):
+    return false
+  heuristic(ax, ay, bx, by) <= BodySearchRadius + 4
+
+proc killerScoreForDistance(distance: int): int =
+  ## Returns the score added for a player near a new body.
+  if distance <= 1:
+    return KillerEvidenceRadius
+  max(0, KillerEvidenceRadius - distance)
+
+proc addKillerScoresForBody(bot: var Bot, body: BodyMatch) =
+  ## Adds distance-weighted killer evidence for one new body.
+  let world = bot.visibleBodyWorld(body)
+  for colorIndex in 0 ..< PlayerColorCount:
+    if colorIndex == bot.selfColorIndex:
+      continue
+    if colorIndex == body.colorIndex:
+      continue
+    let track = bot.trackedPlayerWorld(colorIndex)
+    if not track.found:
+      continue
+    let
+      dx = track.x + CollisionW div 2 - (world.x + CollisionW div 2)
+      dy = track.y + CollisionH div 2 - (world.y + CollisionH div 2)
+      distance = max(abs(dx), abs(dy))
+      score = killerScoreForDistance(distance)
+    if score > 0:
+      bot.killerScores[colorIndex] += score
+
+proc rememberKillEvidence(bot: var Bot, body: BodyMatch) =
+  ## Records player scores when a new body first appears.
+  let world = bot.visibleBodyWorld(body)
+  if sameBody(world.x, world.y, bot.lastKillBodyX, bot.lastKillBodyY):
+    return
+  bot.lastKillBodyX = world.x
+  bot.lastKillBodyY = world.y
+  bot.addKillerScoresForBody(body)
+
+proc updateKillEvidence(bot: var Bot) =
+  ## Updates kill evidence when bodies newly appear on screen.
+  if bot.interstitial or bot.role == RoleImposter:
+    return
+  if bot.visibleBodies.len == 0:
+    bot.hadVisibleBody = false
+    return
+  if bot.hadVisibleBody:
+    return
+  for body in bot.visibleBodies:
+    bot.rememberKillEvidence(body)
+  bot.hadVisibleBody = true
+
+proc bodySuspectColorNear(bot: Bot, x, y: int): int =
+  ## Returns the nearest living crewmate color within body suspicion range.
+  var bestDistance = high(int)
+  result = VoteUnknown
+  for crewmate in bot.visibleCrewmates:
+    if crewmate.colorIndex < 0 or
+        crewmate.colorIndex >= PlayerColorNames.len:
+      continue
+    if crewmate.colorIndex == bot.selfColorIndex:
+      continue
+    if bot.knownImposterColor(crewmate.colorIndex):
+      continue
+    let
+      world = bot.visibleCrewmateWorld(crewmate)
+      dx = world.x + CollisionW div 2 - (x + CollisionW div 2)
+      dy = world.y + CollisionH div 2 - (y + CollisionH div 2)
+      distance = dx * dx + dy * dy
+    if distance > BodySuspectRange * BodySuspectRange:
+      continue
+    if distance < bestDistance:
+      bestDistance = distance
+      result = crewmate.colorIndex
+
+proc suspectedColorFrom(
+  bot: Bot,
+  ticks: openArray[int]
+): tuple[found: bool, name: string, tick: int, colorIndex: int] =
+  ## Returns the most recently seen valid crewmate color.
+  var bestTick = 0
+  for i, tick in ticks:
+    if i == bot.selfColorIndex:
+      continue
+    if bot.knownImposterColor(i):
+      continue
+    if tick > bestTick and i < PlayerColorNames.len:
+      bestTick = tick
+      result = (true, playerColorName(i), tick, i)
+
+proc suspectedColor(
+  bot: Bot
+): tuple[found: bool, name: string, tick: int, colorIndex: int] =
+  ## Returns the most recently seen crewmate color.
+  bot.suspectedColorFrom(bot.lastSeenTicks)
+
+proc bodySuspectedColor(
+  bot: Bot
+): tuple[found: bool, name: string, tick: int, colorIndex: int] =
+  ## Returns the most recently seen crewmate around the reported body.
+  result = bot.suspectedColorFrom(bot.bodySeenTicks)
+  if not result.found:
+    result = bot.suspectedColor()
+
+proc suspectSummary(bot: Bot): string =
+  ## Returns a short debug summary for the current suspect.
+  let suspect = bot.suspectedColor()
+  if not suspect.found:
+    return "none"
+  suspect.name & " seen=" & $suspect.tick
+
+proc bodyRoomMessage(bot: Bot, x, y: int): string =
+  ## Builds a short body-location summary for voting context.
+  let room = bot.roomAt(x + CollisionW div 2, y + CollisionH div 2)
+  result =
+    if not room.found:
+      "body"
+    elif room.inside:
+      "body in " & chatRoomName(room.name)
+    else:
+      "body near " & chatRoomName(room.name)
+  if bot.bodySusColor != VoteUnknown:
+    result.add(" sus ")
+    result.add(playerColorName(bot.bodySusColor))
+
+proc rememberBodySuspects(bot: var Bot) =
+  ## Stores the current seen-player ticks for voting after a body report.
+  for i in 0 ..< bot.bodySeenTicks.len:
+    bot.bodySeenTicks[i] = bot.lastSeenTicks[i]
+
+proc queueBodySeen(bot: var Bot, x, y: int) =
+  ## Stores the room for a discovered body until voting opens.
+  if sameBody(x, y, bot.lastBodySeenX, bot.lastBodySeenY):
+    return
+  bot.lastBodySeenX = x
+  bot.lastBodySeenY = y
+  bot.rememberBodySuspects()
+  bot.bodySusColor = bot.bodySuspectColorNear(x, y)
+
+proc queueBodyReport(bot: var Bot, x, y: int) =
+  ## Stores the room for a reported body until voting opens.
+  if sameBody(x, y, bot.lastBodyReportX, bot.lastBodyReportY):
+    return
+  bot.lastBodyReportX = x
+  bot.lastBodyReportY = y
+  bot.rememberBodySuspects()
+  bot.bodySusColor = bot.bodySuspectColorNear(x, y)
+
+proc voteTargetName(bot: Bot, target: int): string =
+  ## Returns a short display name for a voting target.
+  if target == VoteSkip or
+      (bot.votePlayerCount > 0 and target == bot.votePlayerCount):
+    return "skip"
+  if target >= 0 and target < bot.votePlayerCount:
+    return playerColorName(bot.voteSlots[target].colorIndex)
+  "unknown"
+
+proc skipVoteCursor(bot: Bot): int =
+  ## Returns the skip slot on the voting row.
+  if bot.votePlayerCount > 0:
+    bot.votePlayerCount
+  else:
+    VoteUnknown
+
+proc voteSummary(bot: Bot): string =
+  ## Returns a compact summary of parsed votes.
+  for i, choice in bot.voteChoices:
+    if choice == VoteUnknown:
+      continue
+    if result.len > 0:
+      result.add(", ")
+    result.add(playerColorName(i))
+    result.add("->")
+    result.add(bot.voteTargetName(choice))
+  if result.len == 0:
+    result = "none"
+
+proc compareEvidence(a, b: EvidenceEntry): int =
+  ## Sorts evidence entries by score, then by color order.
+  result = cmp(b.score, a.score)
+  if result == 0:
+    result = cmp(a.colorIndex, b.colorIndex)
+
+proc playerColorLogName(colorIndex: int): string =
+  ## Returns a capitalized player color for logs.
+  playerColorName(colorIndex).capitalizeAscii()
+
+proc evidenceSummary(
+  title: string,
+  scores: openArray[int],
+  minScore = 1
+): string =
+  ## Returns one sorted evidence summary line.
+  var entries: seq[EvidenceEntry]
+  for colorIndex, score in scores:
+    if score >= minScore:
+      entries.add(EvidenceEntry(colorIndex: colorIndex, score: score))
+  if entries.len == 0:
+    return ""
+  entries.sort(compareEvidence)
+  result = title & ": "
+  for i, entry in entries:
+    if i > 0:
+      result.add(", ")
+    result.add(playerColorLogName(entry.colorIndex))
+    result.add(" ")
+    result.add($entry.score)
+
+proc reporterScores(bot: Bot): array[PlayerColorCount, int] =
+  ## Returns one point for each player known to have reported a body.
+  for colorIndex, reported in bot.bodyReportColors:
+    if reported:
+      result[colorIndex] = 1
+
+proc susScores(bot: Bot): array[PlayerColorCount, int] =
+  ## Returns derived sus scores from harmful and helpful evidence.
+  let reporters = bot.reporterScores()
+  for colorIndex in 0 ..< PlayerColorCount:
+    result[colorIndex] =
+      bot.stalkerScores[colorIndex] +
+      bot.killerScores[colorIndex] * 10 -
+      bot.taskerScores[colorIndex] * 10 -
+      reporters[colorIndex] * 150 +
+      bot.votedAgainstScores[colorIndex] * VotedAgainstSusWeight
+
+proc votingEvidenceText(bot: Bot): string =
+  ## Returns the compact evidence lines for this meeting.
+  if bot.role == RoleImposter:
+    return ""
+  template addLine(line: string) =
+    if line.len > 0:
+      if result.len > 0:
+        result.add('\n')
+      result.add(line)
+  addLine(evidenceSummary("stalkers", bot.stalkerScores))
+  addLine(evidenceSummary("killers", bot.killerScores))
+  addLine(evidenceSummary("taskers", bot.taskerScores))
+  addLine(evidenceSummary("reporters", bot.reporterScores()))
+  addLine(evidenceSummary("voted against", bot.votedAgainstScores))
+  addLine(evidenceSummary("sus", bot.susScores(), SusVoteMinScore))
+
+proc printVotingEvidence(bot: var Bot) =
+  ## Prints compact sorted evidence once per meeting.
+  if bot.voteEvidenceLogged:
+    return
+  bot.voteEvidenceLogged = true
+  let evidence = bot.votingEvidenceText()
+  if evidence.len > 0:
+    echo evidence
+
+proc envOrFile(name, fileName: string): string =
+  ## Returns an environment value or the stripped content of a file env.
+  result = getEnv(name).strip()
+  if result.len > 0:
+    return
+  let path = getEnv(fileName).strip()
+  if path.len > 0 and fileExists(path):
+    result = readFile(path).strip()
+
+proc bedrockVotingToken(): string =
+  ## Returns the configured Bedrock bearer token for voting.
+  result = envOrFile(
+    "AWS_BEARER_TOKEN_BEDROCK",
+    "AWS_BEARER_TOKEN_BEDROCK_FILE"
+  )
+  if result.len == 0:
+    result = envOrFile("BEDROCK_KEY", "BEDROCK_API_KEY_FILE")
+
+proc votingLlmEnabled(): bool =
+  ## Returns true when a Bedrock token is configured for meeting chat.
+  bedrockVotingToken().len > 0
+
+proc configureVotingBedrock(): bool =
+  ## Copies voting Bedrock env and file settings into the shared adapter.
+  let token = bedrockVotingToken()
+  if token.len == 0:
+    return false
+  bedrockAi.bedrockKey = token
+  let model = getEnv(
+    "BEDROCK_CLAUDE_MODEL_ID",
+    getEnv("BEDROCK_MODEL")
+  ).strip()
+  if model.len > 0:
+    bedrockAi.bedrockModel = model
+  let region = getEnv(
+    "AWS_REGION",
+    getEnv("AWS_DEFAULT_REGION")
+  ).strip()
+  if region.len > 0:
+    bedrockAi.bedrockRegion = region
+  true
+
+proc jsonObjectText(text: string): string =
+  ## Extracts the outer JSON object from a model response.
+  let
+    start = text.find('{')
+    stop = text.rfind('}')
+  if start >= 0 and stop >= start:
+    return text[start .. stop]
+  text
+
+proc nodeString(node: JsonNode, key: string): string =
+  ## Returns one JSON string field or an empty string.
+  if node.kind != JObject or not node.hasKey(key):
+    return ""
+  let child = node[key]
+  if child.kind == JString:
+    return child.getStr()
+  ""
+
+proc colorIndexFromName(name: string): int =
+  ## Parses one player color name.
+  let normalized = name.normalizeChatText()
+  for i, colorName in PlayerColorNames:
+    if colorName.normalizeChatText() == normalized:
+      return i
+  VoteUnknown
+
+proc cleanLlmChatMessage(text: string): string =
+  ## Cleans one model chat message into short in-game chat.
+  proc hasDigit(word: string): bool =
+    for ch in word:
+      if ch >= '0' and ch <= '9':
+        return true
+
+  proc normalizedWord(word: string): string =
+    for ch in word:
+      if ch >= 'a' and ch <= 'z':
+        result.add ch
+      elif ch >= 'A' and ch <= 'Z':
+        result.add ch.toLowerAscii()
+
+  proc internalWord(word: string): bool =
+    case word.normalizedWord()
+    of "score", "scores", "metric", "metrics", "point", "points",
+        "stalker", "stalkers", "killer", "killers", "tasker", "taskers",
+        "reporter", "reporters", "evidence", "total", "number", "numbers",
+        "internal", "private", "value", "values", "rating", "ratings",
+        "high", "highest", "extremely", "hard", "but":
+      true
+    else:
+      false
+
+  proc trailingWord(word: string): bool =
+    case word.normalizedWord()
+    of "and", "or", "because", "with", "to", "from":
+      true
+    else:
+      false
+
+  proc casedWord(word, replacement: string): string =
+    result = replacement
+    let startsUpper =
+      word.len > 0 and word[0] >= 'A' and word[0] <= 'Z'
+    if startsUpper and result.len > 0:
+      result[0] = result[0].toUpperAscii()
+
+  proc publicWord(word: string): string =
+    case word.normalizedWord()
+    of "stalk":
+      word.casedWord("follow")
+    of "stalks":
+      word.casedWord("follows")
+    of "stalked":
+      word.casedWord("followed")
+    of "stalking":
+      word.casedWord("following")
+    else:
+      word
+
+  proc addWord(words: var seq[string], word: string) =
+    if word.len == 0 or word.hasDigit():
+      return
+    if word.internalWord():
+      if words.len > 0 and words[^1].normalizedWord() == "has":
+        words.setLen(words.len - 1)
+      return
+    let visible = word.publicWord()
+    if words.len > 0 and words[^1].normalizedWord() == visible.normalizedWord():
+      return
+    words.add visible
+
+  var words: seq[string]
+  var word = ""
+  for ch in sim.cleanChatMessage(text):
+    if ch <= ' ':
+      words.addWord(word)
+      word.setLen(0)
+    else:
+      word.add ch
+    if words.len >= 16:
+      break
+  if words.len < 16:
+    words.addWord(word)
+  while words.len > 0 and words[^1].trailingWord():
+    words.setLen(words.len - 1)
+  sim.cleanChatMessage(words.join(" "))
+
+proc parseVotingLlmAction(
+  text: string
+): tuple[ok: bool, action: VoteLlmAction] =
+  ## Parses one JSON voting action returned by the model.
+  result.action = VoteLlmAction(kind: VoteLlmNone, targetColor: VoteUnknown)
+  let raw = text.strip()
+  if raw.len == 0:
+    return
+  let node = parseJson(raw.jsonObjectText())
+  let actionText =
+    if node.nodeString("action").len > 0:
+      node.nodeString("action")
+    else:
+      node.nodeString("type")
+  result.action.raw = raw
+  result.action.reason = node.nodeString("reason").strip()
+  case actionText.normalizeChatText()
+  of "say", "chat", "speak":
+    result.action.kind = VoteLlmSay
+    result.action.message = node.nodeString("message").cleanLlmChatMessage()
+    if result.action.message.len == 0:
+      return
+  of "wait", "listen":
+    result.action.kind = VoteLlmWait
+  of "vote":
+    result.action.kind = VoteLlmVote
+    result.action.targetColor = node.nodeString("target").colorIndexFromName()
+    if result.action.targetColor == VoteUnknown:
+      return
+  else:
+    return
+  result.ok = true
+
+proc scoreObject(
+  bot: Bot,
+  scores: openArray[int]
+): JsonNode =
+  ## Builds a JSON object of scores for current voting players.
+  result = newJObject()
+  for i in 0 ..< bot.votePlayerCount:
+    let colorIndex = bot.voteSlots[i].colorIndex
+    if colorIndex >= 0 and colorIndex < scores.len:
+      result[playerColorName(colorIndex)] = %scores[colorIndex]
+
+proc chatLinesJson(lines: openArray[VoteChatLine]): JsonNode =
+  ## Builds JSON for visible voting chat lines.
+  result = newJArray()
+  for line in lines:
+    var item = newJObject()
+    item["speaker"] = %playerColorName(line.speakerColor)
+    item["text"] = %line.text
+    result.add item
+
+proc playersJson(bot: Bot): JsonNode =
+  ## Builds JSON for current voting slots.
+  result = newJArray()
+  for i in 0 ..< bot.votePlayerCount:
+    let colorIndex = bot.voteSlots[i].colorIndex
+    var item = newJObject()
+    item["slot"] = %i
+    item["color"] = %playerColorName(colorIndex)
+    item["alive"] = %bot.voteSlots[i].alive
+    item["self"] = %(i == bot.voteSelfSlot)
+    if colorIndex >= 0 and colorIndex < bot.voteChoices.len:
+      item["visible_vote"] = %bot.voteTargetName(bot.voteChoices[colorIndex])
+    result.add item
+
+proc knownImpostersJson(bot: Bot): JsonNode =
+  ## Builds JSON for known imposter teammate colors.
+  result = newJArray()
+  for i, known in bot.knownImposters:
+    if known:
+      result.add %playerColorName(i)
+
+proc hasSelfReportedBody(bot: Bot): bool =
+  ## Returns true when this bot reported a body for this meeting.
+  bot.lastBodyReportX != low(int) and bot.lastBodyReportY != low(int)
+
+proc votingObservationJson(bot: Bot): JsonNode =
+  ## Builds the full voting observation shown to the LLM.
+  let
+    sus = bot.susScores()
+    selfReportedBody = bot.hasSelfReportedBody()
+  result = newJObject()
+  result["role"] = %bot.role.roleName()
+  result["self_color"] = %playerColorName(bot.selfColorIndex)
+  result["room"] = %bot.roomName()
+  result["meeting_call_kind"] = %($bot.meetingCallKind)
+  result["meeting_caller"] = %playerColorName(bot.meetingCallCallerColor)
+  result["meeting_body"] = %playerColorName(bot.meetingCallBodyColor)
+  result["body_sus_color"] = %playerColorName(bot.bodySusColor)
+  result["said_something"] = %bot.voteSaidSomething
+  result["say_count"] = %bot.voteLlmSayCount
+  result["min_say_count"] = %VoteLlmMinSayCount
+  result["self_reported_body"] = %selfReportedBody
+  if selfReportedBody:
+    result["reported_body_x"] = %bot.lastBodyReportX
+    result["reported_body_y"] = %bot.lastBodyReportY
+    result["reported_body_summary"] =
+      %bot.bodyRoomMessage(bot.lastBodyReportX, bot.lastBodyReportY)
+    result["reported_body_sus_color"] =
+      %playerColorName(bot.bodySusColor)
+  result["known_imposters"] = bot.knownImpostersJson()
+  result["players"] = bot.playersJson()
+  result["visible_votes"] = %bot.voteSummary()
+  result["chat_lines"] = chatLinesJson(bot.voteChatLines)
+  result["current_chat_text"] = %bot.voteChatText
+  result["previous_chat_text"] = %bot.voteLlmPreviousChatText
+  result["current_sus_metrics_text"] = %bot.votingEvidenceText()
+  result["previous_sus_metrics_text"] = %bot.voteLlmPreviousSusText
+  result["pending_chat"] = %bot.pendingChat
+  var metrics = newJObject()
+  metrics["stalkers"] = bot.scoreObject(bot.stalkerScores)
+  metrics["killers"] = bot.scoreObject(bot.killerScores)
+  metrics["taskers"] = bot.scoreObject(bot.taskerScores)
+  metrics["reporters"] = bot.scoreObject(bot.reporterScores())
+  metrics["voted_against"] = bot.scoreObject(bot.votedAgainstScores)
+  metrics["sus"] = bot.scoreObject(sus)
+  result["sus_metrics"] = metrics
+
+proc validVotingTargetNames(bot: Bot): string =
+  ## Returns legal LLM vote target names for this vote.
+  for i in 0 ..< bot.votePlayerCount:
+    if not bot.voteTargetSafeForRole(i):
+      continue
+    if result.len > 0:
+      result.add(", ")
+    result.add(playerColorName(bot.voteSlots[i].colorIndex))
+  if result.len == 0:
+    result = "none"
+
+proc votingPromptText(bot: Bot): string =
+  ## Builds the current voting prompt sent to Bedrock.
+  "Current voting observation JSON:\n" &
+    $bot.votingObservationJson() &
+    "\n\nLegal vote target color names: " &
+    bot.validVotingTargetNames() &
+    "\nReturn one JSON object only."
+
+proc logVotingLlmPrompt(bot: Bot) =
+  ## Logs the current and previous sus snapshots for voting.
+  let currentSus = bot.votingEvidenceText()
+  echo "truecrew voting sus current:"
+  if currentSus.len > 0:
+    echo currentSus
+  else:
+    echo "none"
+  echo "truecrew voting sus previous:"
+  if bot.voteLlmPreviousSusText.len > 0:
+    echo bot.voteLlmPreviousSusText
+  else:
+    echo "none"
+
+proc updateVotingLlmSnapshots(
+  bot: var Bot,
+  hadVoting: bool,
+  previousChat,
+  previousSus: string
+) =
+  ## Updates LLM prompt snapshots after parsing one voting frame.
+  bot.voteLlmPreviousChatText = previousChat
+  bot.voteLlmPreviousSusText = previousSus
+  if not hadVoting:
+    bot.voteLlmAction = VoteLlmAction(
+      kind: VoteLlmNone,
+      targetColor: VoteUnknown
+    )
+    bot.voteLlmWaiting = false
+    bot.voteLlmNeedsDecision = true
+    bot.voteLlmPromptChatText = ""
+    bot.voteLlmPromptSusText = ""
+    return
+  if bot.voteLlmWaiting:
+    bot.voteLlmNeedsDecision = true
+
+proc logSendingToLlm(
+  messages: openArray[bedrockAi.ConversationMessage]
+) =
+  ## Logs the full prompt sent to the voting LLM.
+  echo "sending to llm:"
+  for message in messages:
+    echo message.role, ":"
+    echo message.content
+
+proc callVotingLlm(bot: var Bot): bool =
+  ## Calls Bedrock for one voting action when credentials are configured.
+  if not configureVotingBedrock():
+    echo "truecrew voting llm skipped: no Bedrock token configured"
+    echo "set AWS_BEARER_TOKEN_BEDROCK_FILE or AWS_BEARER_TOKEN_BEDROCK"
+    return false
+  bot.logVotingLlmPrompt()
+  var messages = @[
+    bedrockAi.ConversationMessage(role: "system", content: VotingPrompt),
+    bedrockAi.ConversationMessage(role: "user", content: bot.votingPromptText())
+  ]
+  logSendingToLlm(messages)
+  var reply = bedrockAi.talkToAI(messages)
+  echo "truecrew voting llm raw: ", reply
+  var parsed = parseVotingLlmAction(reply)
+  let needsMoreChat = bot.voteLlmSayCount < VoteLlmMinSayCount
+  if parsed.ok and
+      (not bot.voteSaidSomething or needsMoreChat) and
+      parsed.action.kind != VoteLlmSay:
+    echo "truecrew voting llm retry: needs more chat before vote"
+    messages.add bedrockAi.ConversationMessage(
+      role: "assistant",
+      content: reply
+    )
+    messages.add bedrockAi.ConversationMessage(
+      role: "user",
+      content:
+        "You have only sent " & $bot.voteLlmSayCount &
+        " chat messages this meeting. " &
+        "Saying too little disqualifies us. " &
+        "Return one say action now. Do not wait or vote."
+    )
+    logSendingToLlm(messages)
+    reply = bedrockAi.talkToAI(messages)
+    echo "truecrew voting llm raw: ", reply
+    parsed = parseVotingLlmAction(reply)
+  if not parsed.ok:
+    echo "truecrew voting llm fallback: invalid action"
+    return false
+  if (not bot.voteSaidSomething or needsMoreChat) and
+      parsed.action.kind != VoteLlmSay:
+    echo "truecrew voting llm fallback: missing required chat"
+    return false
+  bot.voteLlmAction = parsed.action
+  bot.voteLlmNeedsDecision = false
+  bot.voteLlmPromptChatText = bot.voteChatText
+  bot.voteLlmPromptSusText = bot.votingEvidenceText()
+  case parsed.action.kind
+  of VoteLlmSay:
+    bot.pendingChat = parsed.action.message
+    bot.voteLlmWaiting = true
+    echo "truecrew voting llm say: ", parsed.action.message
+  of VoteLlmWait:
+    bot.pendingChat = ""
+    bot.voteLlmWaiting = true
+    echo "truecrew voting llm wait: ", parsed.action.reason
+  of VoteLlmVote:
+    bot.pendingChat = ""
+    bot.voteLlmWaiting = false
+    echo "truecrew voting llm vote: ",
+      playerColorName(parsed.action.targetColor)
+  of VoteLlmNone:
+    discard
+  true
+
+proc llmVotingTarget(
+  bot: Bot
+): tuple[found: bool, target: int, reason: string] =
+  ## Returns the model-selected voting target if it is still legal.
+  if bot.voteLlmAction.kind != VoteLlmVote:
+    return
+  let target = bot.voteSlotForColor(bot.voteLlmAction.targetColor)
+  if not bot.voteTargetSafeForRole(target):
+    return
+  result.found = true
+  result.target = target
+  result.reason =
+    if bot.voteLlmAction.reason.len > 0:
+      "llm: " & bot.voteLlmAction.reason
+    else:
+      "llm voted " & bot.voteTargetName(target)
+
+proc refreshVotingLlmDecision(bot: var Bot) =
+  ## Refreshes the model voting action when the current snapshot needs one.
+  if not bot.voteLlmNeedsDecision:
+    return
+  echo "truecrew voting llm poll: tick=", bot.frameTick,
+    " chat=", bot.voteLlmSayCount,
+    "/", VoteLlmMinSayCount,
+    " pending=", bot.pendingChat.len,
+    " action=", $bot.voteLlmAction.kind
+  try:
+    if not bot.callVotingLlm():
+      bot.voteLlmAction = VoteLlmAction(
+        kind: VoteLlmNone,
+        targetColor: VoteUnknown
+      )
+      bot.voteLlmWaiting = false
+      bot.voteLlmNeedsDecision = true
+  except CatchableError as e:
+    echo "truecrew voting llm fallback: ", e.msg
+    bot.voteLlmAction = VoteLlmAction(
+      kind: VoteLlmNone,
+      targetColor: VoteUnknown
+    )
+    bot.voteLlmWaiting = false
+    bot.voteLlmNeedsDecision = true
+
+proc llmShouldKeepWaiting(bot: Bot, listenedTicks: int): bool =
+  ## Returns true when an LLM chat or wait action should keep listening.
+  if bot.voteLlmAction.kind notin {VoteLlmSay, VoteLlmWait}:
+    return false
+  listenedTicks < VoteDeadlineTicks - VoteLlmDeadlineFallbackTicks
+
+proc selfVoteChoice(bot: Bot): int =
+  ## Returns the parsed vote choice for the local player.
+  if bot.selfColorIndex >= 0 and bot.selfColorIndex < bot.voteChoices.len:
+    return bot.voteChoices[bot.selfColorIndex]
+  if bot.voteSelfSlot >= 0 and bot.voteSelfSlot < bot.votePlayerCount:
+    let colorIndex = bot.voteSlots[bot.voteSelfSlot].colorIndex
+    if colorIndex >= 0 and colorIndex < bot.voteChoices.len:
+      return bot.voteChoices[colorIndex]
+  VoteUnknown
+
+proc voteConfirmMask(bot: Bot): uint8 =
+  ## Returns a one-frame voting confirmation button press.
+  if bot.lastMask == ButtonA:
+    0
+  else:
+    ButtonA
+
+proc actionTapMask(bot: Bot): uint8 =
+  ## Returns a repeated edge-triggered action button tap.
+  if (bot.lastMask and ButtonA) != 0:
+    0
+  else:
+    ButtonA
+
+proc retryVotedMask(bot: var Bot, ownVote: int): uint8 =
+  ## Retries a parsed vote when the voting screen keeps running.
+  if ownVote == VoteUnknown:
+    return 0
+  let cursorTarget =
+    if ownVote == VoteSkip:
+      bot.skipVoteCursor()
+    else:
+      ownVote
+  if bot.voteCursor != cursorTarget:
+    bot.voteRetryTarget = cursorTarget
+    bot.lastVoteRetryTick = bot.frameTick
+    return 0
+  if bot.voteRetryTarget != cursorTarget:
+    bot.voteRetryTarget = cursorTarget
+    bot.lastVoteRetryTick = bot.frameTick
+    return 0
+  if bot.frameTick - bot.lastVoteRetryTick < VoteRetryTicks:
+    return 0
+  result = bot.voteConfirmMask()
+  if result == ButtonA:
+    bot.lastVoteRetryTick = bot.frameTick
+
+proc nextVoteSelectable(bot: Bot, cursor, direction: int): int =
+  ## Returns the next selectable voting cursor slot.
+  let total = bot.votePlayerCount + 1
+  if total <= 0:
+    return VoteUnknown
+  var cur = cursor
+  for step in 1 .. total:
+    cur = (cur + direction + total) mod total
+    if cur == bot.votePlayerCount:
+      return cur
+    if cur >= 0 and cur < bot.votePlayerCount and bot.voteSlots[cur].alive:
+      return cur
+  VoteUnknown
+
+proc voteStepsTo(bot: Bot, target, direction: int): int =
+  ## Counts cursor steps in one direction to a target.
+  if bot.voteCursor == VoteUnknown:
+    return high(int)
+  var cur = bot.voteCursor
+  for step in 0 .. bot.votePlayerCount + 1:
+    if cur == target:
+      return step
+    cur = bot.nextVoteSelectable(cur, direction)
+    if cur == VoteUnknown:
+      return high(int)
+  high(int)
+
+proc voteMoveDirection(bot: Bot, target: int): int =
+  ## Chooses the shortest voting cursor direction toward a target.
+  let
+    leftSteps = bot.voteStepsTo(target, -1)
+    rightSteps = bot.voteStepsTo(target, 1)
+  if leftSteps < rightSteps:
+    -1
+  else:
+    1
+
+proc seenVotingTargetFrom(bot: Bot, ticks: openArray[int]): int =
+  ## Returns the latest seen living non-self voting target.
+  result = VoteUnknown
+  var bestTick = 0
+  for i, tick in ticks:
+    if i >= PlayerColorNames.len:
+      continue
+    if bot.knownImposterColor(i):
+      continue
+    let slot = bot.voteSlotForColor(i)
+    if not bot.voteTargetSafeForRole(slot):
+      continue
+    if tick > bestTick:
+      bestTick = tick
+      result = slot
+
+proc imposterBandwagonTarget(bot: Bot): int =
+  ## Returns a voted non-imposter target that an imposter can pile onto.
+  if bot.role != RoleImposter:
+    return VoteUnknown
+  var counts: array[MaxPlayers, int]
+  for i, choice in bot.voteChoices:
+    if i == bot.selfColorIndex:
+      continue
+    if choice < 0 or choice >= bot.votePlayerCount:
+      continue
+    if not bot.voteTargetSafeForRole(choice):
+      continue
+    inc counts[choice]
+  var bestCount = 0
+  result = VoteUnknown
+  for target in 0 ..< bot.votePlayerCount:
+    if counts[target] > bestCount:
+      bestCount = counts[target]
+      result = target
+
+proc hasAnyParsedVote(bot: Bot): bool =
+  ## Returns true when any visible player has already voted.
+  for choice in bot.voteChoices:
+    if choice != VoteUnknown:
+      return true
+
+proc evidenceCandidates(
+  bot: Bot,
+  scores: openArray[int],
+  minScore: int
+): seq[EvidenceEntry] =
+  ## Returns sorted evidence entries that can be voted against.
+  for colorIndex, score in scores:
+    if score < minScore:
+      continue
+    let slot = bot.voteSlotForColor(colorIndex)
+    if not bot.voteTargetSafeForRole(slot):
+      continue
+    result.add(EvidenceEntry(colorIndex: colorIndex, score: score))
+  result.sort(compareEvidence)
+
+proc evidenceVoteCounts(
+  bot: Bot,
+  candidates: openArray[EvidenceEntry]
+): array[MaxPlayers, int] =
+  ## Counts parsed votes against current evidence candidates.
+  var candidateSlots: array[MaxPlayers, bool]
+  for candidate in candidates:
+    let slot = bot.voteSlotForColor(candidate.colorIndex)
+    if slot >= 0 and slot < candidateSlots.len:
+      candidateSlots[slot] = true
+  for choice in bot.voteChoices:
+    if choice < 0 or choice >= bot.votePlayerCount:
+      continue
+    if candidateSlots[choice]:
+      inc result[choice]
+
+proc evidenceVotingTarget(
+  bot: Bot,
+  scores: openArray[int],
+  minScore: int,
+  name: string
+): tuple[found: bool, target: int, reason: string] =
+  ## Chooses a vote target from evidence scores and visible votes.
+  let candidates = bot.evidenceCandidates(scores, minScore)
+  if candidates.len == 0:
+    return
+  let counts = bot.evidenceVoteCounts(candidates)
+  var
+    bestVoteCount = 0
+    bestVoteTarget = VoteUnknown
+    tied = false
+  for candidate in candidates:
+    let slot = bot.voteSlotForColor(candidate.colorIndex)
+    if slot < 0 or slot >= bot.votePlayerCount:
+      continue
+    let count = counts[slot]
+    if count > bestVoteCount:
+      bestVoteCount = count
+      bestVoteTarget = slot
+      tied = false
+    elif count == bestVoteCount and count > 0:
+      tied = true
+  if bestVoteCount > 0 and not tied:
+    return (
+      true,
+      bestVoteTarget,
+      "joining " & name & " vote against " &
+        bot.voteTargetName(bestVoteTarget)
+    )
+  let topSlot = bot.voteSlotForColor(candidates[0].colorIndex)
+  if bot.voteTargetSafeForRole(topSlot):
+    return (
+      true,
+      topSlot,
+      "top " & name & " evidence against " &
+        bot.voteTargetName(topSlot)
+    )
+
+proc crewmateEvidenceVotingTarget(
+  bot: Bot
+): tuple[found: bool, target: int, reason: string] =
+  ## Chooses a crewmate vote using derived sus scores.
+  bot.evidenceVotingTarget(bot.susScores(), SusVoteMinScore, "sus")
+
+proc firstSafeVotingTarget(bot: Bot): int =
+  ## Returns the first legal player target for this role.
+  for target in 0 ..< bot.votePlayerCount:
+    if bot.voteTargetSafeForRole(target):
+      return target
+  VoteUnknown
+
+proc fallbackVotingTarget(
+  bot: Bot
+): tuple[found: bool, target: int, reason: string] =
+  ## Chooses a legal non-skip fallback target.
+  result.target = VoteUnknown
+  result.target = bot.seenVotingTargetFrom(bot.bodySeenTicks)
+  if result.target != VoteUnknown:
+    result.found = true
+    result.reason = "recent body-context sighting against " &
+      bot.voteTargetName(result.target)
+    return
+  result.target = bot.seenVotingTargetFrom(bot.lastSeenTicks)
+  if result.target != VoteUnknown:
+    result.found = true
+    result.reason = "recent sighting against " &
+      bot.voteTargetName(result.target)
+    return
+  result.target = bot.firstSafeVotingTarget()
+  if result.target != VoteUnknown:
+    result.found = true
+    result.reason = "fallback against " & bot.voteTargetName(result.target)
+
+proc desiredVotingDecision(
+  bot: Bot,
+  listenedTicks: int
+): tuple[target: int, reason: string, instant: bool] =
+  ## Chooses the vote target and explains the current decision.
+  if bot.role == RoleImposter:
+    let bandwagonTarget = bot.imposterBandwagonTarget()
+    if bandwagonTarget != VoteUnknown:
+      return (
+        bandwagonTarget,
+        "imposter joining crewmate vote against " &
+          bot.voteTargetName(bandwagonTarget),
+        true
+      )
+    if listenedTicks >= VoteImposterSkipTicks:
+      let reason =
+        if bot.hasAnyParsedVote():
+          "imposter found no crewmate vote to join after " &
+            $VoteImposterSkipTicks & " ticks"
+        else:
+          "imposter saw no votes after " & $VoteImposterSkipTicks & " ticks"
+      let fallback = bot.fallbackVotingTarget()
+      if fallback.found:
+        return (
+          fallback.target,
+          reason & ", " & fallback.reason,
+          false
+        )
+      return (VoteUnknown, "imposter has no legal vote target", false)
+    let fallback = bot.fallbackVotingTarget()
+    if fallback.found:
+      return (
+        fallback.target,
+        "imposter waiting for crewmate votes, " & fallback.reason,
+        false
+      )
+    return (
+      VoteUnknown,
+      "imposter waiting but has no legal vote target",
+      false
+    )
+
+  let evidenceTarget = bot.crewmateEvidenceVotingTarget()
+  if evidenceTarget.found:
+    return (
+      evidenceTarget.target,
+      evidenceTarget.reason,
+      false
+    )
+  let skipTarget = bot.skipVoteCursor()
+  if skipTarget != VoteUnknown:
+    return (
+      skipTarget,
+      "crewmate has no sus evidence, skipping",
+      false
+    )
+  (VoteUnknown, "crewmate has no legal vote target", false)
+
+proc logVoteDecision(bot: var Bot, target: int, reason: string) =
+  ## Logs a voting choice once per visible decision.
+  if bot.voteLoggedTarget == target and bot.voteLoggedReason == reason:
+    return
+  bot.voteLoggedTarget = target
+  bot.voteLoggedReason = reason
+  echo "voting for ", bot.voteTargetName(target), ": ", reason
+
+proc decideVotingMask(bot: var Bot): uint8 {.measure.} =
+  ## Chooses voting-screen input from parsed vote state.
+  bot.hasGoal = false
+  bot.clearPath()
+  let ownVote = bot.selfVoteChoice()
+  let listenedTicks =
+    if bot.voteStartTick >= 0:
+      bot.frameTick - bot.voteStartTick
+    else:
+      0
+  if bot.voteDelayTicks < 0:
+    bot.voteDelayTicks = bot.randomVoteDelay()
+  bot.printVotingEvidence()
+  if votingLlmEnabled():
+    if bot.voteSaidSomething and
+        bot.voteLlmSayCount < VoteLlmMinSayCount and
+        bot.pendingChat.len == 0:
+      bot.voteLlmWaiting = true
+      bot.voteLlmNeedsDecision = true
+    bot.refreshVotingLlmDecision()
+    if not bot.voteSaidSomething or bot.voteLlmSayCount < VoteLlmMinSayCount:
+      bot.voteTarget = VoteUnknown
+      bot.desiredMask = 0
+      bot.controllerMask = 0
+      bot.intent =
+        if bot.pendingChat.len > 0:
+          "sending llm vote chat"
+        else:
+          "waiting for llm vote chat"
+      bot.thought(bot.intent)
+      return 0
+  if ownVote != VoteUnknown:
+    bot.desiredMask = bot.retryVotedMask(ownVote)
+    bot.controllerMask = bot.desiredMask
+    bot.intent =
+      if bot.desiredMask == ButtonA:
+        "confirming vote " & bot.voteTargetName(ownVote)
+      else:
+        "voted " & bot.voteTargetName(ownVote)
+    bot.thought(bot.intent)
+    return bot.desiredMask
+  if bot.llmShouldKeepWaiting(listenedTicks):
+    bot.voteTarget = VoteUnknown
+    bot.desiredMask = 0
+    bot.controllerMask = 0
+    bot.intent =
+      case bot.voteLlmAction.kind
+      of VoteLlmSay:
+        "llm said, waiting for vote chat"
+      of VoteLlmWait:
+        "llm waiting for more vote chat"
+      else:
+        "llm waiting"
+    bot.thought(bot.intent)
+    return 0
+  let llmTarget = bot.llmVotingTarget()
+  let decision =
+    if llmTarget.found:
+      (
+        target: llmTarget.target,
+        reason: llmTarget.reason,
+        instant: false
+      )
+    else:
+      bot.desiredVotingDecision(listenedTicks)
+  bot.voteTarget = decision.target
+  if bot.voteTarget == VoteUnknown:
+    bot.desiredMask = 0
+    bot.controllerMask = 0
+    bot.intent = "waiting for legal vote target"
+    bot.thought(bot.intent)
+    return 0
+  if bot.voteCursor != bot.voteTarget:
+    let direction = bot.voteMoveDirection(bot.voteTarget)
+    let mask =
+      if direction < 0:
+        ButtonLeft
+      else:
+        ButtonRight
+    bot.desiredMask =
+      if bot.lastMask == mask:
+        0
+      else:
+        mask
+    bot.controllerMask = bot.desiredMask
+    bot.intent = "voting cursor to " & bot.voteTargetName(bot.voteTarget)
+    bot.thought(bot.intent)
+    return bot.desiredMask
+  let waitTicks =
+    if bot.role == RoleImposter and not decision.instant:
+      VoteImposterSkipTicks
+    else:
+      bot.voteDelayTicks
+  if not decision.instant and listenedTicks < waitTicks:
+    bot.desiredMask = 0
+    bot.controllerMask = 0
+    bot.intent = "ready, listening in vote chat " &
+      $listenedTicks & "/" & $waitTicks
+    bot.thought(bot.intent)
+    return 0
+  bot.desiredMask = bot.voteConfirmMask()
+  bot.controllerMask = bot.desiredMask
+  bot.intent = "voting for " & bot.voteTargetName(bot.voteTarget)
+  if bot.desiredMask == ButtonA:
+    bot.logVoteDecision(bot.voteTarget, decision.reason)
+  bot.thought(bot.intent)
+  bot.desiredMask
+
+proc reportRangeContains(
+  bot: Bot,
+  playerX,
+  playerY,
+  bodyX,
+  bodyY: int
+): bool =
+  ## Returns true when one player point can report one body point.
+  let
+    ax = playerX + CollisionW div 2
+    ay = playerY + CollisionH div 2
+    bx = bodyX + CollisionW div 2
+    by = bodyY + CollisionH div 2
+    dx = ax - bx
+    dy = ay - by
+  dx * dx + dy * dy <=
+    bot.sim.config.reportRange * bot.sim.config.reportRange
+
+proc inReportRange(bot: Bot, targetX, targetY: int): bool =
+  ## Returns true when the target point is in report range.
+  bot.reportRangeContains(
+    bot.playerWorldX(),
+    bot.playerWorldY(),
+    targetX,
+    targetY
+  )
+
+proc inKillRange(bot: Bot, targetX, targetY: int): bool =
+  ## Returns true when the target point is in imposter kill range.
+  let
+    ax = bot.playerWorldX() + CollisionW div 2
+    ay = bot.playerWorldY() + CollisionH div 2
+    bx = targetX + CollisionW div 2
+    by = targetY + CollisionH div 2
+    dx = ax - bx
+    dy = ay - by
+  dx * dx + dy * dy <= bot.sim.config.killRange * bot.sim.config.killRange
+
+proc reportGoalForBody(
+  bot: var Bot,
+  bodyX,
+  bodyY: int
+): tuple[found: bool, x: int, y: int] {.measure.} =
+  ## Returns the nearest reachable point that can report one body.
+  if not bot.navigationReady():
+    return
+  type
+    ReportCandidate = tuple[
+      x: int,
+      y: int,
+      directDistance: int,
+      bodyDistance: int
+    ]
+  let
+    range = bot.sim.config.reportRange
+    minX = max(0, bodyX - range)
+    minY = max(0, bodyY - range)
+    maxX = min(MapWidth - CollisionW, bodyX + range)
+    maxY = min(MapHeight - CollisionH, bodyY + range)
+  var candidates: seq[ReportCandidate] = @[]
+  for y in minY .. maxY:
+    for x in minX .. maxX:
+      if not bot.reportRangeContains(x, y, bodyX, bodyY):
+        continue
+      if not bot.passable(x, y):
+        continue
+      candidates.add((
+        x,
+        y,
+        heuristic(bot.playerWorldX(), bot.playerWorldY(), x, y),
+        heuristic(bodyX, bodyY, x, y)
+      ))
+  candidates.sort(proc(a, b: ReportCandidate): int =
+    result = cmp(a.directDistance, b.directDistance)
+    if result == 0:
+      result = cmp(a.bodyDistance, b.bodyDistance)
+  )
+  for candidate in candidates:
+    if bot.pathDistance(candidate.x, candidate.y) != high(int):
+      return (true, candidate.x, candidate.y)
+
+proc nearestTaskGoal(
+  bot: Bot
+): tuple[
+  found: bool,
+  index: int,
+  x: int,
+  y: int,
+  name: string,
+  state: TaskState
+] {.measure.} =
+  ## Returns the closest known active task station center.
+  var bestDistance = high(int)
+  for i in 0 ..< bot.sim.tasks.len:
+    if not bot.taskIconVisibleFor(bot.sim.tasks[i]):
+      continue
+    let goal = bot.taskGoalFor(i, TaskMandatory)
+    if not goal.found:
+      continue
+    let distance = bot.goalDistance(goal.x, goal.y)
+    if distance < bestDistance:
+      bestDistance = distance
+      result = goal
+  if result.found:
+    return
+  if bot.goalIndex >= 0 and
+      bot.goalIndex < bot.sim.tasks.len and
+      bot.taskStates.len == bot.sim.tasks.len and
+      bot.taskStates[bot.goalIndex] == TaskMandatory:
+    let goal = bot.taskGoalFor(bot.goalIndex, TaskMandatory)
+    if goal.found:
+      return goal
+  bestDistance = high(int)
+  for i in 0 ..< bot.sim.tasks.len:
+    if bot.taskStates.len == bot.sim.tasks.len and
+        bot.taskStates[i] != TaskMandatory:
+      continue
+    let goal = bot.taskGoalFor(i, TaskMandatory)
+    if not goal.found:
+      continue
+    let distance = bot.goalDistance(goal.x, goal.y)
+    if distance < bestDistance:
+      bestDistance = distance
+      result = goal
+  if result.found:
+    return
+  if bot.goalIndex >= 0 and
+      bot.goalIndex < bot.sim.tasks.len and
+      bot.taskStates.len == bot.sim.tasks.len and
+      bot.taskStates[bot.goalIndex] != TaskCompleted and
+      bot.checkoutTasks.len == bot.sim.tasks.len and
+      bot.checkoutTasks[bot.goalIndex] and
+      bot.taskHasFreshClue(bot.goalIndex):
+    let goal = bot.taskGoalFor(bot.goalIndex, TaskMaybe)
+    if goal.found:
+      return goal
+  bestDistance = high(int)
+  for i in 0 ..< bot.sim.tasks.len:
+    if bot.checkoutTasks.len != bot.sim.tasks.len or
+        not bot.checkoutTasks[i]:
+      continue
+    if not bot.taskHasFreshClue(i):
+      continue
+    if bot.taskStates.len == bot.sim.tasks.len and
+        bot.taskStates[i] == TaskCompleted:
+      continue
+    let goal = bot.taskGoalFor(i, TaskMaybe)
+    if not goal.found:
+      continue
+    let distance = bot.goalDistance(goal.x, goal.y)
+    if distance < bestDistance:
+      bestDistance = distance
+      result = goal
+  if result.found:
+    return
+  if bot.goalIndex >= 0 and
+      bot.goalIndex < bot.sim.tasks.len and
+      bot.radarTasks.len == bot.sim.tasks.len and
+      bot.radarTasks[bot.goalIndex]:
+    let goal = bot.taskGoalFor(bot.goalIndex, TaskMaybe)
+    if goal.found:
+      return goal
+  bestDistance = high(int)
+  for i in 0 ..< bot.sim.tasks.len:
+    if bot.radarTasks.len != bot.sim.tasks.len or not bot.radarTasks[i]:
+      continue
+    let goal = bot.taskGoalFor(i, TaskMaybe)
+    if not goal.found:
+      continue
+    let distance = bot.goalDistance(goal.x, goal.y)
+    if distance < bestDistance:
+      bestDistance = distance
+      result = goal
+  if result.found:
+    return
+
+proc preciseMaskForGoal(bot: Bot, goalX, goalY: int): uint8 =
+  ## Converts a nearby goal into exact final-approach steering.
+  if not bot.navigationReady():
+    return 0
+  let path: array[0, PathStep] = []
+  bot.navigator.moveToAndStop(bot.motionState(), path, 0, goalX, goalY)
+
+proc choosePathStep(
+  bot: Bot,
+  lookahead = PathLookahead
+): PathStep {.measure.} =
+  ## Returns a visible steering waypoint from the current path.
+  if bot.path.len == 0 or not bot.navigationReady():
+    return
+  bot.navigator.chooseSteeringPathStep(
+    bot.motionState(),
+    bot.path,
+    bot.pathCursor,
+    lookahead
+  )
+
+proc taskReady(bot: Bot, task: TaskStation): bool =
+  ## Returns true when the player can safely hold action for a task.
+  let
+    x = bot.playerWorldX()
+    y = bot.playerWorldY()
+    innerX0 = task.x + TaskInnerMargin
+    innerY0 = task.y + TaskInnerMargin
+    innerX1 = task.x + task.w - TaskInnerMargin
+    innerY1 = task.y + task.h - TaskInnerMargin
+  if x < innerX0 or x >= innerX1 or y < innerY0 or y >= innerY1:
+    return false
+  true
+
+proc taskReadyAtGoal(bot: Bot, index, goalX, goalY: int): bool =
+  ## Returns true when a task can be held at a selected goal.
+  if index < 0 or index >= bot.sim.tasks.len:
+    return false
+  let
+    task = bot.sim.tasks[index]
+    x = bot.playerWorldX()
+    y = bot.playerWorldY()
+  if x < task.x or x >= task.x + task.w or
+      y < task.y or y >= task.y + task.h:
+    return false
+  bot.taskReady(task) or heuristic(x, y, goalX, goalY) <= 1
+
+proc taskGoalReady(
+  bot: Bot,
+  goal: tuple[
+    found: bool,
+    index: int,
+    x: int,
+    y: int,
+    name: string,
+    state: TaskState
+  ]
+): bool =
+  ## Returns true when the selected goal is ready for task action.
+  if not goal.found:
+    return false
+  bot.taskReadyAtGoal(goal.index, goal.x, goal.y)
+
+proc holdTaskAction(bot: var Bot, name: string): uint8 =
+  ## Holds only the action button while completing a task.
+  bot.intent = "doing task at " & name & " hold=" & $bot.taskHoldTicks
+  bot.desiredMask = ButtonA
+  bot.controllerMask = ButtonA
+  bot.clearPath()
+  bot.stuckFrames = 0
+  bot.jiggleTicks = 0
+  if bot.taskHoldTicks > 0:
+    dec bot.taskHoldTicks
+  if bot.taskHoldTicks == 0 and
+      bot.taskHoldIndex >= 0 and
+      bot.taskHoldIndex < bot.taskStates.len:
+    let task = bot.sim.tasks[bot.taskHoldIndex]
+    if not bot.taskIconVisibleFor(task) and bot.taskIconClearAreaVisible(task):
+      bot.taskStates[bot.taskHoldIndex] = TaskCompleted
+      if bot.checkoutTasks.len == bot.sim.tasks.len:
+        bot.checkoutTasks[bot.taskHoldIndex] = false
+    else:
+      bot.taskStates[bot.taskHoldIndex] = TaskMandatory
+    bot.taskHoldIndex = -1
+  bot.thought("at task " & name & ", holding action")
+  ButtonA
+
+proc reportBodyAction(bot: var Bot, x, y: int): uint8 =
+  ## Presses action to report a visible dead body.
+  bot.intent = "reporting dead body"
+  let mask = bot.actionTapMask()
+  bot.desiredMask = mask
+  bot.controllerMask = mask
+  bot.clearPath()
+  bot.taskHoldTicks = 0
+  bot.taskHoldIndex = -1
+  bot.queueBodyReport(x, y)
+  bot.thought("reporting dead body")
+  mask
+
+proc imposterHuntActive(bot: Bot): bool =
+  ## Returns true when this bot should hunt crewmates as an imposter.
+  bot.role == RoleImposter and not bot.isGhost
+
+proc navigateToPoint(
+  bot: var Bot,
+  x,
+  y: int,
+  name: string,
+  preciseRadius = TaskPreciseApproachRadius,
+  pathLookahead = PathLookahead,
+  stopAtGoal = false
+): uint8 {.measure.} =
+  ## Navigates toward one world point and returns the input mask.
+  bot.hasGoal = true
+  bot.goalX = x
+  bot.goalY = y
+  bot.goalName = name
+  if bot.isGhost:
+    bot.clearPath()
+    bot.astarMicros = 0
+    bot.intent = "ghost direct to " & name
+    bot.desiredMask = bot.preciseMaskForGoal(x, y)
+  elif heuristic(bot.playerWorldX(), bot.playerWorldY(), x, y) <=
+      preciseRadius:
+    bot.clearPath()
+    bot.astarMicros = 0
+    bot.intent = "precise approach to " & name
+    bot.desiredMask = bot.preciseMaskForGoal(x, y)
+  else:
+    discard bot.ensurePathTo(x, y)
+    bot.pathStep = bot.choosePathStep(pathLookahead)
+    bot.hasPathStep = bot.pathStep.found
+    bot.intent = "JPS+ to " & name & " path=" & $bot.path.len
+    if bot.navigationReady():
+      if stopAtGoal:
+        bot.desiredMask = bot.navigator.momentumMoveToAndStop(
+          bot.motionState(),
+          bot.path,
+          bot.pathCursor,
+          x,
+          y
+        )
+      else:
+        bot.desiredMask = bot.navigator.momentumMoveTo(
+          bot.motionState(),
+          bot.path,
+          bot.pathCursor,
+          x,
+          y
+        )
+    else:
+      bot.desiredMask = 0
+  bot.controllerMask = bot.desiredMask
+  let mask = bot.applyJiggle(bot.controllerMask)
+  let prefix =
+    if bot.role == RoleImposter:
+      "imposter "
+    elif bot.isGhost:
+      "ghost "
+    else:
+      "map lock "
+  bot.thought(
+    prefix & cameraLockName(bot.cameraLock) & " at camera (" &
+    $bot.cameraX & ", " & $bot.cameraY & "), next " &
+    movementName(mask)
+  )
+  mask
+
+proc visibleBodyAction(bot: var Bot): tuple[found: bool, mask: uint8] =
+  ## Reports or approaches the nearest visible body before other movement.
+  if bot.isGhost or bot.role == RoleImposter:
+    return
+  let body = bot.nearestBody()
+  if not body.found:
+    return
+  bot.updateKillEvidence()
+  bot.queueBodySeen(body.x, body.y)
+  if bot.inReportRange(body.x, body.y):
+    return (true, bot.reportBodyAction(body.x, body.y))
+  let goal = bot.reportGoalForBody(body.x, body.y)
+  if goal.found:
+    return (
+      true,
+      bot.navigateToPoint(
+        goal.x,
+        goal.y,
+        "dead body report range",
+        KillApproachRadius
+      )
+    )
+  (
+    true,
+    bot.navigateToPoint(
+      body.x,
+      body.y,
+      "dead body",
+      KillApproachRadius
+    )
+  )
+
+proc navigateEscapeLoop(bot: var Bot): uint8 =
+  ## Runs a remembered hunter around the selected escape loop.
+  var goal = bot.currentEscapeLoopGoal()
+  if not goal.found:
+    bot.intent = "running from hunter, no escape loop"
+    bot.thought(bot.intent)
+    return 0
+  if heuristic(bot.playerWorldX(), bot.playerWorldY(), goal.x, goal.y) <=
+      EscapeLoopArrivalRadius:
+    bot.escapeLoopPointIndex = bot.nextEscapeLoopPointIndex(
+      bot.escapeLoopIndex,
+      bot.escapeLoopPointIndex
+    )
+    goal = bot.currentEscapeLoopGoal()
+    if not goal.found:
+      bot.intent = "running from hunter, no next loop point"
+      bot.thought(bot.intent)
+      return 0
+  bot.goalIndex = -3
+  bot.navigateToPoint(
+    goal.x,
+    goal.y,
+    goal.name,
+    EscapeLoopArrivalRadius
+  )
+
+proc navigateMoveAway(bot: var Bot): uint8 =
+  ## Moves directly away from the close tracked player.
+  let track = bot.trackedPlayerWorld(bot.activeHunterColor)
+  if not track.found:
+    bot.clearRunawayState()
+    return 0
+  let
+    dx = bot.playerWorldX() - track.x
+    dy = bot.playerWorldY() - track.y
+  var mask: uint8 = 0
+  if dx < 0:
+    mask = mask or ButtonLeft
+  elif dx > 0:
+    mask = mask or ButtonRight
+  if dy < 0:
+    mask = mask or ButtonUp
+  elif dy > 0:
+    mask = mask or ButtonDown
+  if mask == 0:
+    mask = ButtonLeft
+  bot.clearPath()
+  bot.desiredMask = mask
+  bot.controllerMask = mask
+  bot.intent = "moving away from " & playerColorName(bot.activeHunterColor)
+  bot.thought(bot.intent)
+  mask
+
+proc navigateGhostWander(bot: var Bot): uint8 =
+  ## Moves a task-finished ghost around near the emergency button.
+  if not bot.ghostWanderGoalSet or
+      bot.frameTick >= bot.ghostWanderNextTick:
+    bot.chooseGhostWanderGoal()
+  if heuristic(
+    bot.playerWorldX(),
+    bot.playerWorldY(),
+    bot.ghostWanderGoalX,
+    bot.ghostWanderGoalY
+  ) <= GhostWanderArrivalRadius:
+    bot.hasGoal = true
+    bot.goalX = bot.ghostWanderGoalX
+    bot.goalY = bot.ghostWanderGoalY
+    bot.goalIndex = -1
+    bot.goalName = "Ghost wander"
+    bot.desiredMask = 0
+    bot.controllerMask = 0
+    bot.intent = "ghost waiting near button"
+    bot.thought(bot.intent)
+    return 0
+  bot.navigateToPoint(
+    bot.ghostWanderGoalX,
+    bot.ghostWanderGoalY,
+    "Ghost wander"
+  )
+
+proc navigateSafeHide(bot: var Bot): uint8 =
+  ## Moves a button-used finished crewmate to a safe hiding point.
+  let goal = bot.currentSafeHideGoal()
+  if not goal.found:
+    bot.clearPath()
+    bot.intent = "finished crewmate, no safe hide goal"
+    bot.desiredMask = 0
+    bot.controllerMask = 0
+    bot.thought("finished crewmate, no safe hide goal")
+    return 0
+  bot.goalIndex = goal.index
+  if heuristic(bot.playerWorldX(), bot.playerWorldY(), goal.x, goal.y) <=
+      SafeHideArrivalRadius:
+    bot.hasGoal = true
+    bot.goalX = goal.x
+    bot.goalY = goal.y
+    bot.goalName = goal.name
+    bot.clearPath()
+    bot.intent = "hiding at " & goal.name
+    bot.desiredMask = 0
+    bot.controllerMask = 0
+    bot.thought("hiding at " & goal.name)
+    return 0
+  bot.navigateToPoint(goal.x, goal.y, goal.name)
+
+proc attackTrackedCrewmate(
+  bot: var Bot,
+  track: PlayerTrack,
+  name: string
+): uint8 =
+  ## Chases a tracked crewmate and kills as soon as possible.
+  let chase = bot.predictedTrackWorld(track)
+  if bot.imposterKillReady and bot.inKillRange(track.x, track.y):
+    bot.imposterGoalIndex = bot.farthestFakeTargetIndex()
+    bot.intent = "kill " & name
+    bot.desiredMask = ButtonA
+    bot.controllerMask = ButtonA
+    bot.clearPath()
+    bot.thought(name & " in range, attacking")
+    return ButtonA
+  bot.goalIndex = -2
+  bot.navigateToPoint(chase.x, chase.y, name, 0)
+
+proc navigateProwlPoint(bot: var Bot): uint8 =
+  ## Navigates along the ordered prowl path after the hunt timer expires.
+  var goal = bot.currentProwlGoal()
+  if not goal.found:
+    bot.intent = "imposter idle, unreachable prowl point"
+    bot.thought("imposter idle, unreachable prowl point")
+    return 0
+  if heuristic(bot.playerWorldX(), bot.playerWorldY(), goal.x, goal.y) <=
+      TaskPreciseApproachRadius:
+    bot.imposterProwlIndex = bot.nextProwlPointIndex(
+      bot.imposterProwlIndex
+    )
+    goal = bot.currentProwlGoal()
+    if not goal.found:
+      bot.intent = "imposter idle, no next prowl point"
+      bot.thought("imposter idle, no next prowl point")
+      return 0
+  bot.goalIndex = goal.index
+  bot.navigateToPoint(goal.x, goal.y, goal.name)
+
+proc decideImposterMask(bot: var Bot): uint8 {.measure.} =
+  ## Chooses imposter movement and kill behavior.
+  bot.radarDots.setLen(0)
+  if bot.radarTasks.len != bot.sim.tasks.len:
+    bot.radarTasks = newSeq[bool](bot.sim.tasks.len)
+  if bot.checkoutTasks.len != bot.sim.tasks.len:
+    bot.checkoutTasks = newSeq[bool](bot.sim.tasks.len)
+  for i in 0 ..< bot.radarTasks.len:
+    bot.radarTasks[i] = false
+  for i in 0 ..< bot.checkoutTasks.len:
+    bot.checkoutTasks[i] = false
+  bot.taskHoldTicks = 0
+  bot.taskHoldIndex = -1
+  let hunted = bot.nearestUnclaimedCrewmate()
+  if hunted.found:
+    return bot.attackTrackedCrewmate(
+      hunted.track,
+      "hunting " & playerColorName(hunted.track.colorIndex)
+    )
+  bot.navigateProwlPoint()
+
+proc decideNextMask(bot: var Bot): uint8 {.measure.} =
+  ## Updates perception and chooses the next input mask.
+  let centerStart = getMonoTime()
+  bot.updateLocation()
+  bot.centerMicros = int((getMonoTime() - centerStart).inMicroseconds)
+  bot.astarMicros = 0
+  if bot.interstitial:
+    bot.updateMotionState()
+    bot.hasGoal = false
+    bot.clearPath()
+    if bot.voting:
+      return bot.decideVotingMask()
+    bot.desiredMask = 0
+    bot.controllerMask = 0
+    bot.intent =
+      if bot.interstitialText.len > 0:
+        "interstitial: " & bot.interstitialText
+      else:
+        "interstitial screen mode"
+    bot.thought(bot.intent)
+    return 0
+  bot.updateMotionState()
+  bot.hasGoal = false
+  bot.hasPathStep = false
+  bot.desiredMask = 0
+  bot.controllerMask = 0
+  bot.intent = "localizing"
+  if not bot.protocolCameraReady:
+    bot.rememberVisibleMap()
+  let bodyAction = bot.visibleBodyAction()
+  if bodyAction.found:
+    return bodyAction.mask
+  bot.updateTaskGuesses()
+  bot.resetTasksFromRadar()
+  bot.updateTaskIcons()
+  if not bot.localized:
+    bot.clearPath()
+    bot.thought("waiting for a reliable map lock")
+    return 0
+  bot.rememberHome()
+  bot.updateStalkerTracking()
+  bot.updateKillEvidence()
+  bot.updateTaskerTracking()
+  bot.updateFollowerTracking()
+  bot.updateRunawayState()
+  if bot.role == RoleImposter and not bot.isGhost:
+    return bot.decideImposterMask()
+  if bot.moveAwayActive():
+    return bot.navigateMoveAway()
+  if bot.runawayActive():
+    return bot.navigateEscapeLoop()
+  if bot.safeHideReady():
+    return bot.navigateSafeHide()
+  if bot.taskHoldTicks > 0:
+    return bot.holdTaskAction(
+      if bot.goalName.len > 0:
+        bot.goalName
+      else:
+        "task"
+    )
+  if bot.ghostWanderReady():
+    return bot.navigateGhostWander()
+  let goal = bot.nearestTaskGoal()
+  if not goal.found:
+    bot.clearPath()
+    bot.intent = "localized, no task goal"
+    bot.thought("localized near (" & $bot.playerWorldX() & ", " &
+      $bot.playerWorldY() & ")")
+    return 0
+  bot.hasGoal = true
+  bot.goalX = goal.x
+  bot.goalY = goal.y
+  bot.goalIndex = goal.index
+  bot.goalName = goal.name
+  if goal.index >= 0 and
+      bot.taskGoalReady(goal) and
+      (
+        goal.state == TaskMandatory or
+        bot.taskHasFreshClue(goal.index)
+      ):
+    bot.taskHoldTicks = bot.sim.config.taskCompleteTicks + TaskHoldPadding
+    bot.taskHoldIndex = goal.index
+    return bot.holdTaskAction(goal.name)
+  if bot.isGhost:
+    return bot.navigateToPoint(goal.x, goal.y, goal.name)
+  if goal.state == TaskMandatory and
+      heuristic(
+        bot.playerWorldX(),
+        bot.playerWorldY(),
+        goal.x,
+        goal.y
+      ) <= TaskPreciseApproachRadius:
+    bot.clearPath()
+    bot.astarMicros = 0
+    bot.intent = "precise task approach to " & goal.name &
+      " state=" & $goal.state
+    bot.desiredMask = bot.preciseMaskForGoal(goal.x, goal.y)
+  else:
+    discard bot.ensurePathTo(goal.x, goal.y)
+    bot.pathStep = bot.choosePathStep()
+    bot.hasPathStep = bot.pathStep.found
+    bot.intent =
+      if goal.index < 0:
+        "gather at " & goal.name & " path=" & $bot.path.len
+      else:
+        "JPS+ to " & goal.name & " path=" & $bot.path.len &
+          " state=" & $goal.state
+    if bot.navigationReady():
+      if goal.index >= 0:
+        bot.desiredMask = bot.navigator.momentumMoveToAndStop(
+          bot.motionState(),
+          bot.path,
+          bot.pathCursor,
+          goal.x,
+          goal.y
+        )
+      else:
+        bot.desiredMask = bot.navigator.momentumMoveTo(
+          bot.motionState(),
+          bot.path,
+          bot.pathCursor,
+          goal.x,
+          goal.y
+        )
+    else:
+      bot.desiredMask = 0
+  bot.controllerMask = bot.desiredMask
+  let mask = bot.applyJiggle(bot.controllerMask)
+  bot.thought(
+    "map lock " & cameraLockName(bot.cameraLock) & " at camera (" &
+    $bot.cameraX & ", " & $bot.cameraY & "), next " &
+    movementName(mask)
+  )
+  mask
+
+proc stepUnpackedFrame*(
+  bot: var Bot,
+  frame: openArray[uint8]
+): uint8 {.measure.} =
+  ## Steps the bot from one unpacked 4-bit framebuffer and returns an input mask.
+  if frame.len != ScreenWidth * ScreenHeight:
+    return 0
+  if bot.unpacked.len != frame.len:
+    bot.unpacked.setLen(frame.len)
+  for i, value in frame:
+    bot.unpacked[i] = value and 0x0f
+  inc bot.frameTick
+  result = bot.decideNextMask()
+  bot.lastMask = result
+
+proc stepPackedFrame*(
+  bot: var Bot,
+  frame: openArray[uint8]
+): uint8 {.measure.} =
+  ## Steps the bot from one packed 4-bit framebuffer and returns an input mask.
+  if frame.len != ProtocolBytes:
+    return 0
+  if bot.packed.len != frame.len:
+    bot.packed.setLen(frame.len)
+  for i, value in frame:
+    bot.packed[i] = value
+  unpack4bpp(bot.packed, bot.unpacked)
+  inc bot.frameTick
+  result = bot.decideNextMask()
+  bot.lastMask = result
+
+proc sheetSprite(sheet: Image, cellX, cellY: int): Sprite =
+  ## Extracts one 12x12 sprite from the local sprite sheet.
+  spriteFromImage(
+    sheet.subImage(cellX * SpriteSize, cellY * SpriteSize, SpriteSize, SpriteSize)
+  )
+
+proc initBotSim(config: GameConfig): SimServer =
+  ## Builds only the sim data a headless sprite bot needs.
+  result.config = config
+  result.gameMap = initialProtocolMap()
+  result.mapPixels = newSeq[uint8](MapWidth * MapHeight)
+  result.walkMask = newSeq[bool](MapWidth * MapHeight)
+  result.wallMask = newSeq[bool](MapWidth * MapHeight)
+  when not defined(botHeadless):
+    loadPalette(clientDataDir() / "pallete.png")
+    result.asciiSprites = readTiny5Font()
+
+proc botGameDir(): string =
+  ## Returns the game asset directory used by the private bot.
+  for candidate in [ExtractedCrewriftGameDir, CrewriftGameDir]:
+    if fileExists(candidate / "src" / "crewrift.nim"):
+      return candidate
+  gameDir()
+
+proc initBot(mapPath = ""): Bot {.measure.} =
+  ## Builds a bot and loads the runtime data required by its build mode.
+  setCurrentDir(botGameDir())
+  result = Bot()
+  var config = defaultGameConfig()
+  if mapPath.len > 0:
+    config.mapPath = mapPath
+  result.sim = initBotSim(config)
+  when not defined(botHeadless):
+    let sheet = loadSpriteSheet()
+    result.playerSprite = sheet.sheetSprite(0, 0)
+    result.bodySprite = sheet.sheetSprite(1, 0)
+    result.killButtonSprite = sheet.sheetSprite(3, 0)
+    result.taskSprite = sheet.sheetSprite(4, 0)
+    result.ghostSprite = sheet.sheetSprite(6, 0)
+    result.ghostIconSprite = sheet.sheetSprite(7, 0)
+  result.rng = initRand(getTime().toUnix() xor int64(getCurrentProcessId()))
+  result.packed = newSeq[uint8](ProtocolBytes)
+  result.unpacked = newSeq[uint8](ScreenWidth * ScreenHeight)
+  result.mapTiles = newSeq[TileKnowledge](MapWidth * MapHeight)
+  result.radarTasks = newSeq[bool](result.sim.tasks.len)
+  result.checkoutTasks = newSeq[bool](result.sim.tasks.len)
+  result.taskStates = newSeq[TaskState](result.sim.tasks.len)
+  result.taskIconMisses = newSeq[int](result.sim.tasks.len)
+  result.resetTaskerTracking()
+  result.lastTaskRadarResetTick = -TaskRadarResetTicks
+  result.lastDropLogTick = -1_000_000
+  when not defined(botHeadless):
+    result.buildPatchEntries()
+  result.cameraX = result.sim.buttonCameraX()
+  result.cameraY = result.sim.buttonCameraY()
+  result.lastCameraX = result.cameraX
+  result.lastCameraY = result.cameraY
+  result.taskHoldIndex = -1
+  result.imposterGoalIndex = -1
+  result.imposterProwlIndex = -1
+  result.imposterCooldownPercent = -1
+  result.activeHunterColor = VoteUnknown
+  result.moveAwayUntilTick = -1
+  result.runawayUntilTick = -1
+  result.escapeLoopIndex = -1
+  result.escapeLoopPointIndex = -1
+  result.goalIndex = -1
+  result.clearPath()
+  result.lastBodySeenX = low(int)
+  result.lastBodySeenY = low(int)
+  result.lastBodyReportX = low(int)
+  result.lastBodyReportY = low(int)
+  result.lastKillBodyX = low(int)
+  result.lastKillBodyY = low(int)
+  result.bodySusColor = VoteUnknown
+  result.hadVisibleBody = false
+  result.serverTick = -1
+  result.roundStartTick = -1
+  result.roundStartServerTick = -1
+  result.cameraLock = NoLock
+  result.role = RoleCrewmate
+  result.selfColorIndex = -1
+  result.clearMeetingCallState()
+  result.clearVotingState()
+  result.intent = "waiting for first frame"
+
+when defined(italkalotLibrary):
+  const ITalkALotAbiVersion = 1
+  const TrainableMasks = [
+    0'u8,
+    ButtonA,
+    ButtonB,
+    ButtonUp,
+    ButtonUp or ButtonA,
+    ButtonUp or ButtonB,
+    ButtonDown,
+    ButtonDown or ButtonA,
+    ButtonDown or ButtonB,
+    ButtonLeft,
+    ButtonLeft or ButtonA,
+    ButtonLeft or ButtonB,
+    ButtonRight,
+    ButtonRight or ButtonA,
+    ButtonRight or ButtonB,
+    ButtonUp or ButtonLeft,
+    ButtonUp or ButtonLeft or ButtonA,
+    ButtonUp or ButtonLeft or ButtonB,
+    ButtonUp or ButtonRight,
+    ButtonUp or ButtonRight or ButtonA,
+    ButtonUp or ButtonRight or ButtonB,
+    ButtonDown or ButtonLeft,
+    ButtonDown or ButtonLeft or ButtonA,
+    ButtonDown or ButtonLeft or ButtonB,
+    ButtonDown or ButtonRight,
+    ButtonDown or ButtonRight or ButtonA,
+    ButtonDown or ButtonRight or ButtonB
+  ]
+
+  type ITalkALotPolicy = ref object
+    bots: seq[Bot]
+
+  var ITalkALotPolicies: seq[ITalkALotPolicy]
+
+  proc italkalot_abi_version*(): cint {.exportc, dynlib.} =
+    ## Returns the shared-library ABI version expected by Python wrappers.
+    cint(ITalkALotAbiVersion)
+
+  proc actionIndexForMask(mask: uint8): int32 =
+    ## Maps a BitWorld button mask to the CoGames trainable action index.
+    for i, value in TrainableMasks:
+      if value == mask:
+        return i.int32
+    0'i32
+
+  proc stepUnpackedFramePtr(
+    bot: var Bot,
+    frame: ptr UncheckedArray[uint8],
+    frameLen: int
+  ): uint8 =
+    ## Steps the bot from one pointer-backed unpacked framebuffer.
+    if frameLen != ScreenWidth * ScreenHeight:
+      return 0
+    if bot.unpacked.len != frameLen:
+      bot.unpacked.setLen(frameLen)
+    for i in 0 ..< frameLen:
+      bot.unpacked[i] = frame[i] and 0x0f
+    inc bot.frameTick
+    result = bot.decideNextMask()
+    bot.lastMask = result
+
+  proc italkalot_new_policy*(numAgents: cint): cint {.exportc, dynlib.} =
+    ## Creates a persistent Nim-backed ITalkALot policy and returns its handle.
+    let count = max(1, int(numAgents))
+    var policy = ITalkALotPolicy(bots: newSeq[Bot](count))
+    for i in 0 ..< count:
+      policy.bots[i] = initBot()
+    ITalkALotPolicies.add(policy)
+    cint(ITalkALotPolicies.len - 1)
+
+  proc italkalot_step_batch*(
+    handle: cint,
+    agentIds: ptr UncheckedArray[int32],
+    numAgentIds: cint,
+    numAgents: cint,
+    frameStack: cint,
+    height: cint,
+    width: cint,
+    observations: pointer,
+    actions: pointer
+  ) {.exportc, dynlib.} =
+    ## Steps a batch of unpacked pixel observations into CoGames action indices.
+    if handle < 0 or int(handle) >= ITalkALotPolicies.len:
+      return
+    if observations.isNil or actions.isNil or agentIds.isNil:
+      return
+    if frameStack <= 0 or height != ScreenHeight or width != ScreenWidth:
+      return
+
+    let
+      policy = ITalkALotPolicies[int(handle)]
+      obs = cast[ptr UncheckedArray[uint8]](observations)
+      outs = cast[ptr UncheckedArray[int32]](actions)
+      frameLen = int(height) * int(width)
+      rowStride = int(frameStack) * frameLen
+      latestOffset = (int(frameStack) - 1) * frameLen
+
+    if policy.bots.len < int(numAgents):
+      let oldLen = policy.bots.len
+      policy.bots.setLen(int(numAgents))
+      for i in oldLen ..< policy.bots.len:
+        policy.bots[i] = initBot()
+
+    for row in 0 ..< int(numAgentIds):
+      let agentId = int(agentIds[row])
+      if agentId < 0 or agentId >= policy.bots.len:
+        outs[row] = 0
+        continue
+      let frame = cast[ptr UncheckedArray[uint8]](
+        cast[uint](obs) + uint(row * rowStride + latestOffset)
+      )
+      let mask = policy.bots[agentId].stepUnpackedFramePtr(frame, frameLen)
+      outs[row] = actionIndexForMask(mask)
+
+when not defined(italkalotLibrary) and not defined(botHeadless):
+  proc drawOutline(sk: Silky, pos, size: Vec2, color: ColorRGBX, thickness = 1.0) =
+    ## Draws an unfilled rectangle.
+    sk.drawRect(pos, vec2(size.x, thickness), color)
+    sk.drawRect(vec2(pos.x, pos.y + size.y - thickness), vec2(size.x, thickness), color)
+    sk.drawRect(pos, vec2(thickness, size.y), color)
+    sk.drawRect(vec2(pos.x + size.x - thickness, pos.y), vec2(thickness, size.y), color)
+
+  proc drawLine(sk: Silky, a, b: Vec2, color: ColorRGBX) =
+    ## Draws a simple pixel-like line.
+    let
+      dx = b.x - a.x
+      dy = b.y - a.y
+      steps = max(1, int(max(abs(dx), abs(dy)) / 4.0'f))
+    for i in 0 .. steps:
+      let t = i.float32 / steps.float32
+      sk.drawRect(
+        vec2(a.x + dx * t - 1.0'f, a.y + dy * t - 1.0'f),
+        vec2(3, 3),
+        color
+      )
+
+  proc taskStateColor(state: TaskState): ColorRGBX =
+    ## Returns a map marker color for a task state.
+    case state
+    of TaskNotDoing:
+      ViewerTask
+    of TaskMaybe:
+      ViewerTaskGuess
+    of TaskMandatory:
+      ViewerButton
+    of TaskCompleted:
+      ViewerMutedText
+
+  proc crewmateOutlineColor(bot: Bot, colorIndex: int): ColorRGBX =
+    ## Returns the debug outline color for one visible crewmate.
+    if bot.knownImposterColor(colorIndex):
+      ViewerImp
+    else:
+      ViewerCrew
+
+  proc drawCrewmateFrameOutlines(
+    sk: Silky,
+    bot: Bot,
+    x,
+    y,
+    scale: float32
+  ) =
+    ## Draws visible crewmate team outlines in screen space.
+    for crewmate in bot.visibleCrewmates:
+      sk.drawOutline(
+        vec2(
+          x + crewmate.x.float32 * scale,
+          y + crewmate.y.float32 * scale
+        ),
+        vec2(
+          bot.playerSprite.width.float32 * scale,
+          bot.playerSprite.height.float32 * scale
+        ),
+        bot.crewmateOutlineColor(crewmate.colorIndex),
+        2
+      )
+
+  proc drawCrewmateMapOutlines(
+    sk: Silky,
+    bot: Bot,
+    x,
+    y,
+    scale: float32
+  ) =
+    ## Draws visible crewmate team outlines in map space.
+    if not bot.localized:
+      return
+    for crewmate in bot.visibleCrewmates:
+      let
+        world = bot.visibleCrewmateWorld(crewmate)
+        spriteX = world.x - SpriteDrawOffX
+        spriteY = world.y - SpriteDrawOffY
+      sk.drawOutline(
+        vec2(x + spriteX.float32 * scale, y + spriteY.float32 * scale),
+        vec2(
+          bot.playerSprite.width.float32 * scale,
+          bot.playerSprite.height.float32 * scale
+        ),
+        bot.crewmateOutlineColor(crewmate.colorIndex),
+        2
+      )
+
+  proc drawFrameView(sk: Silky, bot: Bot, x, y: float32) =
+    ## Draws the latest 128x128 game frame.
+    let pixelScale = ViewerFrameScale
+    sk.drawRect(
+      vec2(x, y),
+      vec2(ScreenWidth.float32 * pixelScale, ScreenHeight.float32 * pixelScale),
+      ViewerPanelAlt
+    )
+    for py in 0 ..< ScreenHeight:
+      for px in 0 ..< ScreenWidth:
+        let index = bot.unpacked[py * ScreenWidth + px]
+        sk.drawRect(
+          vec2(x + px.float32 * pixelScale, y + py.float32 * pixelScale),
+          vec2(pixelScale, pixelScale),
+          sampleColor(index)
+        )
+    sk.drawCrewmateFrameOutlines(bot, x, y, pixelScale)
+    if bot.interstitial:
+      return
+    let
+      button = bot.sim.gameMap.button
+      buttonX = button.x - bot.cameraX
+      buttonY = button.y - bot.cameraY
+    if buttonX + button.w >= 0 and buttonY + button.h >= 0 and
+        buttonX < ScreenWidth and buttonY < ScreenHeight:
+      sk.drawOutline(
+        vec2(x + buttonX.float32 * pixelScale, y + buttonY.float32 * pixelScale),
+        vec2(button.w.float32 * pixelScale, button.h.float32 * pixelScale),
+        ViewerButton,
+        2
+      )
+    sk.drawRect(
+      vec2(
+        x + PlayerScreenX.float32 * pixelScale - 3,
+        y + PlayerScreenY.float32 * pixelScale - 3
+      ),
+      vec2(7, 7),
+      ViewerPlayer
+    )
+    let playerPos = vec2(
+      x + PlayerScreenX.float32 * pixelScale,
+      y + PlayerScreenY.float32 * pixelScale
+    )
+    for dot in bot.radarDots:
+      let dotPos = vec2(
+        x + dot.x.float32 * pixelScale + pixelScale * 0.5,
+        y + dot.y.float32 * pixelScale + pixelScale * 0.5
+      )
+      sk.drawLine(playerPos, dotPos, ViewerRadarLine)
+      sk.drawRect(dotPos - vec2(4, 4), vec2(9, 9), ViewerTaskGuess)
+    for task in bot.sim.tasks:
+      let
+        taskX = task.x - bot.cameraX
+        taskY = task.y - bot.cameraY
+        taskVisible = taskX + task.w >= 0 and taskY + task.h >= 0 and
+          taskX < ScreenWidth and taskY < ScreenHeight
+      if not taskVisible:
+        continue
+      let
+        icon = bot.taskIconInspectRect(task)
+        hasIcon = bot.taskIconVisibleFor(task)
+        color =
+          if hasIcon:
+            ViewerPlayer
+          else:
+            ViewerTask
+        taskPos = vec2(
+          x + taskX.float32 * pixelScale,
+          y + taskY.float32 * pixelScale
+        )
+        taskSize = vec2(
+          task.w.float32 * pixelScale,
+          task.h.float32 * pixelScale
+        )
+      sk.drawOutline(taskPos, taskSize, color, 2)
+      if icon.x + icon.w >= 0 and icon.y + icon.h >= 0 and
+          icon.x < ScreenWidth and icon.y < ScreenHeight:
+        let
+          iconPos = vec2(
+            x + icon.x.float32 * pixelScale,
+            y + icon.y.float32 * pixelScale
+          )
+          iconSize = vec2(
+            icon.w.float32 * pixelScale,
+            icon.h.float32 * pixelScale
+          )
+        sk.drawOutline(iconPos, iconSize, color, 2)
+        sk.drawLine(
+          taskPos + taskSize * 0.5,
+          iconPos + iconSize * 0.5,
+          color
+        )
+    for icon in bot.visibleTaskIcons:
+      sk.drawOutline(
+        vec2(
+          x + icon.x.float32 * pixelScale,
+          y + icon.y.float32 * pixelScale
+        ),
+        vec2(
+          bot.taskSprite.width.float32 * pixelScale,
+          bot.taskSprite.height.float32 * pixelScale
+        ),
+        ViewerButton,
+        2
+      )
+
+  proc drawMapView(sk: Silky, bot: Bot, x, y: float32) =
+    ## Draws the map, inferred viewport, and known task stations.
+    let scale = ViewerMapScale
+    sk.drawRect(
+      vec2(x, y),
+      vec2(MapWidth.float32 * scale, MapHeight.float32 * scale),
+      ViewerUnknown
+    )
+    for my in countup(0, MapHeight - 1, 2):
+      for mx in countup(0, MapWidth - 1, 2):
+        let idx = mapIndexSafe(mx, my)
+        let color =
+          if bot.sim.wallMask[idx]:
+            ViewerWall
+          elif bot.sim.walkMask[idx]:
+            ViewerWalk
+          else:
+            sampleColor(bot.sim.mapPixels[idx])
+        sk.drawRect(
+          vec2(x + mx.float32 * scale, y + my.float32 * scale),
+          vec2(max(1.0'f, scale * 2), max(1.0'f, scale * 2)),
+          color
+        )
+    if bot.interstitial:
+      return
+    for i in 0 ..< bot.sim.tasks.len:
+      let
+        task = bot.sim.tasks[i]
+        center = task.taskCenter()
+        state =
+          if bot.taskStates.len == bot.sim.tasks.len:
+            bot.taskStates[i]
+          else:
+            TaskNotDoing
+      sk.drawRect(
+        vec2(x + center.x.float32 * scale - 3, y + center.y.float32 * scale - 3),
+        vec2(7, 7),
+        taskStateColor(state)
+      )
+    if bot.taskStates.len == bot.sim.tasks.len:
+      for i in 0 ..< bot.sim.tasks.len:
+        let
+          isRadarTask =
+            bot.radarTasks.len == bot.sim.tasks.len and bot.radarTasks[i]
+          isCheckoutTask =
+            bot.checkoutTasks.len == bot.sim.tasks.len and bot.checkoutTasks[i]
+        if bot.taskStates[i] != TaskMandatory and
+            not isRadarTask and
+            not isCheckoutTask:
+          continue
+        let
+          center = bot.sim.tasks[i].taskCenter()
+          color =
+            if bot.taskStates[i] == TaskMandatory:
+              taskStateColor(TaskMandatory)
+            else:
+              taskStateColor(TaskMaybe)
+          pos = vec2(
+            x + center.x.float32 * scale - 5,
+            y + center.y.float32 * scale - 5
+          )
+        sk.drawOutline(pos, vec2(11, 11), color, 2)
+        if bot.localized:
+          sk.drawLine(
+            vec2(
+              x + bot.playerWorldX().float32 * scale,
+              y + bot.playerWorldY().float32 * scale
+            ),
+            pos + vec2(5, 5),
+            ViewerRadarLine
+          )
+    let button = bot.sim.gameMap.button
+    sk.drawOutline(
+      vec2(
+        x + button.x.float32 * scale,
+        y + button.y.float32 * scale
+      ),
+      vec2(button.w.float32 * scale, button.h.float32 * scale),
+      ViewerButton,
+      1
+    )
+    if bot.localized:
+      sk.drawOutline(
+        vec2(x + bot.cameraX.float32 * scale, y + bot.cameraY.float32 * scale),
+        vec2(ScreenWidth.float32 * scale, ScreenHeight.float32 * scale),
+        ViewerViewport,
+        1
+      )
+      sk.drawRect(
+        vec2(
+          x + bot.playerWorldX().float32 * scale - 2,
+          y + bot.playerWorldY().float32 * scale - 2
+        ),
+        vec2(5, 5),
+        ViewerPlayer
+      )
+      sk.drawCrewmateMapOutlines(bot, x, y, scale)
+    if bot.homeSet:
+      sk.drawOutline(
+        vec2(x + bot.homeX.float32 * scale - 5, y + bot.homeY.float32 * scale - 5),
+        vec2(10, 10),
+        ViewerButton,
+        1
+      )
+    if bot.hasGoal:
+      sk.drawRect(
+        vec2(x + bot.goalX.float32 * scale - 4, y + bot.goalY.float32 * scale - 4),
+        vec2(9, 9),
+        ViewerTask
+      )
+    if bot.path.len > 0:
+      var previous = vec2(
+        x + bot.playerWorldX().float32 * scale,
+        y + bot.playerWorldY().float32 * scale
+      )
+      let start = min(max(0, bot.pathCursor), bot.path.high)
+      for i in countup(start, bot.path.high, 8):
+        let current = vec2(
+          x + bot.path[i].x.float32 * scale,
+          y + bot.path[i].y.float32 * scale
+        )
+        sk.drawLine(previous, current, ViewerPath)
+        previous = current
+      if bot.hasGoal:
+        sk.drawLine(
+          previous,
+          vec2(x + bot.goalX.float32 * scale, y + bot.goalY.float32 * scale),
+          ViewerPath
+        )
+    if bot.hasPathStep:
+      sk.drawRect(
+        vec2(
+          x + bot.pathStep.x.float32 * scale - 2,
+          y + bot.pathStep.y.float32 * scale - 2
+        ),
+        vec2(5, 5),
+        ViewerButton
+      )
+
+  proc refreshDisplayScale(viewer: ViewerApp) =
+    ## Updates UI scaling after the window moves between displays.
+    let scale = viewer.window.displayScale()
+    if abs(scale - viewer.contentScale) <= 0.001'f:
+      return
+    viewer.contentScale = scale
+    viewer.silky.uiScale = scale
+    let logicalSize = (viewer.window.size.vec2 / scale).ivec2
+    viewer.window.size = logicalSize.scaledWindowSize(scale)
+
+  proc initViewerApp(): ViewerApp =
+    ## Opens the diagnostic viewer window.
+    result = ViewerApp()
+    result.window = newWindow(
+      title = "TrueCrew Bot Viewer",
+      size = ivec2(ViewerWindowWidth, ViewerWindowHeight),
+      style = Decorated,
+      visible = true
+    )
+    makeContextCurrent(result.window)
+    when not defined(useDirectX):
+      loadExtensions()
+    result.silky = newSilky(result.window, atlasPath())
+    result.contentScale = result.window.displayScale()
+    result.silky.uiScale = result.contentScale
+    result.window.size =
+      ivec2(
+        ViewerWindowWidth,
+        ViewerWindowHeight
+      ).scaledWindowSize(result.contentScale)
+
+  proc pumpViewer(
+    viewer: ViewerApp,
+    bot: Bot,
+    connected: bool,
+    url: string
+  ) =
+    ## Pumps and renders one viewer frame.
+    if viewer.isNil:
+      return
+    pollEvents()
+    viewer.refreshDisplayScale()
+    if viewer.window.buttonPressed[KeyEscape]:
+      viewer.window.closeRequested = true
+    if viewer.window.closeRequested:
+      return
+    let
+      frameSize = viewer.window.size
+      logicalSize = frameSize.vec2 / viewer.silky.uiScale
+      framePos = vec2(ViewerMargin, ViewerMargin + 28)
+      mapPos = vec2(
+        framePos.x + ScreenWidth.float32 * ViewerFrameScale + 24,
+        ViewerMargin + 28
+      )
+      mapSize = vec2(MapWidth.float32 * ViewerMapScale, MapHeight.float32 * ViewerMapScale)
+      infoPos = vec2(ViewerMargin, framePos.y + ScreenHeight.float32 * ViewerFrameScale + 28)
+      infoSize = vec2(logicalSize.x - ViewerMargin * 2, 300)
+      sk = viewer.silky
+    sk.beginUI(viewer.window, frameSize)
+    sk.clearScreen(ViewerBackground)
+    discard sk.drawText("Default", "TrueCrew Bot Viewer", vec2(ViewerMargin, ViewerMargin), ViewerText)
+    sk.drawRect(
+      framePos - vec2(8, 8),
+      vec2(ScreenWidth.float32 * ViewerFrameScale + 16, ScreenHeight.float32 * ViewerFrameScale + 16),
+      ViewerPanel
+    )
+    sk.drawRect(mapPos - vec2(8, 8), mapSize + vec2(16, 16), ViewerPanel)
+    sk.drawRect(infoPos - vec2(8, 8), infoSize + vec2(16, 16), ViewerPanel)
+    sk.drawFrameView(bot, framePos.x, framePos.y)
+    sk.drawMapView(bot, mapPos.x, mapPos.y)
+    let goalText =
+      if bot.hasGoal:
+        let ready =
+          bot.goalIndex >= 0 and
+          bot.goalIndex < bot.sim.tasks.len and
+          bot.taskReadyAtGoal(bot.goalIndex, bot.goalX, bot.goalY)
+        "goal: " & bot.goalName &
+          " dist=" & $heuristic(
+            bot.playerWorldX(),
+            bot.playerWorldY(),
+            bot.goalX,
+            bot.goalY
+          ) &
+          " ready=" & $ready & "\n"
+      else:
+        "goal: none\n"
+    let infoText =
+      "intent: " & bot.intent & "\n" &
+      "room: " & bot.roomName() & "\n" &
+      "timing sprite scans: " & $bot.spriteScanMicros & "us (" &
+        $(bot.spriteScanMicros div 1000) & "ms)\n" &
+      "timing localize local: " & $bot.localizeLocalMicros & "us (" &
+        $(bot.localizeLocalMicros div 1000) & "ms)\n" &
+      "timing localize patch: " & $bot.localizePatchMicros & "us (" &
+        $(bot.localizePatchMicros div 1000) & "ms)\n" &
+      "timing localize spiral: " & $bot.localizeSpiralMicros & "us (" &
+        $(bot.localizeSpiralMicros div 1000) & "ms)\n" &
+      "timing pathing: " & $bot.astarMicros & "us (" &
+        $(bot.astarMicros div 1000) & "ms)\n" &
+      "client tick: " & $bot.frameTick & "\n" &
+      "BUTTONS HELD: " & inputMaskSummary(bot.lastMask) & "\n" &
+      "timing center: " & $bot.centerMicros & "us (" &
+        $(bot.centerMicros div 1000) & "ms)\n" &
+      "frames buffered: " & $bot.frameBufferLen &
+        " dropped=" & $bot.framesDropped &
+        " total=" & $bot.skippedFrames & "\n" &
+      "interstitial text: " &
+        (if bot.interstitialText.len > 0: bot.interstitialText else: "none") &
+        "\n" &
+      "lock: " & cameraLockName(bot.cameraLock) & " score=" & $bot.cameraScore & "\n" &
+      "role: " & roleName(bot.role) &
+        " self=" & playerColorName(bot.selfColorIndex) &
+        " ghost=" & $bot.isGhost &
+        " ghost icon frames=" & $bot.ghostIconFrames &
+        " kill ready=" & $bot.imposterKillReady &
+        " kill cooldown=" & $bot.imposterCooldownPercent & "%" &
+        " imp goal=" & $bot.imposterGoalIndex &
+        " prowl=" & $bot.imposterProwlIndex & "\n" &
+      "round tick=" & (
+        if bot.roundTimingKnown():
+          $bot.roundElapsedTicks()
+        else:
+          "unset"
+      ) & " server tick=" & $bot.serverTick &
+        " hunt=" & $bot.imposterHuntActive() & "\n" &
+      "known imps: " & bot.knownImposterSummary() & "\n" &
+      "voting: " & $bot.voting &
+        " count=" & $bot.votePlayerCount &
+        " listen=" & $max(0, bot.frameTick - bot.voteStartTick) &
+        " cursor=" & bot.voteTargetName(bot.voteCursor) &
+        " target=" & bot.voteTargetName(bot.voteTarget) & "\n" &
+      "votes: " & bot.voteSummary() & "\n" &
+      "vote chat: " & bot.voteChatText & "\n" &
+      "camera: (" & $bot.cameraX & ", " & $bot.cameraY & ")\n" &
+      "player: (" & $bot.playerWorldX() & ", " & $bot.playerWorldY() & ")\n" &
+      "home: " & (
+        if bot.homeSet:
+          "(" & $bot.homeX & ", " & $bot.homeY & ")"
+        else:
+          "unset"
+      ) & " started=" & $bot.gameStarted & "\n" &
+      "velocity: (" & $bot.velocityX & ", " & $bot.velocityY & ")\n" &
+      "crewmates masked: " & $bot.visibleCrewmates.len &
+        " bodies=" & $bot.visibleBodies.len &
+        " ghosts=" & $bot.visibleGhosts.len & "\n" &
+      "suspect: " & bot.suspectSummary() & "\n" &
+      "radar dots: " & $bot.radarDots.len &
+        " radar tasks=" & $bot.radarTaskCount() &
+        " checkout=" & $bot.checkoutTaskCount() &
+        " task icons=" & $bot.visibleTaskIcons.len & "\n" &
+      "tasks mandatory=" & $bot.taskStateCount(TaskMandatory) &
+        " completed=" & $bot.taskStateCount(TaskCompleted) & "\n" &
+      goalText &
+      "path pixels: " & $bot.path.len & "\n" &
+      "desired: " & inputMaskSummary(bot.desiredMask) & "\n" &
+      "controller: " & inputMaskSummary(bot.controllerMask) & "\n" &
+      "stuck: " & $bot.stuckFrames & " jiggle=" & $bot.jiggleTicks & "\n" &
+      "last thought: " & (
+        if bot.lastThought.len > 0:
+          bot.lastThought
+        else:
+          "waiting"
+      ) & "\n" &
+      "status: " & (if connected: "connected" else: "reconnecting") & "\n" &
+      "url: " & url
+    discard sk.drawText("Default", infoText, infoPos, ViewerText, infoSize.x, infoSize.y)
+    sk.endUi()
+    viewer.window.swapBuffers()
+
+  proc viewerOpen(viewer: ViewerApp): bool =
+    ## Returns true when the diagnostic viewer should keep running.
+    viewer.isNil or not viewer.window.closeRequested
+
+when not defined(italkalotLibrary) and defined(botHeadless):
+  proc initViewerApp(): ViewerApp =
+    ## Returns no viewer for headless builds.
+    nil
+
+  proc pumpViewer(
+    viewer: ViewerApp,
+    bot: Bot,
+    connected: bool,
+    url: string
+  ) =
+    ## Ignores viewer frames in headless builds.
+    discard
+
+  proc viewerOpen(viewer: ViewerApp): bool =
+    ## Returns true because headless builds have no viewer window.
+    true
+
+when not defined(italkalotLibrary):
+  proc runBot(
+    host = DefaultHost,
+    port = PlayerDefaultPort,
+    gui = false,
+    name = "",
+    mapPath = "",
+    url = "",
+    token = "",
+    slot = -1,
+    exitOnDisconnect = false
+  ) =
+    ## Connects to a Crewrift server and processes player frames.
+    ## If `url` is non-empty it is used as the WebSocket endpoint (scheme,
+    ## host, port, path); otherwise we build ws://host:port/player. A
+    ## missing path is filled in with WebSocketPath.
+    if not gui:
+      startProfileTrace()
+    var bot = initBot(mapPath)
+    let endpoint =
+      if url.len > 0: ensureWsPath(url, WebSocketPath)
+      else: "ws://" & host & ":" & $port & WebSocketPath
+    let connectUrl = playerConnectUrl(endpoint, name, token, slot)
+    let client = initProtocolClient()
+
+    proc closeConnection(ws: var WebSocket) =
+      ## Closes a websocket if one is currently open.
+      if not ws.isNil:
+        ws.close()
+        ws = nil
+
+    proc receiveTimeout(): int =
+      ## Returns the frame receive timeout for the active run mode.
+      if gui:
+        10
+      else:
+        BotReceiveTimeoutMs
+
+    var
+      viewer =
+        if gui: initViewerApp()
+        else: nil
+      connected = false
+      notifiedFailure = false
+      everConnected = false
+      disconnectStart = getMonoTime()
+
+    while viewer.viewerOpen():
+      var ws: WebSocket
+      try:
+        if everConnected or notifiedFailure:
+          echo "trying to reconnect to ", connectUrl
+        ws = newWebSocket(connectUrl)
+        echo "connected to ", connectUrl, " protocol=sprite"
+        flushFile(stdout)
+        notifiedFailure = false
+        var
+          lastMask = 0xff'u8
+        client.reset()
+        bot.resetProtocolMap()
+        bot.frameBufferLen = 0
+        bot.framesDropped = 0
+        connected = true
+        everConnected = true
+
+        while viewer.viewerOpen():
+          if gui:
+            viewer.pumpViewer(bot, connected, connectUrl)
+            if not viewer.viewerOpen():
+              ws.close()
+              break
+          var receivedFrame = false
+          if gui:
+            receivedFrame = client.receiveLatestFrameInto(
+              ws,
+              gui,
+              bot.packed,
+              bot.unpacked,
+              receiveTimeout()
+            )
+          else:
+            profileBlock "receive latest frame":
+              receivedFrame = client.receiveLatestFrameInto(
+                ws,
+                gui,
+                bot.packed,
+                bot.unpacked,
+                receiveTimeout()
+              )
+          if not receivedFrame:
+            continue
+          bot.frameTick += client.frameAdvance
+          bot.frameBufferLen = client.frameBufferLen
+          bot.framesDropped = client.framesDropped
+          bot.skippedFrames = client.skippedFrames
+          if bot.framesDropped > 0 and (
+              bot.frameTick - bot.lastDropLogTick >= 120 or
+              bot.framesDropped >= 16
+          ):
+            echo "frames dropped: ", bot.framesDropped,
+              " buffered=", client.frameAdvance,
+              " total=", bot.skippedFrames,
+              " tick=", bot.frameTick
+            bot.lastDropLogTick = bot.frameTick
+          if gui:
+            bot.updateProtocolDetections(client)
+          else:
+            profileBlock "update protocol detections":
+              bot.updateProtocolDetections(client)
+          var nextMask = 0'u8
+          if gui:
+            nextMask = bot.decideNextMask()
+          else:
+            profileBlock "decide next mask":
+              nextMask = bot.decideNextMask()
+          if not gui and profileShouldDump(bot.frameTick):
+            finishProfileTrace()
+          bot.lastMask = nextMask
+          if nextMask != lastMask:
+            if gui:
+              ws.send(inputBlob(nextMask), BinaryMessage)
+            else:
+              profileBlock "send input":
+                ws.send(inputBlob(nextMask), BinaryMessage)
+            lastMask = nextMask
+          if bot.pendingChatReady():
+            if gui:
+              ws.send(chatBlob(bot.pendingChat), BinaryMessage)
+              bot.markPendingChatSent()
+            else:
+              profileBlock "send chat":
+                ws.send(chatBlob(bot.pendingChat), BinaryMessage)
+                bot.markPendingChatSent()
+          if bot.readyMessageReady():
+            if gui:
+              ws.send(readyBlob(), BinaryMessage)
+            else:
+              profileBlock "send ready":
+                ws.send(readyBlob(), BinaryMessage)
+      except CatchableError as e:
+        ws.closeConnection()
+        if connected:
+          echo "connection lost: ", e.msg,
+            " frameTick=", bot.frameTick,
+            " serverTick=", bot.serverTick,
+            " role=", bot.role.roleName(),
+            " voting=", bot.voting,
+            " interstitial=", bot.interstitial,
+            " text=", (
+              if bot.interstitialText.len > 0:
+                bot.interstitialText
+              elif bot.protocolInterstitialText.len > 0:
+                bot.protocolInterstitialText
+              else:
+                "none"
+            ),
+            " framesDropped=", bot.framesDropped,
+            " skipped=", bot.skippedFrames
+          flushFile(stdout)
+          if exitOnDisconnect:
+            break
+          disconnectStart = getMonoTime()
+        elif not notifiedFailure:
+          echo "connection failed: ", e.msg
+          flushFile(stdout)
+          notifiedFailure = true
+        connected = false
+        let windowMs = reconnectWindowMs(everConnected)
+        if (getMonoTime() - disconnectStart).inMilliseconds >= windowMs:
+          echo "can't connect after ", windowMs div 1000, "s; exiting"
+          break
+        if gui:
+          let reconnectStart = getMonoTime()
+          while viewer.viewerOpen() and
+              (getMonoTime() - reconnectStart).inMilliseconds <
+              ReconnectAttemptMs:
+            viewer.pumpViewer(bot, connected, connectUrl)
+            sleep(10)
+        else:
+          sleep(ReconnectAttemptMs)
+
+when isMainModule and not defined(italkalotLibrary):
+  type
+    BotRunConfig = object
+      url: string
+      address: string
+      port: int
+      gui: bool
+      name: string
+      mapPath: string
+      token: string
+      slot: int
+      exitOnDisconnect: bool
+
+  proc requireOptionValue(key, val: string) =
+    ## Raises when one command-line option is missing its value.
+    if val.len == 0:
+      raise newException(ValueError, "Option --" & key & " requires a value.")
+
+  proc parseBotPort(value: string): int =
+    ## Parses a bot server port.
+    try:
+      result = value.parseInt()
+    except ValueError:
+      raise newException(ValueError, "--port must be an integer.")
+    if result <= 0 or result > 65535:
+      raise newException(ValueError, "--port must be between 1 and 65535.")
+
+  proc parseBotSlot(value: string): int =
+    ## Parses a requested bot slot index.
+    try:
+      result = value.parseInt()
+    except ValueError:
+      raise newException(ValueError, "--slot must be an integer.")
+    if result < 0:
+      raise newException(ValueError, "--slot must be non-negative.")
+
+  proc readBotRunConfig(): BotRunConfig =
+    ## Reads command-line options for one bot process.
+    result = BotRunConfig(
+      url: getEnv("COWORLD_PLAYER_WS_URL", getEnv("COGAMES_ENGINE_WS_URL")),
+      address: DefaultHost,
+      port: PlayerDefaultPort,
+      slot: -1
+    )
+    var
+      addressSet = false
+      portSet = false
+      urlSet = false
+    for kind, key, val in getopt():
+      case kind
+      of cmdLongOption:
+        case key
+        of "address", "host":
+          key.requireOptionValue(val)
+          result.address = val
+          addressSet = true
+        of "port":
+          key.requireOptionValue(val)
+          result.port = parseBotPort(val)
+          portSet = true
+        of "url":
+          key.requireOptionValue(val)
+          result.url = val
+          urlSet = true
+        of "name":
+          key.requireOptionValue(val)
+          result.name = val
+        of "map", "map-path":
+          key.requireOptionValue(val)
+          result.mapPath = val
+        of "token":
+          key.requireOptionValue(val)
+          result.token = val
+        of "slot":
+          key.requireOptionValue(val)
+          result.slot = parseBotSlot(val)
+        of "gui":
+          if val.len > 0:
+            raise newException(
+              ValueError,
+              "Option --gui does not take a value."
+            )
+          result.gui = true
+        of "exit-on-disconnect":
+          if val.len > 0:
+            raise newException(
+              ValueError,
+              "Option --exit-on-disconnect does not take a value."
+            )
+          result.exitOnDisconnect = true
+        else:
+          raise newException(ValueError, "Unknown option: --" & key)
+      of cmdShortOption:
+        raise newException(ValueError, "Unknown option: -" & key)
+      of cmdArgument:
+        raise newException(ValueError, "Unexpected argument: " & key)
+      of cmdEnd:
+        discard
+    if not urlSet and (addressSet or portSet):
+      result.url = ""
+
+  let config = readBotRunConfig()
+  let target =
+    if config.url.len > 0:
+      config.url
+    else:
+      "ws://" & config.address & ":" & $config.port
+  echo "starting truecrew -> ", target, " protocol=sprite"
+  addExitProc(finishProfileTrace)
+  runBot(
+    config.address,
+    config.port,
+    config.gui,
+    config.name,
+    config.mapPath,
+    config.url,
+    config.token,
+    config.slot,
+    config.exitOnDisconnect
+  )

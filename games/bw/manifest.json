@@ -1,0 +1,400 @@
+{
+ "id": "cow_03bf6e4d-fcf2-4e06-83e6-f1bdd164f33e",
+ "name": "bw",
+ "version": "0.2.27",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld-bw/blob/master/README.md"
+    }
+   },
+   "name": "bw",
+   "owner": "treeform@softmax.com",
+   "version": "0.2.27",
+   "runnable": {
+    "env": {},
+    "run": [
+     "/bin/openbw"
+    ],
+    "type": "game",
+    "image": "img_8040e5e9-0cac-46e7-a0a1-b54c9b6a0a0f"
+   },
+   "protocols": {
+    "global": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/bitworld/blob/master/docs/sprite_v1.md"
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/bitworld/blob/master/docs/sprite_v1.md"
+    }
+   },
+   "description": "Four-player OpenBW StarCraft: Brood War free-for-all over the bitworld sprite protocol. Each slot picks its own race. Build an army, eliminate the other players, and be the last one standing within 45 minutes.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players",
+     "maxTicks"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "One connection token per player slot."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        },
+        "race": {
+         "enum": [
+          "terran",
+          "zerg",
+          "protoss"
+         ],
+         "type": "string",
+         "description": "Race for this slot; terran when omitted."
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "One display-name object per player slot."
+     },
+     "maxTicks": {
+      "type": "integer",
+      "maximum": 100000,
+      "minimum": 1,
+      "description": "Game frames before the episode ends."
+     },
+     "num_agents": {
+      "type": "integer",
+      "const": 4,
+      "description": "Seat count for the episode. The ruleset commissioner reads this to size episode rosters; the game itself ignores it (seats are the tokens array)."
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores",
+     "outcomes",
+     "mineralsGathered",
+     "supplyDepots",
+     "marines",
+     "barracks",
+     "ticks"
+    ],
+    "properties": {
+     "ticks": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "Per-slot FFA score. Victory dominates, followed by surviving army and economy value."
+     },
+     "marines": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "Living Marines per player slot at episode end."
+     },
+     "barracks": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "Living Barracks per player slot at episode end."
+     },
+     "outcomes": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "OpenBW victory state per player slot."
+     },
+     "supplyDepots": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "Living Supply Depots per player slot at episode end."
+     },
+     "mineralsGathered": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "Total minerals gathered per player slot."
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "starcraft",
+   "rts",
+   "free-for-all"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "sleepyterran",
+    "env": {},
+    "run": [
+     "/bin/sleepyterran"
+    ],
+    "name": "Sleepy Terran",
+    "type": "player",
+    "image": "img_67283231-671e-4569-89fb-669e10ee9136",
+    "description": "Uses a one-barracks opening, produces Marines, and attacks rotating enemy start locations."
+   },
+   {
+    "id": "lazyterran",
+    "env": {},
+    "run": [
+     "/bin/lazyterran"
+    ],
+    "name": "Lazy Terran",
+    "type": "player",
+    "image": "img_67283231-671e-4569-89fb-669e10ee9136",
+    "description": "Neutral baseline: keeps its starting SCVs mining and never trains, builds or attacks. Use it as a punching bag opponent."
+   },
+   {
+    "id": "sleepyzerg",
+    "env": {},
+    "run": [
+     "/bin/sleepyzerg"
+    ],
+    "name": "Sleepy Zerg",
+    "type": "player",
+    "image": "img_67283231-671e-4569-89fb-669e10ee9136",
+    "description": "Zerg swarm for a slot with race zerg: morphs Drones and Overlords from Larvae, builds a Spawning Pool and extra Hatcheries, expands to the corner minerals, and sends Zergling waves through the gate walls."
+   },
+   {
+    "id": "sleepyprotos",
+    "env": {},
+    "run": [
+     "/bin/sleepyprotos"
+    ],
+    "name": "Sleepy Protoss",
+    "type": "player",
+    "image": "img_67283231-671e-4569-89fb-669e10ee9136",
+    "description": "Two-Gateway Zealot build for a slot with race protoss: warps Pylons and Gateways, expands to the corner minerals, and sends Zealot waves through the gate walls."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/metta/main/packages/coworld/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "standard",
+    "name": "Four-player FFA",
+    "description": "Four players on Weave fight to be last standing within 10 minutes. Each slot may set its own race; slots default to Terran.",
+    "game_config": {
+     "seed": 0,
+     "players": [
+      {
+       "name": "Player 1"
+      },
+      {
+       "name": "Player 2"
+      },
+      {
+       "name": "Player 3"
+      },
+      {
+       "name": "Player 4"
+      }
+     ],
+     "maxTicks": 64800,
+     "num_agents": 4
+    }
+   },
+   {
+    "id": "protoss-mirror",
+    "name": "Four-player Protoss FFA",
+    "description": "All four slots are Protoss. A race-specific policy cannot choose its own race \u2014 race comes from this config \u2014 so a Protoss bot dispatched into the raceless standard variant is handed a Terran base it cannot build from. This mirror lets Protoss bots compete on equal terms. Longer than standard because every base is sealed behind a 4000 HP neutral wall, and breaking out plus killing three bases does not fit in 14400 ticks.",
+    "game_config": {
+     "seed": 0,
+     "players": [
+      {
+       "name": "Protoss 1",
+       "race": "protoss"
+      },
+      {
+       "name": "Protoss 2",
+       "race": "protoss"
+      },
+      {
+       "name": "Protoss 3",
+       "race": "protoss"
+      },
+      {
+       "name": "Protoss 4",
+       "race": "protoss"
+      }
+     ],
+     "maxTicks": 43200,
+     "num_agents": 4
+    }
+   },
+   {
+    "id": "zerg-mirror",
+    "name": "Four-player Zerg FFA",
+    "description": "All four slots are Zerg. Same purpose as the Protoss mirror: a race-specific policy needs a config that grants it its race.",
+    "game_config": {
+     "seed": 0,
+     "players": [
+      {
+       "name": "Zerg 1",
+       "race": "zerg"
+      },
+      {
+       "name": "Zerg 2",
+       "race": "zerg"
+      },
+      {
+       "name": "Zerg 3",
+       "race": "zerg"
+      },
+      {
+       "name": "Zerg 4",
+       "race": "zerg"
+      }
+     ],
+     "maxTicks": 43200,
+     "num_agents": 4
+    }
+   },
+   {
+    "id": "terran-mirror",
+    "name": "Four-player Terran FFA",
+    "description": "All four slots are explicitly Terran. Same shape as the other mirrors so the set is symmetric; matches what the standard variant produces by default, but stated rather than implied.",
+    "game_config": {
+     "seed": 0,
+     "players": [
+      {
+       "name": "Terran 1",
+       "race": "terran"
+      },
+      {
+       "name": "Terran 2",
+       "race": "terran"
+      },
+      {
+       "name": "Terran 3",
+       "race": "terran"
+      },
+      {
+       "name": "Terran 4",
+       "race": "terran"
+      }
+     ],
+     "maxTicks": 43200,
+     "num_agents": 4
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "BW Commissioner",
+    "type": "commissioner",
+    "image": "img_4c3f4f9d-3cac-4c33-8d6b-c96def60c91d",
+    "description": "Runs recurring four-player FFA rounds and ranks policies by mean placement score."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "sleepyzerg"
+    },
+    {
+     "player_id": "sleepyterran"
+    },
+    {
+     "player_id": "lazyterran"
+    },
+    {
+     "player_id": "sleepyprotos"
+    }
+   ],
+   "game_config": {
+    "seed": 0,
+    "players": [
+     {
+      "name": "Sleepy Zerg",
+      "race": "zerg"
+     },
+     {
+      "name": "Sleepy Terran"
+     },
+     {
+      "name": "Lazy Terran"
+     },
+     {
+      "name": "Protoss",
+      "race": "protoss"
+     }
+    ],
+    "maxTicks": 3000
+   }
+  },
+  "players_per_user": 4
+ },
+ "manifest_hash": "sha256:90274cb617103b4da76281bb52ef619c5b96db51b03324cdb9a97dd6b7be2ff4",
+ "size_bytes": 6991,
+ "created_at": "2026-08-05T23:49:12.468885Z",
+ "canonical": true
+}

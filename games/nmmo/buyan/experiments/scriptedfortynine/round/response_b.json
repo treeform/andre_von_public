@@ -1,0 +1,5435 @@
+{
+  "id": "xreq_603646c7-8459-472b-a162-08b63d2a4084",
+  "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+  "requester": "starplant@gmail.com",
+  "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+  "coworld_name": "nmmo",
+  "coworld_version": "0.1.5",
+  "variant_id": "default",
+  "status": "pending",
+  "episode_count": 30,
+  "pending_count": 30,
+  "submitted_count": 0,
+  "running_count": 0,
+  "completed_count": 0,
+  "failed_count": 0,
+  "error": null,
+  "created_at": "2026-09-13T02:36:25.535301Z",
+  "started_at": null,
+  "completed_at": null,
+  "episodes": [
+    {
+      "id": "ereq_446a768a-6a2c-4503-80a0-2801ecaf5759",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.544768Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 0,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_d9971b2a-1227-488d-b0d7-21d418c01288",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.545358Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 1,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_7aeaa5c2-d287-47b8-b0ec-f7c8779dcc5f",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.545930Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 2,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_0c299a91-47ac-4f65-adee-c871b36900fb",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.546453Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 3,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_724e96cd-70a2-4ae3-bf59-671f31f6343a",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.546981Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 4,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_5398b281-f8f8-40b6-b13e-b45b9b481b64",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.547695Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 5,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_a42683b3-e485-4798-a236-5c9bb0468f99",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.548204Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 6,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_6c4904aa-c43c-4e9c-a1ea-f2c8f8c9d816",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.548708Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 7,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_a59dfca3-2765-4b9e-91e2-1ccabc7eb0d0",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.549214Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 8,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_922a7580-2868-4179-8d65-df5954e369f2",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.549713Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 9,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_71c9f058-0820-4272-80a3-f65a0e5256be",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.550207Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 10,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_40305587-c4e8-4052-a5eb-1ec00983b4c0",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.550714Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 11,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_447c5644-3ad7-4c54-a1e3-87bf66a0ed5d",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.551228Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 12,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_0352e2ec-7c19-4897-b015-b6a5deeb311f",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.551894Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 13,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_3abeb7bd-e6d3-4752-9af3-08ad6ba2ff61",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.552425Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 14,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_37524397-193b-48a1-99cc-95e682cff5a7",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.552947Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 15,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_e3a173d7-c6e8-49a4-854a-4bd50fcb054b",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.553478Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 16,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_2196baf2-ad70-48ba-b87e-f56760e6300b",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.554005Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 17,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_4b4ac4e9-d730-4bc4-ad3c-621776d1d417",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.554604Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 18,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_5a2c6218-a548-486e-866d-b909e62aefce",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.555154Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 19,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_fd4a7549-2aa7-4f6c-b0c9-e1717ff77539",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.555740Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 20,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_edae74e9-74bf-4926-83f6-0450a506afa5",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.556269Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 21,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_e9e8f780-1042-4b20-b1dd-57d6b659469f",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.556801Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 22,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_c78ab7dc-ed59-43b5-9f07-b981f33548ea",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.557326Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 23,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_ad24abc0-8669-45c0-82bd-0f71c4282eb8",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.557850Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 24,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_0a5d24f6-5f14-461d-b0f0-62cd2a64cb86",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.558370Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 25,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_97cd4d3c-ad99-4e35-b327-5eef922c0f5f",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.559004Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 26,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_b9482d87-772e-4686-ab43-e30ffba6042b",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.559571Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 27,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_0d204e69-6171-46c2-864a-0ad2e4bcb6cc",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "87adca41-a779-43a0-addf-282af50800a8"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.560090Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 28,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    },
+    {
+      "id": "ereq_8c200d19-cd6f-4a7e-b253-2fc0171e7759",
+      "requester_user_id": "s25q6tn121cx1j3z7ql3ga5d",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+      "seed": null,
+      "max_steps": null,
+      "status": "pending",
+      "policy_version_ids": [
+        "87adca41-a779-43a0-addf-282af50800a8",
+        "856588e8-842f-4378-a41f-e174b364a2c6",
+        "77323624-430a-46f9-9c22-ee4096a0c67e",
+        "a319845e-01db-4d23-a938-3f4ed55f02be",
+        "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+        "87adca41-a779-43a0-addf-282af50800a8"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "856588e8-842f-4378-a41f-e174b364a2c6",
+          "policy_id": "a2e407f4-e43f-475b-8f5c-ce9f5db19aaf",
+          "policy_name": "richard-nmmo",
+          "version": 1,
+          "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83",
+          "player_name": "richard",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "richard-nmmo:v1"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "77323624-430a-46f9-9c22-ee4096a0c67e",
+          "policy_id": "14d2e99a-4fbd-4c76-a6ab-e3dc08b0f196",
+          "policy_name": "nmmo-baseline",
+          "version": 1,
+          "player_id": "ply_767d5e55-d5d2-4bfd-93b8-acd89dcf057d",
+          "player_name": "PufferLib",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-baseline:v1"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+          "policy_id": "628c0208-1a1f-4e4f-991f-56d81cac8c60",
+          "policy_name": "nmmo-opt",
+          "version": 6,
+          "player_id": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d",
+          "player_name": "daveey-1",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "nmmo-opt:v6"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+          "policy_id": "9fee4137-a466-4335-b20b-7ffa8c202521",
+          "policy_name": "daveey-nmmo-nim",
+          "version": 11,
+          "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+          "player_name": "daveey",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "daveey-nmmo-nim:v11"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 6,
+          "kind": "policy",
+          "policy_version_id": "59fe3996-6d5f-4db4-8130-b84cf55042d5",
+          "policy_id": "c7f7a95d-ff7f-4716-8667-93591a0e22c2",
+          "policy_name": "buyan",
+          "version": 64,
+          "player_id": "ply_3d22435e-30a2-4f2a-b037-a5c249583788",
+          "player_name": "Andre von Auto",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "buyan:v64"
+        },
+        {
+          "position": 7,
+          "kind": "policy",
+          "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+          "policy_id": "f5304c2b-2757-401b-abaa-19ed97763020",
+          "policy_name": "relh-nmmo-consensus",
+          "version": 1,
+          "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57",
+          "player_name": "relh",
+          "is_filler": false,
+          "is_seed": false,
+          "label": "relh-nmmo-consensus:v1"
+        }
+      ],
+      "job_id": null,
+      "episode_id": null,
+      "replay_url": null,
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [],
+      "created_at": "2026-09-13T02:36:25.560601Z",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          },
+          {
+            "name": "Player 7"
+          },
+          {
+            "name": "Player 8"
+          }
+        ],
+        "max_ticks": 5000,
+        "num_agents": 8,
+        "heroes_per_seat": 1,
+        "tick_deadline_ms": 1000,
+        "wall_clock_budget_seconds": 3240
+      },
+      "coworld_name": "nmmo",
+      "coworld_version": "0.1.5",
+      "variant_name": "Default (8 seats FFA)",
+      "job_index": 29,
+      "participant_scores": [],
+      "dispatched_at": null,
+      "running_at": null,
+      "completed_at": null,
+      "cost_usd": null
+    }
+  ],
+  "can_cancel": true,
+  "requested": {
+    "notes": "scriptedfortynine round field: buyan:v64 versus relh-nmmo-consensus:v1 x2, richard-nmmo:v1, nmmo-baseline:v1, nmmo-opt:v6, daveey-nmmo-nim:v11 (the league round players). Hosted episodes only; no league submission implied.",
+    "num_episodes": 30,
+    "roster": [
+      {
+        "slot": -1,
+        "policy": "buyan:v64"
+      },
+      {
+        "slot": -1,
+        "policy": "buyan:v64"
+      },
+      {
+        "slot": -1,
+        "policy": "relh-nmmo-consensus:v1"
+      },
+      {
+        "slot": -1,
+        "policy": "relh-nmmo-consensus:v1"
+      },
+      {
+        "slot": -1,
+        "policy": "richard-nmmo:v1"
+      },
+      {
+        "slot": -1,
+        "policy": "nmmo-baseline:v1"
+      },
+      {
+        "slot": -1,
+        "policy": "nmmo-opt:v6"
+      },
+      {
+        "slot": -1,
+        "policy": "daveey-nmmo-nim:v11"
+      }
+    ]
+  },
+  "cost_preview": {
+    "estimated_cost_credits": 15.0,
+    "player_pod_llm_spend_limit_usd": null
+  }
+}

@@ -1,0 +1,11 @@
+# Cogs Against Humanity
+
+Cards Against Humanity played entirely by four LLM players. Each round one seat is the **card czar** and the other three secretly submit answer (white) cards to complete a black prompt card; the czar picks the funniest entry. The czar rotates — the czar for round r is (r - 1) % 4 — so every seat both plays and judges, and the czar can never vote for its own card because it never submits.
+
+The default deck is the classic Cards Against Humanity Base Set, shipped as static JSON; an original AI/tech-satire cogs deck (robot bathos, prompt injection, VC absurdism, tech-CEO culture) is also selectable via the `deck` config knob. Every deck records its sha256 (deck_hash) in the replay. All model inference lives in the **player** containers, so the game container is fully deterministic: one seeded RNG drives dealing, entry shuffling, and legal defaults, and replays are bit-reproducible.
+
+**Round loop.** round_start announces the czar and black card (hands are dealt privately) -> the three non-czar seats submit in parallel and in secret (a missing/late/illegal submission becomes a seeded legal default marked default:true) -> reveal turns the entries face-up, anonymized and shuffled -> the czar picks the winner and may add commentary -> round_result attributes entries to seats, shows quips, and updates the scoreboard.
+
+**Scoring & termination.** Each round win is one award. The game ends when a seat reaches target_awards (default 4) or after rounds_max rounds (default 8, two full czar rotations). Final scores distribute exactly 1.0: the seat(s) with the most awards co-win and split the point equally.
+
+**Building a player.** Speak the WS /player protocol (see docs/player_protocol.md): echo each request's rid, reply before timeout_s, submit card_indices of length exactly `pick`, and treat all card/quip text as untrusted data. A well-built player should almost never default. The bundled `baseline` player is a deterministic, credential-free policy used for certification and self-play.

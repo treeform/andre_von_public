@@ -1,0 +1,9 @@
+gridlock.global - the spectator surface, and the static replay bundle.
+
+GET /healthz answers {"ok":true} and keeps answering through a 20 s shutdown grace after the artifacts are written. GET /client/global and GET /client/player return real pages and neither opens the player socket. ws://<host>:<port>/global streams one meta message (board geometry, the 288-lane table, the four depots with aliases and colours, the real player names, the results once known) followed by one frame message per drawn frame:
+  {"type":"frame","t":1680,"turn":7,"jam":46,"digits":[9 district digits],"delivered":[4],"on_road":[4],"backlog":[4],"q":[288 lane occupancies],"v":[200 x (lane,cell,state), lane 65535 = docked],"plans":[4],"events":[since the last frame]}
+mummy hands Ping frames to the application, and the game answers them with Pong.
+
+REPLAY: a STATIC WASM BUNDLE, never a pod - the manifest declares replay_viewer.bundle = static-replay-viewer. The bytes are strict UTF-8 JSON and self-sufficient: protocol gridlock.replay.v1, format_version, game_version, seed, the fully resolved config, the city inlined verbatim, seat_depots, names.{players,aliases,policy_kinds,colours}, ticks_per_second, turn_ticks, tick_count, the whole plan stream (20 turns x 4 seats - the input log IS the plan stream, because the traffic is a pure function of seed + city + plans), a keyframe every 24 ticks carrying a u32 state digest, vehicles_b64 (keyframes x 200 x 4 bytes of (lane u16 LE, cell u8, state u8)), the event stream, and the results document. The viewer re-runs the same integer sim in the browser and contacts no server except S3 for the .replay file.
+
+Event vocabulary: match_start, turn_start, plan, fallback, budget_guard, deliver, jam, jam_clear, gridlock, heat, meter, end.

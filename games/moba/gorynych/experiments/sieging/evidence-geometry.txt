@@ -1,0 +1,228 @@
+# Sieging geometry comparison
+scoring_evidence=false. Pinned wasm b76a9c4cdcc7e4a47c973d4029737a832e0b678646c6a512f5653d3e98f1b8c8
+
+## daveey-radiant-r3730-g4
+focal=daveey radiant=daveey dire=richard ticks=1827 winner=radiant verified=true
+heroCalls=9135 velMatch=50.3% fullMatch=49.6% nearTicks(cheb<=8)=1639
+v1-hold: recHold=749 recWalkIn=18 recWalkOut=23
+v1-dive: recHold=156 recWalkIn=68 recWalkOut=18
+v1-out (inside vision, no wave): recHold=0 recWalkIn=9 recWalkOut=32
+recorded holds by chebyshev:
+  cheb 1: hold=156 wave=156 nowave=0
+  cheb 6: hold=749 wave=0 nowave=749
+  cheb 7: hold=265 wave=0 nowave=265
+recorded holds by L1:
+  l1 2: 156
+  l1 6: 41
+  l1 7: 2
+  l1 8: 297
+  l1 10: 17
+  l1 11: 646
+  l1 12: 11
+v1-dive but recorded hold, by cheb:
+  cheb 1: 156
+near-tower by chebyshev (recorded move vs v1):
+  cheb 1 n=164 recHold=156 toward=0 away=6 side=2 v1Hold=156 velDiff=0 hugHold=156 rimHold=0 wave=160 nowave=4
+  cheb 2 n=35 recHold=0 toward=22 away=7 side=6 v1Hold=0 velDiff=0 hugHold=0 rimHold=0 wave=33 nowave=2
+  cheb 3 n=31 recHold=0 toward=10 away=10 side=11 v1Hold=0 velDiff=0 hugHold=0 rimHold=0 wave=26 nowave=5
+  cheb 4 n=45 recHold=0 toward=13 away=25 side=7 v1Hold=0 velDiff=19 hugHold=0 rimHold=0 wave=20 nowave=25
+  cheb 5 n=55 recHold=0 toward=26 away=23 side=6 v1Hold=0 velDiff=22 hugHold=0 rimHold=0 wave=25 nowave=30
+  cheb 6 n=826 recHold=749 toward=29 away=36 side=12 v1Hold=790 velDiff=45 hugHold=0 rimHold=0 wave=19 nowave=807
+  cheb 7 n=351 recHold=265 toward=41 away=24 side=21 v1Hold=0 velDiff=305 hugHold=0 rimHold=0 wave=9 nowave=342
+  cheb 8 n=132 recHold=0 toward=72 away=35 side=25 v1Hold=0 velDiff=52 hugHold=0 rimHold=0 wave=14 nowave=118
+tower-tile vs truncated static cell offset: {0: 615}
+walk onto remembered-dead tower cell: 0
+examples v1HoldRecIn (v1 holds at standoff, leader walks in):
+  t=1210 pid=3 tank pos=(18,86) tower=(20,92) cheb=6 l1=8 hp10=7 wave=false rec=[3, 6, 0, 1, 0, 0] v1=[3, 3, 0, 1, 0, 0]
+  t=1221 pid=3 tank pos=(14,95) tower=(20,92) cheb=6 l1=9 hp10=10 wave=false rec=[6, 6, 0, 1, 0, 0] v1=[3, 3, 0, 1, 0, 0]
+  t=1222 pid=3 tank pos=(14,96) tower=(20,92) cheb=6 l1=10 hp10=10 wave=false rec=[6, 3, 0, 1, 0, 0] v1=[3, 3, 0, 1, 0, 0]
+  t=1275 pid=4 carry pos=(18,86) tower=(20,92) cheb=6 l1=8 hp10=7 wave=false rec=[3, 6, 2, 0, 0, 0] v1=[3, 3, 2, 0, 0, 0]
+  t=1326 pid=3 tank pos=(22,105) tower=(28,103) cheb=6 l1=8 hp10=7 wave=false rec=[6, 3, 0, 1, 0, 1] v1=[3, 3, 2, 1, 0, 1]
+  t=1408 pid=4 carry pos=(18,86) tower=(20,92) cheb=6 l1=8 hp10=7 wave=false rec=[3, 6, 0, 0, 0, 1] v1=[3, 3, 0, 0, 0, 1]
+examples v1DiveRecHold (v1 dives with wave, leader holds):
+  t=84 pid=2 burst pos=(60,68) tower=(59,69) cheb=1 l1=2 hp10=9 wave=true rec=[3, 3, 0, 0, 0, 0] v1=[3, 3, 0, 0, 0, 0]
+  t=85 pid=2 burst pos=(60,68) tower=(59,69) cheb=1 l1=2 hp10=7 wave=true rec=[3, 3, 0, 0, 0, 0] v1=[3, 3, 0, 0, 0, 0]
+  t=86 pid=2 burst pos=(60,68) tower=(59,69) cheb=1 l1=2 hp10=7 wave=true rec=[3, 3, 0, 0, 0, 0] v1=[3, 3, 0, 0, 0, 0]
+  t=87 pid=2 burst pos=(60,68) tower=(59,69) cheb=1 l1=2 hp10=7 wave=true rec=[3, 3, 0, 0, 0, 0] v1=[3, 3, 0, 0, 0, 0]
+  t=88 pid=2 burst pos=(60,68) tower=(59,69) cheb=1 l1=2 hp10=7 wave=true rec=[3, 3, 0, 0, 0, 0] v1=[3, 3, 0, 0, 0, 0]
+  t=89 pid=2 burst pos=(60,68) tower=(59,69) cheb=1 l1=2 hp10=7 wave=true rec=[3, 3, 0, 0, 0, 0] v1=[3, 3, 0, 0, 0, 0]
+examples v1OutRecHold (v1 leaves vision, leader holds inside):
+  (none)
+examples v1DiveRecOut (v1 dives, leader walks away/side):
+  t=159 pid=4 carry pos=(80,113) tower=(78,113) cheb=2 l1=2 hp10=10 wave=true rec=[3, 0, 2, 0, 0, 0] v1=[3, 0, 2, 0, 0, 0]
+  t=160 pid=4 carry pos=(80,112) tower=(78,113) cheb=2 l1=3 hp10=10 wave=true rec=[3, 0, 2, 0, 0, 0] v1=[3, 0, 2, 0, 0, 0]
+  t=161 pid=4 carry pos=(80,111) tower=(78,113) cheb=2 l1=4 hp10=10 wave=true rec=[0, 0, 2, 0, 0, 0] v1=[0, 0, 2, 0, 0, 0]
+  t=162 pid=4 carry pos=(79,111) tower=(78,113) cheb=2 l1=3 hp10=10 wave=true rec=[0, 3, 2, 0, 0, 0] v1=[0, 3, 2, 0, 0, 0]
+  t=163 pid=4 carry pos=(78,111) tower=(78,113) cheb=2 l1=2 hp10=10 wave=true rec=[0, 3, 2, 0, 0, 0] v1=[0, 3, 2, 0, 0, 0]
+  t=164 pid=4 carry pos=(77,111) tower=(78,113) cheb=2 l1=3 hp10=10 wave=true rec=[0, 3, 2, 0, 0, 0] v1=[0, 3, 2, 0, 0, 0]
+examples cheb7HoldVelDiff (leader holds at 7, v1 still walks):
+  t=1233 pid=3 tank pos=(21,102) tower=(28,103) cheb=7 l1=8 hp10=9 wave=false rec=[3, 3, 2, 0, 0, 0] v1=[3, 0, 2, 0, 0, 0]
+  t=1234 pid=3 tank pos=(21,102) tower=(28,103) cheb=7 l1=8 hp10=9 wave=false rec=[3, 3, 2, 0, 0, 0] v1=[3, 0, 2, 0, 0, 0]
+  t=1235 pid=3 tank pos=(21,102) tower=(28,103) cheb=7 l1=8 hp10=9 wave=false rec=[3, 3, 2, 0, 0, 0] v1=[3, 0, 2, 0, 0, 0]
+  t=1236 pid=3 tank pos=(21,102) tower=(28,103) cheb=7 l1=8 hp10=9 wave=false rec=[3, 3, 2, 0, 0, 0] v1=[3, 0, 2, 0, 0, 0]
+  t=1237 pid=3 tank pos=(21,102) tower=(28,103) cheb=7 l1=8 hp10=9 wave=false rec=[3, 3, 2, 0, 0, 0] v1=[0, 3, 2, 0, 0, 0]
+  t=1238 pid=3 tank pos=(21,102) tower=(28,103) cheb=7 l1=8 hp10=9 wave=false rec=[3, 3, 2, 0, 0, 0] v1=[0, 3, 2, 0, 0, 0]
+
+## daveey-dire-r3728-g9
+focal=daveey radiant=richard dire=daveey ticks=1177 winner=dire verified=true
+heroCalls=5885 velMatch=53.3% fullMatch=52.6% nearTicks(cheb<=8)=1072
+v1-hold: recHold=270 recWalkIn=5 recWalkOut=50
+v1-dive: recHold=157 recWalkIn=52 recWalkOut=6
+v1-out (inside vision, no wave): recHold=0 recWalkIn=20 recWalkOut=50
+recorded holds by chebyshev:
+  cheb 1: hold=157 wave=157 nowave=0
+  cheb 6: hold=270 wave=0 nowave=270
+  cheb 7: hold=131 wave=0 nowave=131
+recorded holds by L1:
+  l1 2: 157
+  l1 8: 131
+  l1 9: 184
+  l1 10: 54
+  l1 11: 17
+  l1 12: 15
+v1-dive but recorded hold, by cheb:
+  cheb 1: 157
+near-tower by chebyshev (recorded move vs v1):
+  cheb 1 n=163 recHold=157 toward=0 away=5 side=1 v1Hold=157 velDiff=0 hugHold=157 rimHold=0 wave=158 nowave=5
+  cheb 2 n=37 recHold=0 toward=16 away=12 side=9 v1Hold=0 velDiff=14 hugHold=0 rimHold=0 wave=14 nowave=23
+  cheb 3 n=28 recHold=0 toward=17 away=7 side=4 v1Hold=0 velDiff=9 hugHold=0 rimHold=0 wave=17 nowave=11
+  cheb 4 n=32 recHold=0 toward=13 away=10 side=9 v1Hold=0 velDiff=21 hugHold=0 rimHold=0 wave=7 nowave=25
+  cheb 5 n=36 recHold=0 toward=21 away=12 side=3 v1Hold=0 velDiff=17 hugHold=0 rimHold=0 wave=7 nowave=29
+  cheb 6 n=357 recHold=270 toward=19 away=17 side=51 v1Hold=325 velDiff=64 hugHold=0 rimHold=0 wave=13 nowave=344
+  cheb 7 n=296 recHold=131 toward=55 away=24 side=86 v1Hold=0 velDiff=274 hugHold=0 rimHold=0 wave=2 nowave=294
+  cheb 8 n=123 recHold=0 toward=47 away=29 side=47 v1Hold=0 velDiff=105 hugHold=0 rimHold=0 wave=1 nowave=122
+tower-tile vs truncated static cell offset: {0: 556}
+walk onto remembered-dead tower cell: 0
+examples v1HoldRecIn (v1 holds at standoff, leader walks in):
+  t=1022 pid=8 tank pos=(106,27) tower=(102,21) cheb=6 l1=10 hp10=10 wave=false rec=[3, 0, 2, 0, 0, 0] v1=[3, 3, 2, 0, 0, 0]
+  t=1150 pid=7 burst pos=(106,27) tower=(102,21) cheb=6 l1=10 hp10=10 wave=false rec=[3, 0, 2, 0, 0, 0] v1=[3, 3, 2, 0, 0, 0]
+  t=1163 pid=6 assassin pos=(106,27) tower=(102,21) cheb=6 l1=10 hp10=10 wave=false rec=[3, 0, 2, 0, 0, 0] v1=[3, 3, 2, 0, 0, 0]
+  t=1164 pid=9 carry pos=(106,27) tower=(102,21) cheb=6 l1=10 hp10=10 wave=false rec=[3, 0, 2, 0, 0, 0] v1=[3, 3, 2, 0, 0, 0]
+  t=1176 pid=6 assassin pos=(102,15) tower=(102,21) cheb=6 l1=6 hp10=5 wave=false rec=[0, 6, 2, 0, 1, 0] v1=[3, 3, 2, 0, 0, 0]
+examples v1DiveRecHold (v1 dives with wave, leader holds):
+  t=119 pid=7 burst pos=(74,54) tower=(75,53) cheb=1 l1=2 hp10=10 wave=true rec=[3, 3, 2, 0, 0, 0] v1=[3, 3, 2, 0, 0, 0]
+  t=120 pid=7 burst pos=(74,54) tower=(75,53) cheb=1 l1=2 hp10=10 wave=true rec=[3, 3, 2, 0, 0, 0] v1=[3, 3, 2, 0, 0, 0]
+  t=121 pid=7 burst pos=(74,54) tower=(75,53) cheb=1 l1=2 hp10=10 wave=true rec=[3, 3, 2, 0, 0, 0] v1=[3, 3, 2, 0, 0, 0]
+  t=122 pid=7 burst pos=(74,54) tower=(75,53) cheb=1 l1=2 hp10=10 wave=true rec=[3, 3, 2, 0, 0, 0] v1=[3, 3, 2, 0, 0, 0]
+  t=123 pid=7 burst pos=(74,54) tower=(75,53) cheb=1 l1=2 hp10=10 wave=true rec=[3, 3, 2, 0, 0, 0] v1=[3, 3, 2, 0, 0, 0]
+  t=124 pid=6 assassin pos=(76,54) tower=(75,53) cheb=1 l1=2 hp10=10 wave=true rec=[3, 3, 2, 0, 0, 0] v1=[3, 3, 2, 0, 0, 0]
+examples v1OutRecHold (v1 leaves vision, leader holds inside):
+  (none)
+examples v1DiveRecOut (v1 dives, leader walks away/side):
+  t=115 pid=6 assassin pos=(73,55) tower=(75,53) cheb=2 l1=4 hp10=10 wave=true rec=[6, 6, 2, 0, 0, 0] v1=[6, 6, 2, 0, 0, 0]
+  t=116 pid=6 assassin pos=(74,56) tower=(75,53) cheb=3 l1=4 hp10=10 wave=true rec=[6, 3, 2, 0, 0, 0] v1=[6, 3, 2, 0, 0, 0]
+  t=117 pid=6 assassin pos=(75,56) tower=(75,53) cheb=3 l1=3 hp10=10 wave=true rec=[6, 3, 2, 0, 0, 0] v1=[6, 3, 2, 0, 0, 0]
+  t=118 pid=6 assassin pos=(76,56) tower=(75,53) cheb=3 l1=4 hp10=10 wave=true rec=[6, 3, 2, 0, 0, 0] v1=[6, 3, 2, 0, 0, 0]
+  t=119 pid=6 assassin pos=(77,56) tower=(75,53) cheb=3 l1=5 hp10=10 wave=true rec=[6, 3, 2, 0, 0, 0] v1=[6, 3, 2, 0, 0, 0]
+  t=120 pid=6 assassin pos=(78,56) tower=(75,53) cheb=3 l1=6 hp10=10 wave=true rec=[6, 0, 2, 0, 0, 0] v1=[6, 0, 2, 0, 0, 0]
+examples cheb7HoldVelDiff (leader holds at 7, v1 still walks):
+  t=1041 pid=8 tank pos=(101,14) tower=(102,21) cheb=7 l1=8 hp10=9 wave=false rec=[3, 3, 2, 0, 0, 0] v1=[0, 3, 2, 0, 0, 0]
+  t=1042 pid=8 tank pos=(101,14) tower=(102,21) cheb=7 l1=8 hp10=9 wave=false rec=[3, 3, 2, 0, 0, 0] v1=[0, 3, 2, 0, 0, 0]
+  t=1043 pid=8 tank pos=(101,14) tower=(102,21) cheb=7 l1=8 hp10=9 wave=false rec=[3, 3, 2, 0, 0, 0] v1=[0, 3, 2, 0, 0, 0]
+  t=1044 pid=8 tank pos=(101,14) tower=(102,21) cheb=7 l1=8 hp10=9 wave=false rec=[3, 3, 2, 0, 0, 0] v1=[0, 3, 2, 0, 0, 0]
+  t=1045 pid=8 tank pos=(101,14) tower=(102,21) cheb=7 l1=8 hp10=9 wave=false rec=[3, 3, 2, 0, 0, 0] v1=[3, 6, 2, 0, 0, 0]
+  t=1046 pid=8 tank pos=(101,14) tower=(102,21) cheb=7 l1=8 hp10=9 wave=false rec=[3, 3, 2, 0, 0, 0] v1=[3, 6, 2, 0, 0, 0]
+
+## v1-radiant-ereq_82528dd3
+focal=Andre von Auto radiant=Andre von Auto dire=daveey ticks=2576 winner=dire verified=true
+heroCalls=12880 velMatch=100.0% fullMatch=100.0% nearTicks(cheb<=8)=4680
+v1-hold: recHold=3600 recWalkIn=0 recWalkOut=0
+v1-dive: recHold=462 recWalkIn=175 recWalkOut=38
+v1-out (inside vision, no wave): recHold=0 recWalkIn=1 recWalkOut=59
+recorded holds by chebyshev:
+  cheb 1: hold=462 wave=462 nowave=0
+  cheb 6: hold=3600 wave=0 nowave=3600
+recorded holds by L1:
+  l1 1: 35
+  l1 2: 427
+  l1 6: 394
+  l1 7: 380
+  l1 8: 209
+  l1 9: 252
+  l1 11: 2288
+  l1 12: 77
+v1-dive but recorded hold, by cheb:
+  cheb 1: 462
+near-tower by chebyshev (recorded move vs v1):
+  cheb 1 n=498 recHold=462 toward=0 away=20 side=16 v1Hold=462 velDiff=0 hugHold=462 rimHold=0 wave=476 nowave=22
+  cheb 2 n=58 recHold=0 toward=38 away=16 side=4 v1Hold=0 velDiff=0 hugHold=0 rimHold=0 wave=48 nowave=10
+  cheb 3 n=79 recHold=0 toward=35 away=20 side=24 v1Hold=0 velDiff=0 hugHold=0 rimHold=0 wave=61 nowave=18
+  cheb 4 n=43 recHold=0 toward=31 away=11 side=1 v1Hold=0 velDiff=0 hugHold=0 rimHold=0 wave=31 nowave=12
+  cheb 5 n=95 recHold=0 toward=44 away=20 side=31 v1Hold=0 velDiff=0 hugHold=0 rimHold=0 wave=52 nowave=43
+  cheb 6 n=3718 recHold=3600 toward=51 away=20 side=47 v1Hold=3600 velDiff=0 hugHold=0 rimHold=0 wave=67 nowave=3651
+  cheb 7 n=98 recHold=0 toward=56 away=16 side=26 v1Hold=0 velDiff=0 hugHold=0 rimHold=0 wave=20 nowave=78
+  cheb 8 n=91 recHold=0 toward=55 away=18 side=18 v1Hold=0 velDiff=0 hugHold=0 rimHold=0 wave=19 nowave=72
+tower-tile vs truncated static cell offset: {0: 830}
+walk onto remembered-dead tower cell: 0
+examples v1HoldRecIn (v1 holds at standoff, leader walks in):
+  (none)
+examples v1DiveRecHold (v1 dives with wave, leader holds):
+  t=98 pid=3 tank pos=(19,28) tower=(18,29) cheb=1 l1=2 hp10=10 wave=true rec=[3, 3, 0, 1, 0, 1] v1=[3, 3, 0, 1, 0, 1]
+  t=99 pid=3 tank pos=(19,28) tower=(18,29) cheb=1 l1=2 hp10=10 wave=true rec=[3, 3, 0, 1, 0, 1] v1=[3, 3, 0, 1, 0, 1]
+  t=100 pid=3 tank pos=(19,28) tower=(18,29) cheb=1 l1=2 hp10=10 wave=true rec=[3, 3, 0, 1, 0, 1] v1=[3, 3, 0, 1, 0, 1]
+  t=101 pid=3 tank pos=(19,28) tower=(18,29) cheb=1 l1=2 hp10=10 wave=true rec=[3, 3, 0, 1, 0, 1] v1=[3, 3, 0, 1, 0, 1]
+  t=102 pid=3 tank pos=(19,28) tower=(18,29) cheb=1 l1=2 hp10=9 wave=true rec=[3, 3, 0, 1, 0, 1] v1=[3, 3, 0, 1, 0, 1]
+  t=103 pid=3 tank pos=(19,28) tower=(18,29) cheb=1 l1=2 hp10=8 wave=true rec=[3, 3, 0, 1, 0, 1] v1=[3, 3, 0, 1, 0, 1]
+examples v1OutRecHold (v1 leaves vision, leader holds inside):
+  (none)
+examples v1DiveRecOut (v1 dives, leader walks away/side):
+  t=191 pid=0 support pos=(80,113) tower=(78,113) cheb=2 l1=2 hp10=10 wave=true rec=[3, 6, 0, 0, 0, 0] v1=[3, 6, 0, 0, 0, 0]
+  t=192 pid=0 support pos=(80,114) tower=(78,113) cheb=2 l1=3 hp10=10 wave=true rec=[3, 6, 0, 0, 0, 0] v1=[3, 6, 0, 0, 0, 0]
+  t=193 pid=0 support pos=(80,115) tower=(78,113) cheb=2 l1=4 hp10=10 wave=true rec=[0, 6, 0, 0, 0, 0] v1=[0, 6, 0, 0, 0, 0]
+  t=194 pid=0 support pos=(79,116) tower=(78,113) cheb=3 l1=4 hp10=10 wave=true rec=[0, 3, 0, 0, 0, 0] v1=[0, 3, 0, 0, 0, 0]
+  t=195 pid=0 support pos=(78,116) tower=(78,113) cheb=3 l1=3 hp10=10 wave=true rec=[0, 3, 0, 0, 0, 0] v1=[0, 3, 0, 0, 0, 0]
+  t=196 pid=0 support pos=(77,116) tower=(78,113) cheb=3 l1=4 hp10=10 wave=true rec=[0, 3, 0, 0, 0, 0] v1=[0, 3, 0, 0, 0, 0]
+examples cheb7HoldVelDiff (leader holds at 7, v1 still walks):
+  (none)
+
+## v1-dire-ereq_9b896a79
+focal=Andre von Auto radiant=daveey dire=Andre von Auto ticks=2901 winner=radiant verified=true
+heroCalls=14505 velMatch=100.0% fullMatch=100.0% nearTicks(cheb<=8)=5139
+v1-hold: recHold=3898 recWalkIn=0 recWalkOut=0
+v1-dive: recHold=407 recWalkIn=205 recWalkOut=42
+v1-out (inside vision, no wave): recHold=0 recWalkIn=2 recWalkOut=119
+recorded holds by chebyshev:
+  cheb 1: hold=407 wave=407 nowave=0
+  cheb 6: hold=3898 wave=0 nowave=3898
+recorded holds by L1:
+  l1 1: 63
+  l1 2: 344
+  l1 6: 141
+  l1 7: 2711
+  l1 8: 151
+  l1 9: 352
+  l1 10: 132
+  l1 11: 411
+v1-dive but recorded hold, by cheb:
+  cheb 1: 407
+near-tower by chebyshev (recorded move vs v1):
+  cheb 1 n=439 recHold=407 toward=0 away=19 side=13 v1Hold=407 velDiff=0 hugHold=407 rimHold=0 wave=416 nowave=23
+  cheb 2 n=73 recHold=0 toward=48 away=21 side=4 v1Hold=0 velDiff=0 hugHold=0 rimHold=0 wave=63 nowave=10
+  cheb 3 n=64 recHold=0 toward=33 away=19 side=12 v1Hold=0 velDiff=0 hugHold=0 rimHold=0 wave=40 nowave=24
+  cheb 4 n=78 recHold=0 toward=34 away=28 side=16 v1Hold=0 velDiff=0 hugHold=0 rimHold=0 wave=39 nowave=39
+  cheb 5 n=148 recHold=0 toward=55 away=52 side=41 v1Hold=0 velDiff=0 hugHold=0 rimHold=0 wave=73 nowave=75
+  cheb 6 n=4063 recHold=3898 toward=47 away=43 side=75 v1Hold=3898 velDiff=0 hugHold=0 rimHold=0 wave=70 nowave=3993
+  cheb 7 n=135 recHold=0 toward=71 away=30 side=34 v1Hold=0 velDiff=0 hugHold=0 rimHold=0 wave=14 nowave=121
+  cheb 8 n=139 recHold=0 toward=76 away=37 side=26 v1Hold=0 velDiff=0 hugHold=0 rimHold=0 wave=12 nowave=127
+tower-tile vs truncated static cell offset: {0: 802}
+walk onto remembered-dead tower cell: 0
+examples v1HoldRecIn (v1 holds at standoff, leader walks in):
+  (none)
+examples v1DiveRecHold (v1 dives with wave, leader holds):
+  t=105 pid=5 support pos=(111,103) tower=(112,102) cheb=1 l1=2 hp10=8 wave=true rec=[3, 3, 0, 1, 0, 1] v1=[3, 3, 0, 1, 0, 1]
+  t=106 pid=5 support pos=(111,103) tower=(112,102) cheb=1 l1=2 hp10=8 wave=true rec=[3, 3, 0, 1, 0, 1] v1=[3, 3, 0, 1, 0, 1]
+  t=107 pid=5 support pos=(111,103) tower=(112,102) cheb=1 l1=2 hp10=8 wave=true rec=[3, 3, 0, 1, 0, 1] v1=[3, 3, 0, 1, 0, 1]
+  t=108 pid=5 support pos=(111,103) tower=(112,102) cheb=1 l1=2 hp10=6 wave=true rec=[3, 3, 0, 0, 1, 0] v1=[3, 3, 0, 0, 1, 0]
+  t=109 pid=5 support pos=(111,103) tower=(112,102) cheb=1 l1=2 hp10=10 wave=true rec=[3, 3, 0, 0, 0, 0] v1=[3, 3, 0, 0, 0, 0]
+  t=110 pid=5 support pos=(111,103) tower=(112,102) cheb=1 l1=2 hp10=10 wave=true rec=[3, 3, 0, 0, 0, 0] v1=[3, 3, 0, 0, 0, 0]
+examples v1OutRecHold (v1 leaves vision, leader holds inside):
+  (none)
+examples v1DiveRecOut (v1 dives, leader walks away/side):
+  t=271 pid=8 tank pos=(45,20) tower=(51,16) cheb=6 l1=10 hp10=8 wave=true rec=[3, 0, 2, 0, 0, 0] v1=[3, 0, 2, 0, 0, 0]
+  t=272 pid=8 tank pos=(45,19) tower=(51,16) cheb=6 l1=9 hp10=7 wave=true rec=[3, 0, 2, 0, 0, 0] v1=[3, 0, 2, 0, 0, 0]
+  t=273 pid=8 tank pos=(45,18) tower=(51,16) cheb=6 l1=8 hp10=7 wave=true rec=[3, 0, 2, 0, 0, 0] v1=[3, 0, 2, 0, 0, 0]
+  t=274 pid=8 tank pos=(45,17) tower=(51,16) cheb=6 l1=7 hp10=7 wave=true rec=[3, 0, 2, 0, 0, 0] v1=[3, 0, 2, 0, 0, 0]
+  t=275 pid=8 tank pos=(45,16) tower=(51,16) cheb=6 l1=6 hp10=7 wave=true rec=[3, 0, 2, 0, 0, 0] v1=[3, 0, 2, 0, 0, 0]
+  t=276 pid=8 tank pos=(45,15) tower=(51,16) cheb=6 l1=7 hp10=7 wave=true rec=[3, 0, 2, 0, 0, 0] v1=[3, 0, 2, 0, 0, 0]
+examples cheb7HoldVelDiff (leader holds at 7, v1 still walks):
+  (none)

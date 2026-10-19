@@ -1,0 +1,517 @@
+{
+ "id": "cow_dc2d9596-dc2d-4251-a841-c0afe81968e8",
+ "name": "factorio",
+ "version": "0.1.3",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "replay.md",
+      "title": "Replay format",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/cogame-factorio/blob/main/docs/REPLAY.md"
+      }
+     },
+     {
+      "id": "rules.md",
+      "title": "Rules & observation contract",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/cogame-factorio/blob/main/docs/RULES.md"
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-factorio/blob/main/README.md"
+    }
+   },
+   "name": "factorio",
+   "owner": "daveey@softmax.com",
+   "version": "0.1.3",
+   "runnable": {
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "cogame_factorio.server"
+    ],
+    "type": "game",
+    "image": "img_a2d939d3-343c-445f-83b1-2c67ca0b6d12",
+    "resources": {
+     "requests": {
+      "cpu": "3",
+      "memory": "4Gi",
+      "ephemeral-storage": "4Gi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-factorio/tree/main"
+   },
+   "protocols": {
+    "global": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-factorio/blob/main/docs/PROTOCOL.md"
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-factorio/blob/main/docs/PROTOCOL.md"
+    }
+   },
+   "description": "The Factorio Learning Environment (FLE 0.3.0, Factorio 1.1.110) as a Coworld: each seat gets its own headless Factorio server on the FLE lab map and plays a fixed number of steps, each step a Python program written against the FLE agent API (place_entity, connect_entities, nearest, craft_item, sleep, ...). Open play scores each seat by FLE production score; throughput variants score by achieved items/minute of a target item. Seats never share a map, so scores are absolute and comparable across episodes. Replays record every program, its output, and an entity snapshot per step, rendered by a static wasm viewer.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "fast": {
+      "type": "boolean",
+      "default": true,
+      "description": "FLE fast mode: actions (movement, crafting, harvesting) resolve instantly rather than being tick-driven."
+     },
+     "task": {
+      "type": "string",
+      "default": "open_play",
+      "description": "FLE task key: open_play (score = production score) or an FLE lab-play throughput task key such as iron_plate_throughput, iron_gear_wheel_throughput, copper_plate_throughput, stone_furnace_throughput (score = achieved items/minute of the target item, measured with FLE's holdout verification at the end)."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "description": "One connection token per player seat, indexed by seat slot. Injected by the runner; never authored."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "description": "One player display-name object per seat, indexed by seat slot. Each seat plays its own Factorio server."
+     },
+     "max_steps": {
+      "type": "integer",
+      "default": 30,
+      "maximum": 128,
+      "minimum": 1,
+      "description": "Programs each seat may run."
+     },
+     "game_speed": {
+      "type": "number",
+      "default": 10,
+      "description": "Factorio game.speed while the episode runs (FLE default 10).",
+      "exclusiveMinimum": 0
+     },
+     "num_agents": {
+      "type": "integer",
+      "default": 2,
+      "maximum": 4,
+      "minimum": 1,
+      "description": "Number of agent seats; must equal the player slot count. Used by the platform ladder service for seating; ignored by the game server."
+     },
+     "strike_limit": {
+      "type": "integer",
+      "default": 3,
+      "minimum": 1,
+      "description": "Consecutive noop steps that mark a seat dead (its remaining steps are forfeited)."
+     },
+     "step_deadline_seconds": {
+      "type": "number",
+      "default": 60,
+      "description": "Seconds a policy has to reply with a program after receiving an observation; late/missing/malformed replies forfeit the step (noop) and count one strike.",
+      "exclusiveMinimum": 0
+     },
+     "program_timeout_seconds": {
+      "type": "number",
+      "default": 45,
+      "description": "Wall-clock cap for executing one program against Factorio; a program that exceeds it is interrupted with an error (not a strike).",
+      "exclusiveMinimum": 0
+     },
+     "wall_clock_budget_seconds": {
+      "type": "number",
+      "description": "Engine wall-clock hard stop: the episode ends itself with end_reason wall_clock (scores as of that moment, artifacts written) once this much real time has elapsed. Default 0.85 x episode_timeout_minutes x 60 - always under the platform container kill, which would lose results and replay.",
+      "exclusiveMinimum": 0
+     },
+     "player_connect_timeout_seconds": {
+      "type": "number",
+      "default": 180,
+      "minimum": 0,
+      "description": "Seconds to wait for a seat to connect before its loop starts anyway (it then noops until it connects or strikes out); never-connected seats are reported to COGAME_PLAYER_FAILURE_URI."
+     }
+    },
+    "additionalProperties": false
+   },
+   "replay_viewer": {
+    "bundle": "sha256:84c4596fed26c128fd57c3c981328282f07260dc5ec59aed561d6ac831c91bd4"
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "names",
+     "scores",
+     "production_scores",
+     "throughputs",
+     "task_key",
+     "steps_completed",
+     "error_steps",
+     "noop_steps",
+     "dead_seats",
+     "noop_causes",
+     "final_ticks",
+     "end_reason",
+     "wall_clock_seconds"
+    ],
+    "properties": {
+     "names": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "description": "One player name per seat, in seat-slot order."
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "description": "One scalar score per seat: FLE production score (open_play) or achieved items/minute (throughput tasks). Absolute, higher is better."
+     },
+     "task_key": {
+      "type": "string",
+      "description": "The FLE task key the episode played."
+     },
+     "dead_seats": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "description": "Per-seat strike-rule dead flag at episode end."
+     },
+     "end_reason": {
+      "enum": [
+       "steps_cap",
+       "wall_clock",
+       "sim_fault"
+      ],
+      "type": "string",
+      "description": "Why the episode ended: every seat finished its steps or struck out (steps_cap), the engine's wall-clock budget expired (wall_clock), or a Factorio/FLE fault ended play early (sim_fault: scores as of the fault, partial replay)."
+     },
+     "noop_steps": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "description": "Steps forfeited to noop (late, missing, malformed, wrong-step reply), per seat."
+     },
+     "error_steps": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "description": "Executed programs that raised or timed out, per seat."
+     },
+     "final_ticks": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "description": "FLE elapsed game ticks per seat at episode end."
+     },
+     "noop_causes": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "timeout",
+        "malformed",
+        "wrong_step",
+        "disconnected",
+        "host_error"
+       ],
+       "properties": {
+        "timeout": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "malformed": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "host_error": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "wrong_step": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "disconnected": {
+         "type": "integer",
+         "minimum": 0
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "description": "Per-seat noop cause counters. timeout/malformed/disconnected/host_error partition noop_steps; wrong_step counts mis-addressed reply messages (such a step also counts as timeout)."
+     },
+     "throughputs": {
+      "type": "array",
+      "items": {
+       "type": [
+        "number",
+        "null"
+       ]
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "description": "Achieved items/minute of the task's target item per seat (throughput tasks), null for open_play."
+     },
+     "steps_completed": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "description": "Programs actually executed per seat."
+     },
+     "production_scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "description": "FLE production score per seat at episode end, regardless of task."
+     },
+     "wall_clock_seconds": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Real seconds from episode start to end."
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "factorio",
+   "fle",
+   "code-agents",
+   "long-horizon"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "burner",
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "players.burner_player"
+    ],
+    "name": "burner baseline",
+    "type": "player",
+    "image": "img_aa249043-6e9a-40db-a8f7-a592c2d59c6b",
+    "resources": {
+     "limits": {
+      "cpu": "1"
+     },
+     "requests": {
+      "cpu": "250m",
+      "memory": "256Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-factorio/tree/main/players",
+    "description": "Scripted baseline: burner mining drills on the iron and coal patches feeding stone furnaces, refuelled every few steps. Image placeholder is replaced at deploy time."
+   },
+   {
+    "id": "handcraft",
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "players.handcraft_player"
+    ],
+    "name": "handcraft baseline",
+    "type": "player",
+    "image": "img_aa249043-6e9a-40db-a8f7-a592c2d59c6b",
+    "resources": {
+     "limits": {
+      "cpu": "1"
+     },
+     "requests": {
+      "cpu": "250m",
+      "memory": "256Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-factorio/tree/main/players",
+    "description": "Scripted baseline: hand-mines ore and smelts it in hand-placed stone furnaces; no automation."
+   },
+   {
+    "id": "idle",
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "players.idle_player"
+    ],
+    "name": "idle baseline",
+    "type": "player",
+    "image": "img_aa249043-6e9a-40db-a8f7-a592c2d59c6b",
+    "resources": {
+     "limits": {
+      "cpu": "1"
+     },
+     "requests": {
+      "cpu": "100m",
+      "memory": "128Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-factorio/tree/main/players",
+    "description": "Scripted baseline: replies with a no-op program every step (score floor)."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/metta/main/packages/coworld/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "open_play",
+    "name": "Open play (2 seats)",
+    "description": "Two seats on separate FLE lab maps, 30 programs each; score = FLE production score.",
+    "game_config": {
+     "task": "open_play",
+     "players": [
+      {
+       "name": "Player1"
+      },
+      {
+       "name": "Player2"
+      }
+     ],
+     "max_steps": 30,
+     "num_agents": 2,
+     "step_deadline_seconds": 60,
+     "program_timeout_seconds": 45,
+     "wall_clock_budget_seconds": 3000
+    }
+   },
+   {
+    "id": "iron_plate_throughput",
+    "name": "Iron plate throughput (2 seats)",
+    "description": "FLE lab-play task iron_plate_throughput: build a factory producing iron plates; score = items/minute achieved at the end (FLE quota is 16/min).",
+    "game_config": {
+     "task": "iron_plate_throughput",
+     "players": [
+      {
+       "name": "Player1"
+      },
+      {
+       "name": "Player2"
+      }
+     ],
+     "max_steps": 30,
+     "num_agents": 2,
+     "step_deadline_seconds": 60,
+     "program_timeout_seconds": 45,
+     "wall_clock_budget_seconds": 3000
+    }
+   },
+   {
+    "id": "solo",
+    "name": "Open play (solo)",
+    "description": "One seat, open play, 30 programs.",
+    "game_config": {
+     "task": "open_play",
+     "players": [
+      {
+       "name": "Player1"
+      }
+     ],
+     "max_steps": 30,
+     "num_agents": 1,
+     "step_deadline_seconds": 60,
+     "program_timeout_seconds": 45,
+     "wall_clock_budget_seconds": 3000
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [],
+  "certification": {
+   "players": [
+    {
+     "player_id": "burner"
+    },
+    {
+     "player_id": "handcraft"
+    },
+    {
+     "player_id": "idle"
+    }
+   ],
+   "game_config": {
+    "task": "open_play",
+    "players": [
+     {
+      "name": "Burner"
+     },
+     {
+      "name": "Handcraft"
+     },
+     {
+      "name": "Idle"
+     }
+    ],
+    "max_steps": 4,
+    "num_agents": 3,
+    "step_deadline_seconds": 30,
+    "program_timeout_seconds": 30,
+    "wall_clock_budget_seconds": 600,
+    "player_connect_timeout_seconds": 90
+   }
+  },
+  "episode_timeout_minutes": 60
+ },
+ "manifest_hash": "sha256:a0e43c3d6cc492542d6ddd6be03da678f6b150bcfe7ef51cd604199c3faf4c3f",
+ "size_bytes": 10782,
+ "created_at": "2026-08-18T21:37:00.855033Z",
+ "canonical": true
+}

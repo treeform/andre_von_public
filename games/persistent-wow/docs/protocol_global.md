@@ -1,0 +1,1 @@
+The v1 Vanilla WoW Coworld does not stream gameplay over /global. During a running episode, /client/global and WS /global expose one read-only vanilla_wow.episode_watch.v1 progress projection from the player metrics already forwarded over authenticated sessions; add format=json to the HTTP route for structured tooling.

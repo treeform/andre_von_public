@@ -1,0 +1,260 @@
+{
+ "id": "cow_806a5a3b-bcdd-4b09-a174-dfb3edd32f93",
+ "name": "coguire",
+ "version": "0.1.9",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "coguire Rules",
+      "content": {
+       "type": "text",
+       "value": "coguire \u2014 Acquire (Sid Sackson), a 4-player stock-market hotel-chain game.\n\n- Board: 108 tiles (cols 1-12 x rows A-I). Each turn: play one tile, buy up to 3 shares, refill.\n- 7 corporations in 3 price tiers (Tower/Luxor cheap, American/Worldwide/Festival medium, Imperial/Continental pricey).\n- Founding a corporation (placing next to a lone tile) gives the founder 1 free share. Placing between two\n  corporations MERGES them: the larger survives; majority/minority shareholders of the defunct one are paid bonuses\n  (10x / 5x the share price); each holder then holds, sells, or trades 2-for-1 for surviving shares.\n- A corporation of 11+ tiles is SAFE (cannot be absorbed). The game ends when a corporation reaches 41 tiles or every\n  corporation is safe; all bonuses pay out, everyone liquidates, and the richest player wins.\n- Score = final net worth (cash + held-share value)."
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/metta/tree/main/packages/cogweb/games/coguire"
+    }
+   },
+   "name": "coguire",
+   "owner": "daveey@gmail.com",
+   "version": "0.1.9",
+   "runnable": {
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/coworld/game-cli.js"
+    ],
+    "type": "game",
+    "image": "img_2841e24f-9ba4-4f4b-9a9e-fbc11305ebc2",
+    "source_url": "https://github.com/Metta-AI/metta/tree/fc93c9563e71dc7fa4015f1611675d2483774f33/packages/cogweb/games/coguire"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "Read-only spectator feed: the @cogweb/core ServerMessage stream the live console and\nreplay viewer render (snapshot / event / status / lobby / reset frames). Players take\nturns placing tiles that found, grow, and merge hotel corporations; mergers pay\nshareholder bonuses; the game ends when a corporation hits 41 tiles or all are safe.\nThe saved replay is { protocol:\"cogweb.replay.v1\", frames: ServerMessage[] }.\nSpectators send nothing."
+    },
+    "player": {
+     "type": "text",
+     "value": "coguire coworld player protocol (cogweb.player.v1).\n\nYour container is a websocket CLIENT of the game host's /player endpoint (the URL,\nalready carrying ?slot=&token=, is in COWORLD_PLAYER_WS_URL). Frames:\n\n- game -> player  welcome      { type, protocol:\"cogweb.player.v1\", slot, config:{players} }\n- game -> player  observation  { type, id, seat, turn, view, reason }\n- player -> game  reply        { type:\"reply\", id, decision }\n- game -> player  final        { type:\"final\", scores:[number x4] }\n\n`view` is your seat's REDACTED view of the Acquire game: the public board, every\ncorporation's size/price, all players' cash + stock holdings, and your OWN hand of\ntile ids (other hands and the draw bag are masked to counts). On each observation,\ndecide and reply with the SAME id. The decision matches `view.phase`:\n\n- place:       { kind:\"place\", tile:<id 0-107 from your hand> }\n- found:       { kind:\"found\", chain:\"<an inactive corporation>\" }\n- survivor:    { kind:\"survivor\", chain:\"<a tied-largest merging corporation>\" }\n- mergerStock: { kind:\"mergerStock\", sell:<n>, trade:<n> }   (sell + 2*trade <= held)\n- buy:         { kind:\"buy\", purchases:[{chain,count}], declareEnd:<bool> }  (<=3 shares)\n\nThe host validates legality and re-requests (reason set) on a rejected move; an\nabsent/slow player falls back to the always-legal baseline. The standard baseline +\nLLM players are bundled \u2014 see the source tree."
+    }
+   },
+   "description": "A four-player economic-strategy benchmark (Acquire): agents found and grow hotel corporations on a shared grid, time mergers to harvest shareholder bonuses, manage cash across stock buys, and finish with the most money.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "description": "Optional deterministic episode seed. Omit it for a fresh random deal per episode (the secure league default: the deal is a pure function of the seed, so a pinned seed published here would let a player re-derive every hidden hand)."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "Per-seat auth tokens injected by the runner; length is the seat count."
+     },
+     "pace_ms": {
+      "type": "number",
+      "maximum": 5000,
+      "minimum": 0,
+      "description": "Minimum ms between automated decisions, for live viewing."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "Per-seat player display names (seat order). The platform injects the real policy/player names here; the host labels each seat with them so replays and the live roster show real names instead of the engine defaults."
+     },
+     "num_agents": {
+      "type": "integer",
+      "description": "Seat count for the episode. The league commissioner reads this from the variant game_config to size a Competition round; absent, it mis-sizes the episode to the entrant count and never dispatches. Always the fixed seat count."
+     },
+     "act_timeout_seconds": {
+      "type": "number",
+      "maximum": 600,
+      "description": "Per-decision budget before the scripted fallback takes the turn.",
+      "exclusiveMinimum": 0
+     },
+     "player_connect_timeout_seconds": {
+      "type": "number",
+      "minimum": 0,
+      "description": "How long to wait for all players to connect before starting anyway."
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores",
+     "winner"
+    ],
+    "properties": {
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "Each seat's final net worth (cash after all bonuses + liquidation), in seat order."
+     },
+     "winner": {
+      "type": "integer",
+      "maximum": 3,
+      "minimum": 0,
+      "description": "The seat with the highest net worth."
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "grader": [],
+  "player": [
+   {
+    "id": "coguire-scripted",
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/coworld/baseline-player.js"
+    ],
+    "name": "coguire Scripted Baseline",
+    "type": "player",
+    "image": "img_2841e24f-9ba4-4f4b-9a9e-fbc11305ebc2",
+    "source_url": "https://github.com/Metta-AI/metta/tree/fc93c9563e71dc7fa4015f1611675d2483774f33/packages/cogweb/games/coguire",
+    "description": "Deterministic no-LLM baseline (plays a legal tile, founds the first free chain, buys nothing). Certifies the contract offline."
+   },
+   {
+    "id": "coguire-value",
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/coworld/value-player.js"
+    ],
+    "name": "coguire Value Investor",
+    "type": "player",
+    "image": "img_2841e24f-9ba4-4f4b-9a9e-fbc11305ebc2",
+    "source_url": "https://github.com/Metta-AI/metta/tree/fc93c9563e71dc7fa4015f1611675d2483774f33/packages/cogweb/games/coguire",
+    "description": "Exact-EV heuristic (no LLM): parity-aware stock buys, bonus-led merger timing, and final-accounting-aware end declaration computed from the public holdings. The reference bar to beat."
+   },
+   {
+    "id": "coguire-llm",
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/coworld/llm-player.js"
+    ],
+    "name": "coguire LLM Baseline",
+    "type": "player",
+    "image": "img_2841e24f-9ba4-4f4b-9a9e-fbc11305ebc2",
+    "source_url": "https://github.com/Metta-AI/metta/tree/fc93c9563e71dc7fa4015f1611675d2483774f33/packages/cogweb/games/coguire",
+    "description": "A Bedrock-driven policy that plays the seat through the game's autopilot (system prompt + per-turn tool)."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "standard",
+    "name": "Standard (4 players)",
+    "description": "A fresh random four-player deal each episode (no fixed seed).",
+    "game_config": {
+     "players": [
+      {
+       "name": "Investor A"
+      },
+      {
+       "name": "Investor B"
+      },
+      {
+       "name": "Investor C"
+      },
+      {
+       "name": "Investor D"
+      }
+     ],
+     "num_agents": 4
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "coguire Commissioner",
+    "type": "commissioner",
+    "image": "img_ae289532-1829-4e7e-b267-1e0d07da1c43",
+    "source_url": "https://github.com/Metta-AI/metta/tree/fc93c9563e71dc7fa4015f1611675d2483774f33/packages/cogweb/games/coguire/coworld/commissioner",
+    "description": "The stock ruleset_strategy commissioner with coguire's config baked in: Competition schedules from a single champion, filling empty seats by duplicating the baseline, so a sparsely-entered league still plays. See coworld/commissioner/ in the source tree."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "coguire-scripted"
+    },
+    {
+     "player_id": "coguire-scripted"
+    },
+    {
+     "player_id": "coguire-value"
+    },
+    {
+     "player_id": "coguire-llm"
+    }
+   ],
+   "game_config": {
+    "seed": 7,
+    "players": [
+     {
+      "name": "Investor A"
+     },
+     {
+      "name": "Investor B"
+     },
+     {
+      "name": "Investor C"
+     },
+     {
+      "name": "Investor D"
+     }
+    ],
+    "num_agents": 4
+   }
+  }
+ },
+ "manifest_hash": "sha256:86e98e7411bea1bf7257bac847ae2302b6e451446f26a1795df22aa4a39b5fc1",
+ "size_bytes": 8574,
+ "created_at": "2026-07-11T06:32:37.746900Z",
+ "canonical": true
+}

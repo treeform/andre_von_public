@@ -1,0 +1,930 @@
+{
+ "id": "cow_0fe135e0-81b0-4c6a-bcf2-eadab95e4a7a",
+ "name": "polymarket_coworld",
+ "version": "0.1.6",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "design.md",
+      "title": "Design",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-polymarket/blob/main/coworld/docs/design.md"
+      }
+     },
+     {
+      "id": "polymarket_api_notes.md",
+      "title": "Polymarket API Notes",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-polymarket/blob/main/coworld/docs/polymarket_api_notes.md"
+      }
+     },
+     {
+      "id": "cooperation_design_recommendations.md",
+      "title": "Cooperation Design Recommendations",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-polymarket/blob/main/coworld/docs/cooperation_design_recommendations.md"
+      }
+     },
+     {
+      "id": "game_structure_and_league.md",
+      "title": "Game Structure And League",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-polymarket/blob/main/coworld/docs/game_structure_and_league.md"
+      }
+     },
+     {
+      "id": "online_league_implementation_plan.md",
+      "title": "Online League Implementation Plan",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-polymarket/blob/main/coworld/docs/online_league_implementation_plan.md"
+      }
+     },
+     {
+      "id": "xp_request_eval_design.md",
+      "title": "XP Request Eval Design",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-polymarket/blob/main/coworld/docs/xp_request_eval_design.md"
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld-polymarket/blob/main/README.md"
+    }
+   },
+   "name": "polymarket_coworld",
+   "owner": "metta-ai",
+   "version": "0.1.6",
+   "runnable": {
+    "env": {},
+    "run": [
+     "polymarket-coworld-game"
+    ],
+    "type": "game",
+    "image": "img_3d17b012-7ff2-4321-9da8-12d1ca4d015f",
+    "source_url": "https://github.com/Metta-AI/coworld-polymarket/tree/main/coworld"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "Global viewers connect to /global and receive public market snapshots, turn status, pending slots, mark-to-market leaderboard, and final results."
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld-polymarket/blob/main/coworld/docs/player_protocol.md"
+    }
+   },
+   "description": "Prediction-market trading Coworld using Polymarket-style market data and oracle settlement.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "default": null,
+      "maximum": 2147483647,
+      "minimum": 0,
+      "description": "Optional deterministic seed for XP eval market-pack selection."
+     },
+     "desks": {
+      "type": "array",
+      "items": {
+       "type": "array",
+       "items": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "minItems": 1
+      },
+      "default": [],
+      "description": "Desk assignments by player slot. Each slot may appear at most once."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 8,
+      "minItems": 2,
+      "description": "One runner-injected connection token per player slot."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 8,
+      "minItems": 2
+     },
+     "turn_count": {
+      "type": "integer",
+      "default": 6,
+      "maximum": 96,
+      "minimum": 1
+     },
+     "fixture_path": {
+      "type": "string"
+     },
+     "initial_cash": {
+      "type": "number",
+      "default": 1000,
+      "exclusiveMinimum": 0
+     },
+     "market_count": {
+      "type": "integer",
+      "default": 3,
+      "maximum": 12,
+      "minimum": 1
+     },
+     "market_slugs": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "default": []
+     },
+     "turn_seconds": {
+      "type": "integer",
+      "default": 3600,
+      "maximum": 86400,
+      "minimum": 60
+     },
+     "market_source": {
+      "enum": [
+       "fixture",
+       "live",
+       "resolved"
+      ],
+      "type": "string",
+      "default": "fixture"
+     },
+     "desk_bonus_bps": {
+      "type": "integer",
+      "default": 1000,
+      "maximum": 1500,
+      "minimum": 0,
+      "description": "Basis points of positive desk personal P&L redistributed equally to desk members."
+     },
+     "desk_query_cost": {
+      "type": "number",
+      "default": 25,
+      "minimum": 0,
+      "description": "Cash cost paid from the shared desk pool for each desk_query action."
+     },
+     "trading_fee_bps": {
+      "type": "number",
+      "default": 20,
+      "maximum": 500,
+      "minimum": 0
+     },
+     "enable_desk_pool": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable shared desk contributions, pooled desk queries, and capped desk bonus scoring."
+     },
+     "risk_penalty_bps": {
+      "type": "integer",
+      "default": 0,
+      "maximum": 10000,
+      "minimum": 0,
+      "description": "Basis points charged on excessive gross position exposure and single-market concentration."
+     },
+     "max_order_quantity": {
+      "type": "number",
+      "default": 250,
+      "exclusiveMinimum": 0
+     },
+     "initial_cash_by_slot": {
+      "type": "array",
+      "items": {
+       "type": "number",
+       "exclusiveMinimum": 0
+      },
+      "default": [],
+      "description": "Optional per-slot starting bankroll. When set, length must match players."
+     },
+     "enable_research_notes": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable typed share_research actions, private note inboxes, and capped helper-credit scoring."
+     },
+     "order_timeout_seconds": {
+      "type": "number",
+      "default": 120,
+      "maximum": 3600,
+      "exclusiveMinimum": 0
+     },
+     "per_turn_query_budget": {
+      "type": "integer",
+      "default": 2,
+      "maximum": 20,
+      "minimum": 0
+     },
+     "enable_funding_contracts": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable typed offer_funding/accept_funding actions, contract repayment, and default penalties."
+     },
+     "risk_exposure_limit_ratio": {
+      "type": "number",
+      "default": 1,
+      "minimum": 0,
+      "description": "Gross position exposure limit as a multiple of the slot's starting bankroll."
+     },
+     "misinformation_penalty_bps": {
+      "type": "integer",
+      "default": 2000,
+      "maximum": 10000,
+      "minimum": 0,
+      "description": "Basis points of recipient loss charged to a sender for wrong-direction notes that the recipient acted on."
+     },
+     "allow_live_mark_to_market_oracle": {
+      "type": "boolean",
+      "default": true
+     },
+     "risk_market_concentration_limit_ratio": {
+      "type": "number",
+      "default": 0.75,
+      "minimum": 0,
+      "description": "Single-market position exposure limit as a multiple of the slot's starting bankroll."
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "status",
+     "metadata",
+     "scores",
+     "rows",
+     "risk",
+     "desks",
+     "desk_contributions",
+     "desk_queries",
+     "research_notes",
+     "research_note_scores",
+     "funding_offers",
+     "funding_contracts",
+     "funding_contract_settlements",
+     "social_events",
+     "oracle"
+    ],
+    "properties": {
+     "risk": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "slot",
+        "gross_position_exposure",
+        "max_market_position_exposure",
+        "exposure_limit",
+        "concentration_limit",
+        "excess_exposure",
+        "excess_concentration",
+        "penalty_basis",
+        "risk_penalty"
+       ],
+       "properties": {
+        "slot": {
+         "type": "integer"
+        },
+        "risk_penalty": {
+         "type": "number"
+        },
+        "penalty_basis": {
+         "type": "number"
+        },
+        "exposure_limit": {
+         "type": "number"
+        },
+        "excess_exposure": {
+         "type": "number"
+        },
+        "concentration_limit": {
+         "type": "number"
+        },
+        "excess_concentration": {
+         "type": "number"
+        },
+        "gross_position_exposure": {
+         "type": "number"
+        },
+        "max_market_position_exposure": {
+         "type": "number"
+        }
+       },
+       "additionalProperties": true
+      }
+     },
+     "rows": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "slot",
+        "profit_loss",
+        "personal_pnl",
+        "composite_score"
+       ],
+       "properties": {
+        "slot": {
+         "type": "integer"
+        },
+        "desk_id": {
+         "type": [
+          "integer",
+          "null"
+         ]
+        },
+        "desk_bonus": {
+         "type": "number"
+        },
+        "reputation": {
+         "type": "object",
+         "additionalProperties": true
+        },
+        "profit_loss": {
+         "type": "number"
+        },
+        "initial_cash": {
+         "type": "number"
+        },
+        "personal_pnl": {
+         "type": "number"
+        },
+        "risk_penalty": {
+         "type": "number"
+        },
+        "helper_credit": {
+         "type": "number"
+        },
+        "composite_score": {
+         "type": "number"
+        },
+        "default_penalty": {
+         "type": "number"
+        },
+        "desk_query_spend": {
+         "type": "number"
+        },
+        "desk_contribution": {
+         "type": "number"
+        },
+        "capital_utilization": {
+         "type": "number"
+        },
+        "funding_offers_sent": {
+         "type": "integer"
+        },
+        "research_notes_sent": {
+         "type": "integer"
+        },
+        "funding_contract_pnl": {
+         "type": "number"
+        },
+        "portfolio_return_pct": {
+         "type": "number"
+        },
+        "risk_excess_exposure": {
+         "type": "number"
+        },
+        "funding_contracts_lent": {
+         "type": "integer"
+        },
+        "misinformation_penalty": {
+         "type": "number"
+        },
+        "funding_offers_received": {
+         "type": "integer"
+        },
+        "gross_position_exposure": {
+         "type": "number"
+        },
+        "research_notes_received": {
+         "type": "integer"
+        },
+        "restricted_funding_cash": {
+         "type": "number"
+        },
+        "recipient_profit_created": {
+         "type": "number"
+        },
+        "risk_excess_concentration": {
+         "type": "number"
+        },
+        "funding_contracts_borrowed": {
+         "type": "integer"
+        },
+        "gross_oracle_position_value": {
+         "type": "number"
+        },
+        "max_market_position_exposure": {
+         "type": "number"
+        },
+        "contract_settlement_adjustment": {
+         "type": "number"
+        }
+       },
+       "additionalProperties": true
+      }
+     },
+     "desks": {
+      "type": "array",
+      "items": {
+       "type": "object"
+      }
+     },
+     "oracle": {
+      "type": "array",
+      "items": {
+       "type": "object"
+      }
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      }
+     },
+     "status": {
+      "type": "string"
+     },
+     "metadata": {
+      "type": "object",
+      "additionalProperties": true
+     },
+     "desk_queries": {
+      "type": "array",
+      "items": {
+       "type": "object"
+      }
+     },
+     "social_events": {
+      "type": "array",
+      "items": {
+       "type": "object"
+      }
+     },
+     "funding_offers": {
+      "type": "array",
+      "items": {
+       "type": "object"
+      }
+     },
+     "research_notes": {
+      "type": "array",
+      "items": {
+       "type": "object"
+      }
+     },
+     "funding_contracts": {
+      "type": "array",
+      "items": {
+       "type": "object"
+      }
+     },
+     "desk_contributions": {
+      "type": "array",
+      "items": {
+       "type": "object"
+      }
+     },
+     "research_note_scores": {
+      "type": "array",
+      "items": {
+       "type": "object"
+      }
+     },
+     "funding_contract_settlements": {
+      "type": "array",
+      "items": {
+       "type": "object"
+      }
+     }
+    },
+    "additionalProperties": true
+   }
+  },
+  "grader": [],
+  "player": [
+   {
+    "id": "baseline",
+    "env": {},
+    "run": [
+     "polymarket-coworld-baseline"
+    ],
+    "name": "Momentum Baseline",
+    "type": "player",
+    "image": "img_3d17b012-7ff2-4321-9da8-12d1ca4d015f",
+    "source_url": "https://github.com/Metta-AI/coworld-polymarket/tree/main/coworld",
+    "description": "Queries price history once per turn and sizes small momentum-following trades."
+   },
+   {
+    "id": "starter",
+    "env": {},
+    "run": [
+     "polymarket-coworld-starter"
+    ],
+    "name": "Starter Trader",
+    "type": "player",
+    "image": "img_3d17b012-7ff2-4321-9da8-12d1ca4d015f",
+    "source_url": "https://github.com/Metta-AI/coworld-polymarket/tree/main/coworld",
+    "description": "Heuristic starter policy that estimates edge from spreads, price trend, public signals, and live/fixture stream data before sizing positions."
+   },
+   {
+    "id": "risk_averse_starter",
+    "env": {},
+    "run": [
+     "polymarket-coworld-risk-averse"
+    ],
+    "name": "Risk-Averse Starter",
+    "type": "player",
+    "image": "img_3d17b012-7ff2-4321-9da8-12d1ca4d015f",
+    "source_url": "https://github.com/Metta-AI/coworld-polymarket/tree/main/coworld",
+    "description": "Starter-derived anchor with smaller sizing for baseline regression and anchor ladders."
+   },
+   {
+    "id": "aggressive_starter",
+    "env": {},
+    "run": [
+     "polymarket-coworld-aggressive"
+    ],
+    "name": "Aggressive Starter",
+    "type": "player",
+    "image": "img_3d17b012-7ff2-4321-9da8-12d1ca4d015f",
+    "source_url": "https://github.com/Metta-AI/coworld-polymarket/tree/main/coworld",
+    "description": "Starter-derived anchor with larger buy sizing for risk and drawdown probes."
+   },
+   {
+    "id": "contrarian_baseline",
+    "env": {},
+    "run": [
+     "polymarket-coworld-contrarian"
+    ],
+    "name": "Contrarian Baseline",
+    "type": "player",
+    "image": "img_3d17b012-7ff2-4321-9da8-12d1ca4d015f",
+    "source_url": "https://github.com/Metta-AI/coworld-polymarket/tree/main/coworld",
+    "description": "Weak anchor that trades against the starter signal for robustness and anchor-ladder calibration."
+   },
+   {
+    "id": "scripted_good_signal",
+    "env": {},
+    "run": [
+     "polymarket-coworld-good-signal"
+    ],
+    "name": "Scripted Good Signal",
+    "type": "player",
+    "image": "img_3d17b012-7ff2-4321-9da8-12d1ca4d015f",
+    "source_url": "https://github.com/Metta-AI/coworld-polymarket/tree/main/coworld",
+    "description": "Social anchor that shares calibrated research notes before trading."
+   },
+   {
+    "id": "scripted_noisy_signal",
+    "env": {},
+    "run": [
+     "polymarket-coworld-noisy-signal"
+    ],
+    "name": "Scripted Noisy Signal",
+    "type": "player",
+    "image": "img_3d17b012-7ff2-4321-9da8-12d1ca4d015f",
+    "source_url": "https://github.com/Metta-AI/coworld-polymarket/tree/main/coworld",
+    "description": "Social anchor that shares deliberately low-trust research notes for robustness tests."
+   },
+   {
+    "id": "scripted_free_rider",
+    "env": {},
+    "run": [
+     "polymarket-coworld-free-rider"
+    ],
+    "name": "Scripted Free Rider",
+    "type": "player",
+    "image": "img_3d17b012-7ff2-4321-9da8-12d1ca4d015f",
+    "source_url": "https://github.com/Metta-AI/coworld-polymarket/tree/main/coworld",
+    "description": "Desk anchor that spends available shared desk query budget without contributing first."
+   },
+   {
+    "id": "scripted_desk_contributor",
+    "env": {},
+    "run": [
+     "polymarket-coworld-desk-contributor"
+    ],
+    "name": "Scripted Desk Contributor",
+    "type": "player",
+    "image": "img_3d17b012-7ff2-4321-9da8-12d1ca4d015f",
+    "source_url": "https://github.com/Metta-AI/coworld-polymarket/tree/main/coworld",
+    "description": "Desk anchor that funds the shared desk query pool and then runs pooled research queries; earns desk bonus in proportion to its contribution."
+   },
+   {
+    "id": "scripted_good_lender",
+    "env": {},
+    "run": [
+     "polymarket-coworld-good-lender"
+    ],
+    "name": "Scripted Good Lender",
+    "type": "player",
+    "image": "img_3d17b012-7ff2-4321-9da8-12d1ca4d015f",
+    "source_url": "https://github.com/Metta-AI/coworld-polymarket/tree/main/coworld",
+    "description": "Capital-allocation anchor that offers bounded restricted funding to a counterparty."
+   },
+   {
+    "id": "scripted_bad_borrower",
+    "env": {},
+    "run": [
+     "polymarket-coworld-bad-borrower"
+    ],
+    "name": "Scripted Bad Borrower",
+    "type": "player",
+    "image": "img_3d17b012-7ff2-4321-9da8-12d1ca4d015f",
+    "source_url": "https://github.com/Metta-AI/coworld-polymarket/tree/main/coworld",
+    "description": "Capital-allocation anchor that accepts funding and then trades against the strongest visible signal."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "fixture_2p",
+    "name": "Fixture 2P",
+    "description": "Two-player deterministic fixture with three markets and oracle settlement.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Alice"
+      },
+      {
+       "name": "Bob"
+      }
+     ],
+     "turn_count": 6,
+     "initial_cash": 1000,
+     "market_count": 3,
+     "market_source": "fixture",
+     "per_turn_query_budget": 2
+    }
+   },
+   {
+    "id": "seeded_fixture_eval_2p",
+    "name": "Seeded Fixture Eval 2P",
+    "description": "Two-player fixture eval with seed-controlled market-pack selection for paired XP requests.",
+    "game_config": {
+     "seed": 0,
+     "players": [
+      {
+       "name": "Alice"
+      },
+      {
+       "name": "Bob"
+      }
+     ],
+     "turn_count": 6,
+     "initial_cash": 1000,
+     "market_count": 2,
+     "market_source": "fixture",
+     "per_turn_query_budget": 2
+    }
+   },
+   {
+    "id": "risk_control_2p",
+    "name": "Risk Control 2P",
+    "description": "Two-player fixture eval with exposure and concentration penalties for risk-aware portfolio skill.",
+    "game_config": {
+     "seed": 0,
+     "players": [
+      {
+       "name": "Alice"
+      },
+      {
+       "name": "Bob"
+      }
+     ],
+     "turn_count": 6,
+     "initial_cash": 1000,
+     "market_count": 3,
+     "market_source": "fixture",
+     "risk_penalty_bps": 1000,
+     "per_turn_query_budget": 2,
+     "risk_exposure_limit_ratio": 0.25,
+     "risk_market_concentration_limit_ratio": 0.2
+    }
+   },
+   {
+    "id": "research_notes_2p",
+    "name": "Research Notes 2P",
+    "description": "Two-player social eval with typed private research notes and capped helper-credit scoring.",
+    "game_config": {
+     "seed": 0,
+     "players": [
+      {
+       "name": "Alice"
+      },
+      {
+       "name": "Bob"
+      }
+     ],
+     "turn_count": 6,
+     "initial_cash": 1000,
+     "market_count": 2,
+     "market_source": "fixture",
+     "enable_research_notes": true,
+     "per_turn_query_budget": 2
+    }
+   },
+   {
+    "id": "capital_allocation_2p",
+    "name": "Capital Allocation 2P",
+    "description": "Two-player social eval with research notes plus enforceable funding contracts and default penalties.",
+    "game_config": {
+     "seed": 0,
+     "players": [
+      {
+       "name": "Alice"
+      },
+      {
+       "name": "Bob"
+      }
+     ],
+     "turn_count": 6,
+     "initial_cash": 1000,
+     "market_count": 2,
+     "market_source": "fixture",
+     "enable_research_notes": true,
+     "per_turn_query_budget": 2,
+     "enable_funding_contracts": true
+    }
+   },
+   {
+    "id": "pair_social_2p",
+    "name": "Pair Social 2P",
+    "description": "Two-player mixed social eval with research notes, funding contracts, and equal starting bankrolls.",
+    "game_config": {
+     "seed": 0,
+     "players": [
+      {
+       "name": "Alice"
+      },
+      {
+       "name": "Bob"
+      }
+     ],
+     "turn_count": 6,
+     "initial_cash": 1000,
+     "market_count": 3,
+     "market_source": "fixture",
+     "enable_research_notes": true,
+     "per_turn_query_budget": 2,
+     "enable_funding_contracts": true
+    }
+   },
+   {
+    "id": "desk_4p",
+    "name": "Desk 4P",
+    "description": "Four-player social league variant scored on live resolved Polymarket markets discovered per episode, with two shared research desks, pooled desk queries, funding contracts, and capped desk bonus scoring.",
+    "game_config": {
+     "desks": [
+      [
+       0,
+       1
+      ],
+      [
+       2,
+       3
+      ]
+     ],
+     "players": [
+      {
+       "name": "Alice"
+      },
+      {
+       "name": "Bob"
+      },
+      {
+       "name": "Carol"
+      },
+      {
+       "name": "Drew"
+      }
+     ],
+     "turn_count": 6,
+     "initial_cash": 1000,
+     "market_count": 3,
+     "market_source": "resolved",
+     "desk_bonus_bps": 1000,
+     "desk_query_cost": 25,
+     "enable_desk_pool": true,
+     "enable_research_notes": true,
+     "per_turn_query_budget": 2,
+     "enable_funding_contracts": true
+    }
+   },
+   {
+    "id": "capital_allocation_4p",
+    "name": "Capital Allocation 4P",
+    "description": "Four-player capital-allocation eval with two capital-rich lenders, two capital-constrained borrowers, research notes, and enforceable funding contracts.",
+    "game_config": {
+     "seed": 0,
+     "players": [
+      {
+       "name": "Alice"
+      },
+      {
+       "name": "Bob"
+      },
+      {
+       "name": "Carol"
+      },
+      {
+       "name": "Drew"
+      }
+     ],
+     "turn_count": 6,
+     "initial_cash": 1000,
+     "market_count": 3,
+     "market_source": "fixture",
+     "initial_cash_by_slot": [
+      1500,
+      1500,
+      600,
+      600
+     ],
+     "enable_research_notes": true,
+     "per_turn_query_budget": 2,
+     "enable_funding_contracts": true
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Default Commissioner",
+    "type": "commissioner",
+    "image": "img_4e045eb9-0920-433a-b60e-232b776d98a5",
+    "source_url": "https://github.com/Metta-AI/coworld-polymarket/tree/main/coworld",
+    "description": "Reusable round-robin commissioner for the first Polymarket Coworld league."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "starter"
+    },
+    {
+     "player_id": "starter"
+    }
+   ],
+   "game_config": {
+    "players": [
+     {
+      "name": "Alice"
+     },
+     {
+      "name": "Bob"
+     }
+    ],
+    "turn_count": 6,
+    "initial_cash": 1000,
+    "market_count": 3,
+    "market_source": "fixture",
+    "per_turn_query_budget": 2
+   }
+  },
+  "players_per_user": 50
+ },
+ "manifest_hash": "sha256:684661204770b81b429c00359ca266b36a5db36b5792b3d5aeae615bfbea4518",
+ "size_bytes": 16895,
+ "created_at": "2026-06-19T19:19:18.260718Z",
+ "canonical": true
+}

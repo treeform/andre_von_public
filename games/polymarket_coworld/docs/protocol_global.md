@@ -1,0 +1,1 @@
+Global viewers connect to /global and receive public market snapshots, turn status, pending slots, mark-to-market leaderboard, and final results.

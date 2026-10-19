@@ -1,0 +1,3424 @@
+{
+ "id": "cow_f395d354-34e9-4e60-9596-dedce3838d8f",
+ "name": "vanilla-wow",
+ "version": "0.1.242",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "nim-player-client",
+      "title": "Nim Player Client",
+      "content": {
+       "type": "text",
+       "value": "Open /client/player for the account and canonical authenticated /tcp/realmd and /tcp/world bridge details. The rendered Nim client retains WS /player and applies those WebSocket URLs directly to its login and world transports."
+      }
+     },
+     {
+      "id": "isolated-rfc-episodes",
+      "title": "Persistent Realm And Isolated RFC Episodes",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-vanilla-wow/blob/main/docs/participation/dungeon.md"
+      }
+     },
+     {
+      "id": "cwreplay",
+      "title": "CWREPLAY Binary Format",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-vanilla-wow/blob/main/docs/protocol/cwreplay.md"
+      }
+     },
+     {
+      "id": "rfc-roles",
+      "title": "RFC Coworld Roles",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-vanilla-wow/blob/main/docs/coworld-rfc-roles.md"
+      }
+     },
+     {
+      "id": "arena-two-v-two",
+      "title": "Arena 2v2 Variant",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-vanilla-wow/blob/main/docs/participation/arena.md"
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld-vanilla-wow/blob/main/README.md"
+    }
+   },
+   "name": "vanilla-wow",
+   "owner": "metta-ai",
+   "version": "0.1.242",
+   "runnable": {
+    "env": {
+     "VMANGOS_DATA_DIR": "/vmangos-data",
+     "VMANGOS_RESET_DB": "0",
+     "COWORLD_RECORD_DIR": "/coworld-captures",
+     "VMANGOS_REALM_NAME": "Coworld Vanilla",
+     "VMANGOS_DB_DATA_DIR": "/var/lib/coworld-mariadb",
+     "VANILLA_WOW_INSTALL_DIR": "/opt/vmangos",
+     "VMANGOS_MYSQL_DUMPS_DIR": "/vmangos-mysql-dump",
+     "COWORLD_RECORD_INTERVAL_MS": "500",
+     "COGAME_REPLAY_VIEWER_CONFIG": "{\"viewer_url\":\"https://d1v7pcbfg1b1hg.cloudfront.net/app/sha256-bfcb9fb6627455f003752420ef590c8e6dcbd0965a09cbe7bca5b5979c7971bb/global_viewer.html\",\"asset_base_url\":\"https://d1v7pcbfg1b1hg.cloudfront.net/assets/sha256-4778c61c331a4dbc0f577a293dc938b4056a4afdf5f97adc25a8a9849e2cdec5\",\"asset_grant_resource\":\"https://d1v7pcbfg1b1hg.cloudfront.net/assets/*\",\"cloudfront_key_pair_id\":\"KZ8LOP4LV5MOS\",\"signing_key_uri\":\"secret://coworld/vanilla-wow/replay_asset_signing_key\"}",
+     "VMANGOS_ADMIN_ACCOUNT_GMLEVEL": "6",
+     "VANILLA_WOW_EXTRACTED_DATA_DIR": "/vmangos-data",
+     "VMANGOS_ADMIN_ACCOUNT_PASSWORD": "cowcam",
+     "VMANGOS_ADMIN_ACCOUNT_USERNAME": "cowcam",
+     "VANILLA_WOW_ROSTER_SNAPSHOT_HMAC_KEY_URI": "secret://coworld/vanilla-wow/roster_snapshot_hmac_key",
+     "COWORLD_VMANGOS_SERVICES_READY_TIMEOUT_SECONDS": "1200"
+    },
+    "run": [],
+    "type": "game",
+    "image": "img_8e93e969-977b-4bea-a56f-370f5a3ce101",
+    "resources": {
+     "requests": {
+      "cpu": "6",
+      "memory": "12Gi",
+      "ephemeral-storage": "15Gi"
+     }
+    }
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "The v1 Vanilla WoW Coworld does not stream gameplay over /global. During a running episode, /client/global and WS /global expose one read-only vanilla_wow.episode_watch.v1 progress projection from the player metrics already forwarded over authenticated sessions; add format=json to the HTTP route for structured tooling."
+    },
+    "player": {
+     "type": "text",
+     "value": "Players connect to the exact runner-provided COWORLD_PLAYER_WS_URL at WS /player?slot=<slot>&token=<token>. WebSocket subprotocol vanilla-wow-policy selects binary vanilla_wow.control_wire Observation/Action traffic without rewriting the URL. Omitting the subprotocol selects the native/rendered session handoff used by RealPlayerBot, with account credentials, authenticated realmd and mangosd bridges, navigation, and immutable world-asset paths. During migration the game emits vanilla_wow.session.v1; current players accept both that literal and vanilla_wow.session and reply with the received literal so .v1 can be removed after active player images roll forward. Current players send typed status, route, or local_graph navigation requests on that retained authenticated session; already-published players may negotiate the legacy navigation extension and POST the same typed requests to /player/navigation. Players fetch only referenced DBFilesClient, Maps, VMaps, or MMaps files beneath /player/assets using the same slot token. Navigation responses are read-only evidence; policies still move through ordinary Action client input and server-validated movement. Human native and browser/WASM Nim players use the authenticated /client/player handoff; no separate mutable browser bot console exists."
+    }
+   },
+   "description": "Isolated Vanilla WoW episodes for 10x leveling, Kalimdor racing, RFC dungeon clears, and Arena 2v2, with one VMaNGOS backend per episode and independent leagues bound to explicit variants.",
+   "config_schema": {
+    "type": "object",
+    "$defs": {
+     "PlayerSpec": {
+      "type": "object",
+      "title": "PlayerSpec",
+      "required": [
+       "name"
+      ],
+      "properties": {
+       "name": {
+        "type": "string",
+        "title": "Name",
+        "minLength": 1
+       },
+       "team": {
+        "anyOf": [
+         {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "maxLength": 64,
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Team",
+        "default": null
+       },
+       "driver": {
+        "enum": [
+         "bot",
+         "human",
+         "unknown"
+        ],
+        "type": "string",
+        "title": "Driver",
+        "default": "unknown"
+       },
+       "character": {
+        "anyOf": [
+         {
+          "$ref": "#/$defs/CharacterSeedSpec"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null
+       },
+       "account_id": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "minimum": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Account Id",
+        "default": null
+       },
+       "party_role": {
+        "anyOf": [
+         {
+          "enum": [
+           "tank",
+           "healer",
+           "dps"
+          ],
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Party Role",
+        "default": null
+       },
+       "character_name": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Character Name",
+        "default": null
+       },
+       "rfc_profile_id": {
+        "anyOf": [
+         {
+          "type": "string",
+          "maxLength": 32,
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Rfc Profile Id",
+        "default": null
+       },
+       "account_password": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Account Password",
+        "default": null
+       },
+       "account_username": {
+        "anyOf": [
+         {
+          "type": "string",
+          "maxLength": 16,
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Account Username",
+        "default": null
+       },
+       "character_creation": {
+        "anyOf": [
+         {
+          "$ref": "#/$defs/CharacterCreationSpec"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null
+       }
+      },
+      "additionalProperties": false
+     },
+     "ArenaConfig": {
+      "type": "object",
+      "title": "ArenaConfig",
+      "properties": {
+       "map_id": {
+        "type": "integer",
+        "const": 0,
+        "title": "Map Id",
+        "default": 0
+       },
+       "enabled": {
+        "type": "boolean",
+        "title": "Enabled",
+        "default": false
+       },
+       "team_size": {
+        "type": "integer",
+        "const": 2,
+        "title": "Team Size",
+        "default": 2
+       },
+       "eliminations_to_win": {
+        "type": "integer",
+        "const": 2,
+        "title": "Eliminations To Win",
+        "default": 2
+       }
+      },
+      "description": "One stock-Vanilla-compatible mirrored two-versus-two duel.",
+      "additionalProperties": false
+     },
+     "BagItemSpec": {
+      "type": "object",
+      "title": "BagItemSpec",
+      "required": [
+       "item_id"
+      ],
+      "properties": {
+       "count": {
+        "type": "integer",
+        "title": "Count",
+        "default": 1,
+        "maximum": 255,
+        "minimum": 1
+       },
+       "item_id": {
+        "type": "integer",
+        "title": "Item Id",
+        "minimum": 1
+       }
+      },
+      "description": "One stack to place in the seeded character's backpack.\n\nFixture variants (mail/auction/trade provisioning) use these so client-path\nservice commands have items to attach, list, and trade.",
+      "additionalProperties": false
+     },
+     "TowerConfig": {
+      "type": "object",
+      "title": "TowerConfig",
+      "properties": {
+       "seed": {
+        "type": "string",
+        "title": "Seed",
+        "default": "torghast-climb",
+        "minLength": 1
+       },
+       "enabled": {
+        "type": "boolean",
+        "title": "Enabled",
+        "default": false
+       },
+       "floor_count": {
+        "type": "integer",
+        "title": "Floor Count",
+        "default": 6,
+        "maximum": 50,
+        "minimum": 1
+       },
+       "start_level": {
+        "type": "integer",
+        "title": "Start Level",
+        "default": 30,
+        "maximum": 60,
+        "minimum": 1
+       },
+       "reward_policy": {
+        "type": "string",
+        "const": "run_score",
+        "title": "Reward Policy",
+        "default": "run_score"
+       },
+       "players_per_run": {
+        "type": "integer",
+        "title": "Players Per Run",
+        "default": 1,
+        "maximum": 5,
+        "minimum": 1
+       },
+       "completion_radius": {
+        "type": "number",
+        "title": "Completion Radius",
+        "default": 20.0,
+        "exclusiveMinimum": 0
+       }
+      },
+      "description": "Configuration for the generated dungeon-climb mode.",
+      "additionalProperties": false
+     },
+     "StartPosition": {
+      "type": "object",
+      "title": "StartPosition",
+      "required": [
+       "map_id",
+       "zone",
+       "x",
+       "y",
+       "z"
+      ],
+      "properties": {
+       "x": {
+        "type": "number",
+        "title": "X"
+       },
+       "y": {
+        "type": "number",
+        "title": "Y"
+       },
+       "z": {
+        "type": "number",
+        "title": "Z"
+       },
+       "zone": {
+        "type": "integer",
+        "title": "Zone",
+        "minimum": 0
+       },
+       "map_id": {
+        "type": "integer",
+        "title": "Map Id",
+        "minimum": 0
+       },
+       "orientation": {
+        "type": "number",
+        "title": "Orientation",
+        "default": 0.0
+       }
+      },
+      "description": "World location a seeded character is placed at on first login.",
+      "additionalProperties": false
+     },
+     "PetFixtureSpec": {
+      "type": "object",
+      "title": "PetFixtureSpec",
+      "required": [
+       "entry",
+       "slot"
+      ],
+      "properties": {
+       "name": {
+        "type": "string",
+        "title": "Name",
+        "default": "Proofpet",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       "slot": {
+        "type": "integer",
+        "title": "Slot",
+        "maximum": 4,
+        "minimum": 0
+       },
+       "entry": {
+        "type": "integer",
+        "title": "Entry",
+        "minimum": 1
+       },
+       "level": {
+        "type": "integer",
+        "title": "Level",
+        "default": 10,
+        "maximum": 60,
+        "minimum": 1
+       },
+       "spells": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/PetSpellFixtureSpec"
+        },
+        "title": "Spells",
+        "default": []
+       },
+       "loyalty": {
+        "type": "integer",
+        "title": "Loyalty",
+        "default": 6,
+        "maximum": 6,
+        "minimum": 1
+       },
+       "pet_type": {
+        "type": "integer",
+        "title": "Pet Type",
+        "default": 1,
+        "minimum": 0
+       },
+       "display_id": {
+        "type": "integer",
+        "title": "Display Id",
+        "default": 0,
+        "minimum": 0
+       },
+       "react_state": {
+        "type": "integer",
+        "title": "React State",
+        "default": 0,
+        "maximum": 2,
+        "minimum": 0
+       },
+       "current_mana": {
+        "type": "integer",
+        "title": "Current Mana",
+        "default": 0,
+        "minimum": 0
+       },
+       "current_health": {
+        "type": "integer",
+        "title": "Current Health",
+        "default": 100,
+        "minimum": 1
+       },
+       "loyalty_points": {
+        "type": "integer",
+        "title": "Loyalty Points",
+        "default": 17500,
+        "minimum": 0
+       },
+       "action_bar_data": {
+        "type": "string",
+        "title": "Action Bar Data",
+        "default": ""
+       },
+       "created_by_spell": {
+        "type": "integer",
+        "title": "Created By Spell",
+        "default": 0,
+        "minimum": 0
+       },
+       "teach_spell_data": {
+        "type": "string",
+        "title": "Teach Spell Data",
+        "default": ""
+       },
+       "current_happiness": {
+        "type": "integer",
+        "title": "Current Happiness",
+        "default": 1000000,
+        "minimum": 0
+       }
+      },
+      "description": "Minimal persisted hunter pet row for stable fixture readiness.",
+      "additionalProperties": false
+     },
+     "RfcRoundConfig": {
+      "type": "object",
+      "title": "RfcRoundConfig",
+      "required": [
+       "loadout_version"
+      ],
+      "properties": {
+       "leader_slot": {
+        "type": "integer",
+        "title": "Leader Slot",
+        "default": 0,
+        "maximum": 4,
+        "minimum": 0
+       },
+       "max_attempts": {
+        "type": "integer",
+        "title": "Max Attempts",
+        "default": 4,
+        "maximum": 100,
+        "minimum": 1
+       },
+       "loadout_version": {
+        "type": "string",
+        "title": "Loadout Version",
+        "maxLength": 64,
+        "minLength": 1
+       }
+      },
+      "description": "One normalized, disposable Dungeon Wow RFC launch.",
+      "additionalProperties": false
+     },
+     "SpellLabConfig": {
+      "type": "object",
+      "title": "SpellLabConfig",
+      "properties": {
+       "enabled": {
+        "type": "boolean",
+        "title": "Enabled",
+        "default": false
+       },
+       "bindings": {
+        "type": "object",
+        "title": "Bindings",
+        "additionalProperties": {
+         "type": "array",
+         "items": {
+          "$ref": "#/$defs/SpellLabBinding"
+         }
+        }
+       },
+       "spell_id": {
+        "type": "integer",
+        "title": "Spell Id",
+        "default": 15208,
+        "minimum": 1
+       },
+       "friend_guid": {
+        "type": "integer",
+        "title": "Friend Guid",
+        "default": 890404,
+        "minimum": 1
+       },
+       "friend_name": {
+        "type": "string",
+        "title": "Friend Name",
+        "default": "Friendly orc",
+        "maxLength": 64,
+        "minLength": 1
+       },
+       "target_guid": {
+        "type": "integer",
+        "title": "Target Guid",
+        "default": 890403,
+        "minimum": 1
+       },
+       "target_name": {
+        "type": "string",
+        "title": "Target Name",
+        "default": "Hostile boar",
+        "maxLength": 64,
+        "minLength": 1
+       },
+       "friend_entry": {
+        "type": "integer",
+        "title": "Friend Entry",
+        "default": 920404,
+        "minimum": 1
+       },
+       "neutral_guid": {
+        "type": "integer",
+        "title": "Neutral Guid",
+        "default": 890405,
+        "minimum": 1
+       },
+       "neutral_name": {
+        "type": "string",
+        "title": "Neutral Name",
+        "default": "Neutral ogre",
+        "maxLength": 64,
+        "minLength": 1
+       },
+       "target_entry": {
+        "type": "integer",
+        "title": "Target Entry",
+        "default": 920403,
+        "minimum": 1
+       },
+       "target_level": {
+        "type": "integer",
+        "title": "Target Level",
+        "default": 60,
+        "maximum": 63,
+        "minimum": 1
+       },
+       "action_button": {
+        "type": "integer",
+        "title": "Action Button",
+        "default": 1,
+        "maximum": 119,
+        "minimum": 0
+       },
+       "neutral_entry": {
+        "type": "integer",
+        "title": "Neutral Entry",
+        "default": 920405,
+        "minimum": 1
+       },
+       "friend_enabled": {
+        "type": "boolean",
+        "title": "Friend Enabled",
+        "default": true
+       },
+       "friend_position": {
+        "$ref": "#/$defs/StartPosition"
+       },
+       "neutral_enabled": {
+        "type": "boolean",
+        "title": "Neutral Enabled",
+        "default": true
+       },
+       "target_position": {
+        "$ref": "#/$defs/StartPosition"
+       },
+       "neutral_position": {
+        "$ref": "#/$defs/StartPosition"
+       },
+       "locked_object_guid": {
+        "type": "integer",
+        "title": "Locked Object Guid",
+        "default": 890406,
+        "minimum": 1
+       },
+       "target_resistances": {
+        "type": "object",
+        "title": "Target Resistances",
+        "additionalProperties": {
+         "type": "integer"
+        }
+       },
+       "teach_bound_spells": {
+        "type": "boolean",
+        "title": "Teach Bound Spells",
+        "default": false
+       },
+       "locked_object_enabled": {
+        "type": "boolean",
+        "title": "Locked Object Enabled",
+        "default": false
+       },
+       "source_creature_entry": {
+        "type": "integer",
+        "title": "Source Creature Entry",
+        "default": 3098,
+        "minimum": 1
+       },
+       "locked_object_position": {
+        "$ref": "#/$defs/StartPosition"
+       },
+       "target_respawn_seconds": {
+        "type": "integer",
+        "title": "Target Respawn Seconds",
+        "default": 10,
+        "minimum": 1
+       },
+       "target_armor_multiplier": {
+        "type": "number",
+        "title": "Target Armor Multiplier",
+        "default": 1.0,
+        "minimum": 0
+       },
+       "target_damage_multiplier": {
+        "type": "number",
+        "title": "Target Damage Multiplier",
+        "default": 0.001,
+        "minimum": 0
+       },
+       "target_health_multiplier": {
+        "type": "number",
+        "title": "Target Health Multiplier",
+        "default": 200.0,
+        "exclusiveMinimum": 0
+       },
+       "locked_object_source_entry": {
+        "type": "integer",
+        "title": "Locked Object Source Entry",
+        "default": 179486,
+        "minimum": 1
+       },
+       "friend_source_creature_entry": {
+        "type": "integer",
+        "title": "Friend Source Creature Entry",
+        "default": 3296,
+        "minimum": 1
+       },
+       "locked_object_respawn_seconds": {
+        "type": "integer",
+        "title": "Locked Object Respawn Seconds",
+        "default": 10,
+        "minimum": 1
+       },
+       "neutral_source_creature_entry": {
+        "type": "integer",
+        "title": "Neutral Source Creature Entry",
+        "default": 211,
+        "minimum": 1
+       }
+      },
+      "description": "Optional deterministic spell-effect lab staging.\n\nThe lab writes world rows before VMaNGOS starts so live testing still casts\nthrough the normal realmd/world client path. ``bindings`` maps an account\nusername to that character's staged action buttons; when absent, the legacy\nsingle ``spell_id``/``action_button`` pair applies to every lab character.",
+      "additionalProperties": false
+     },
+     "ClassDeckConfig": {
+      "type": "object",
+      "title": "ClassDeckConfig",
+      "properties": {
+       "enabled": {
+        "type": "boolean",
+        "title": "Enabled",
+        "default": false
+       },
+       "test_seed": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "maximum": 4294967295,
+          "minimum": 0
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Test Seed",
+        "default": null
+       },
+       "interrupt_after_select_once": {
+        "type": "boolean",
+        "title": "Interrupt After Select Once",
+        "default": false
+       }
+      },
+      "description": "Optional server-authoritative class spell draft progression.",
+      "additionalProperties": false
+     },
+     "QuestStatusSpec": {
+      "type": "object",
+      "title": "QuestStatusSpec",
+      "required": [
+       "quest_id"
+      ],
+      "properties": {
+       "timer": {
+        "type": "integer",
+        "title": "Timer",
+        "default": 0,
+        "minimum": 0
+       },
+       "status": {
+        "type": "integer",
+        "title": "Status",
+        "default": 1,
+        "minimum": 0
+       },
+       "explored": {
+        "type": "integer",
+        "title": "Explored",
+        "default": 0,
+        "maximum": 1,
+        "minimum": 0
+       },
+       "quest_id": {
+        "type": "integer",
+        "title": "Quest Id",
+        "minimum": 1
+       },
+       "rewarded": {
+        "type": "integer",
+        "title": "Rewarded",
+        "default": 0,
+        "maximum": 1,
+        "minimum": 0
+       },
+       "mob_count1": {
+        "type": "integer",
+        "title": "Mob Count1",
+        "default": 0,
+        "minimum": 0
+       },
+       "mob_count2": {
+        "type": "integer",
+        "title": "Mob Count2",
+        "default": 0,
+        "minimum": 0
+       },
+       "mob_count3": {
+        "type": "integer",
+        "title": "Mob Count3",
+        "default": 0,
+        "minimum": 0
+       },
+       "mob_count4": {
+        "type": "integer",
+        "title": "Mob Count4",
+        "default": 0,
+        "minimum": 0
+       },
+       "item_count1": {
+        "type": "integer",
+        "title": "Item Count1",
+        "default": 0,
+        "minimum": 0
+       },
+       "item_count2": {
+        "type": "integer",
+        "title": "Item Count2",
+        "default": 0,
+        "minimum": 0
+       },
+       "item_count3": {
+        "type": "integer",
+        "title": "Item Count3",
+        "default": 0,
+        "minimum": 0
+       },
+       "item_count4": {
+        "type": "integer",
+        "title": "Item Count4",
+        "default": 0,
+        "minimum": 0
+       },
+       "reward_choice": {
+        "type": "integer",
+        "title": "Reward Choice",
+        "default": 0,
+        "minimum": 0
+       }
+      },
+      "description": "One durable quest-log row for proof-realm fixture readiness.",
+      "additionalProperties": false
+     },
+     "SpellLabBinding": {
+      "type": "object",
+      "title": "SpellLabBinding",
+      "required": [
+       "spell_id",
+       "action_button"
+      ],
+      "properties": {
+       "spell_id": {
+        "type": "integer",
+        "title": "Spell Id",
+        "minimum": 1
+       },
+       "action_button": {
+        "type": "integer",
+        "title": "Action Button",
+        "maximum": 119,
+        "minimum": 0
+       }
+      },
+      "description": "One staged action-button assignment for a lab character.",
+      "additionalProperties": false
+     },
+     "CoworldStateSpec": {
+      "type": "object",
+      "title": "CoworldStateSpec",
+      "required": [
+       "mode"
+      ],
+      "properties": {
+       "mode": {
+        "enum": [
+         "head",
+         "snapshot"
+        ],
+        "type": "string",
+        "title": "Mode"
+       },
+       "scope": {
+        "enum": [
+         "player",
+         "world"
+        ],
+        "type": "string",
+        "title": "Scope",
+        "default": "player"
+       },
+       "participants": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/CoworldStateParticipant"
+        },
+        "title": "Participants"
+       }
+      },
+      "description": "Game-agnostic state intent attached to a Coworld episode.",
+      "additionalProperties": false
+     },
+     "DungeonLabConfig": {
+      "type": "object",
+      "title": "DungeonLabConfig",
+      "properties": {
+       "definition_path": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Definition Path",
+        "default": null
+       },
+       "difficulty_override": {
+        "anyOf": [
+         {
+          "$ref": "#/$defs/DungeonLabDifficultyOverride"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null
+       },
+       "maximum_player_level": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "maximum": 60,
+          "minimum": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Maximum Player Level",
+        "default": null
+       }
+      },
+      "description": "Optional Dungeon Lab scenario staging.\n\n``definition_path`` names a ``coworld.dungeon`` document (the manifest\nconvention is a repo-relative ``content/dungeons/<name>.dungeon.json``). The\nruntime compiles it to a world overlay before VMaNGOS starts and stages\nthe seeded party at the definition's entrance.",
+      "additionalProperties": false
+     },
+     "SkillFixtureSpec": {
+      "type": "object",
+      "title": "SkillFixtureSpec",
+      "required": [
+       "skill_id",
+       "value",
+       "max_value"
+      ],
+      "properties": {
+       "value": {
+        "type": "integer",
+        "title": "Value",
+        "minimum": 1
+       },
+       "skill_id": {
+        "type": "integer",
+        "title": "Skill Id",
+        "minimum": 1
+       },
+       "max_value": {
+        "type": "integer",
+        "title": "Max Value",
+        "minimum": 1
+       }
+      },
+      "description": "A skill row intentionally left below cap for live skill-up proofs.",
+      "additionalProperties": false
+     },
+     "ActionBarSlotSpec": {
+      "type": "object",
+      "title": "ActionBarSlotSpec",
+      "required": [
+       "button",
+       "action"
+      ],
+      "properties": {
+       "action": {
+        "type": "integer",
+        "title": "Action",
+        "minimum": 1
+       },
+       "button": {
+        "type": "integer",
+        "title": "Button",
+        "maximum": 119,
+        "minimum": 0
+       },
+       "action_type": {
+        "type": "integer",
+        "title": "Action Type",
+        "default": 0,
+        "maximum": 255,
+        "minimum": 0
+       }
+      },
+      "description": "One deterministic action-bar binding for a seeded character.",
+      "additionalProperties": false
+     },
+     "CharacterSeedSpec": {
+      "type": "object",
+      "title": "CharacterSeedSpec",
+      "required": [
+       "character_class"
+      ],
+      "properties": {
+       "mana": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "minimum": 0
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Mana",
+        "default": null
+       },
+       "name": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Name",
+        "default": null
+       },
+       "race": {
+        "type": "string",
+        "title": "Race",
+        "default": "troll"
+       },
+       "level": {
+        "type": "integer",
+        "title": "Level",
+        "default": 30,
+        "maximum": 60,
+        "minimum": 1
+       },
+       "start": {
+        "anyOf": [
+         {
+          "$ref": "#/$defs/StartPosition"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null
+       },
+       "gender": {
+        "enum": [
+         "male",
+         "female"
+        ],
+        "type": "string",
+        "title": "Gender",
+        "default": "male"
+       },
+       "health": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "minimum": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Health",
+        "default": null
+       },
+       "ammo_id": {
+        "type": "integer",
+        "title": "Ammo Id",
+        "default": 0,
+        "minimum": 0
+       },
+       "bag_items": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/BagItemSpec"
+        },
+        "title": "Bag Items",
+        "default": []
+       },
+       "equipment": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/EquippedItemSeedSpec"
+        },
+        "title": "Equipment",
+        "default": []
+       },
+       "spell_ids": {
+        "type": "array",
+        "items": {
+         "type": "integer"
+        },
+        "title": "Spell Ids",
+        "default": []
+       },
+       "action_bar": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/ActionBarSlotSpec"
+        },
+        "title": "Action Bar",
+        "default": []
+       },
+       "money_gold": {
+        "type": "integer",
+        "title": "Money Gold",
+        "default": 0,
+        "minimum": 0
+       },
+       "rest_bonus": {
+        "type": "number",
+        "title": "Rest Bonus",
+        "default": 0.0,
+        "minimum": 0
+       },
+       "pet_fixtures": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/PetFixtureSpec"
+        },
+        "title": "Pet Fixtures",
+        "default": []
+       },
+       "seed_profile": {
+        "enum": [
+         "premade",
+         "playercreateinfo"
+        ],
+        "type": "string",
+        "title": "Seed Profile",
+        "default": "premade"
+       },
+       "stable_slots": {
+        "type": "integer",
+        "title": "Stable Slots",
+        "default": 0,
+        "maximum": 5,
+        "minimum": 0
+       },
+       "gear_template": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Gear Template",
+        "default": null
+       },
+       "allow_alliance": {
+        "type": "boolean",
+        "title": "Allow Alliance",
+        "default": false
+       },
+       "corpse_fixture": {
+        "anyOf": [
+         {
+          "$ref": "#/$defs/CorpseFixtureSpec"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null
+       },
+       "quest_statuses": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/QuestStatusSpec"
+        },
+        "title": "Quest Statuses",
+        "default": []
+       },
+       "skill_fixtures": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/SkillFixtureSpec"
+        },
+        "title": "Skill Fixtures",
+        "default": []
+       },
+       "spell_template": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Spell Template",
+        "default": null
+       },
+       "template_level": {
+        "type": "integer",
+        "title": "Template Level",
+        "default": 29,
+        "maximum": 60,
+        "minimum": 1
+       },
+       "character_class": {
+        "type": "string",
+        "title": "Character Class",
+        "minLength": 1
+       },
+       "known_taxi_mask": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Known Taxi Mask",
+        "default": null
+       },
+       "maxed_extra_skills": {
+        "type": "array",
+        "items": {
+         "type": "integer"
+        },
+        "title": "Maxed Extra Skills",
+        "default": []
+       }
+      },
+      "description": "Per-player character to write into the VMaNGOS DB before the session.\n\nWhen a player carries this block the runtime seeds a level-set, geared\ncharacter on that player's provisioned account so the player logs straight\ninto a ready character instead of the character-creation screen. The\ndefault profile uses VMaNGOS premade templates; ``playercreateinfo`` uses\nstock starter gear, spells, actions, and spawn rows for low-level fixtures.",
+      "additionalProperties": false
+     },
+     "CorpseFixtureSpec": {
+      "type": "object",
+      "title": "CorpseFixtureSpec",
+      "required": [
+       "map_id",
+       "x",
+       "y",
+       "z"
+      ],
+      "properties": {
+       "x": {
+        "type": "number",
+        "title": "X"
+       },
+       "y": {
+        "type": "number",
+        "title": "Y"
+       },
+       "z": {
+        "type": "number",
+        "title": "Z"
+       },
+       "map_id": {
+        "type": "integer",
+        "title": "Map Id",
+        "minimum": 0
+       },
+       "corpse_type": {
+        "type": "integer",
+        "title": "Corpse Type",
+        "default": 1,
+        "minimum": 0
+       },
+       "orientation": {
+        "type": "number",
+        "title": "Orientation",
+        "default": 0.0
+       }
+      },
+      "description": "A corpse row paired with a character for corpse-run fixture readiness.",
+      "additionalProperties": false
+     },
+     "SovereigntyConfig": {
+      "type": "object",
+      "title": "SovereigntyConfig",
+      "required": [
+       "catalog_path"
+      ],
+      "properties": {
+       "catalog_path": {
+        "type": "string",
+        "title": "Catalog Path",
+        "minLength": 1
+       }
+      },
+      "description": "Default-off stock-world guild sovereignty staging.",
+      "additionalProperties": false
+     },
+     "WorldSnapshotSpec": {
+      "type": "object",
+      "title": "WorldSnapshotSpec",
+      "required": [
+       "uri",
+       "sha256"
+      ],
+      "properties": {
+       "uri": {
+        "type": "string",
+        "title": "Uri",
+        "minLength": 1
+       },
+       "sha256": {
+        "type": "string",
+        "title": "Sha256",
+        "pattern": "^[0-9a-fA-F]{64}$"
+       },
+       "hmac_key_env": {
+        "type": "string",
+        "const": "VANILLA_WOW_ROSTER_SNAPSHOT_HMAC_KEY",
+        "title": "Hmac Key Env",
+        "default": "VANILLA_WOW_ROSTER_SNAPSHOT_HMAC_KEY"
+       }
+      },
+      "description": "Private signed full-world artifact restored before an isolated realm starts.",
+      "additionalProperties": false
+     },
+     "RosterSnapshotSpec": {
+      "type": "object",
+      "title": "RosterSnapshotSpec",
+      "required": [
+       "uri",
+       "sha256",
+       "expected_player_count"
+      ],
+      "properties": {
+       "uri": {
+        "type": "string",
+        "title": "Uri",
+        "minLength": 1
+       },
+       "sha256": {
+        "type": "string",
+        "title": "Sha256",
+        "pattern": "^[0-9a-fA-F]{64}$"
+       },
+       "hmac_key_env": {
+        "type": "string",
+        "const": "VANILLA_WOW_ROSTER_SNAPSHOT_HMAC_KEY",
+        "title": "Hmac Key Env",
+        "default": "VANILLA_WOW_ROSTER_SNAPSHOT_HMAC_KEY"
+       },
+       "expected_player_count": {
+        "type": "integer",
+        "title": "Expected Player Count",
+        "maximum": 5,
+        "minimum": 1
+       }
+      },
+      "description": "Private signed character-copy artifact imported into an isolated realm.",
+      "additionalProperties": false
+     },
+     "PetSpellFixtureSpec": {
+      "type": "object",
+      "title": "PetSpellFixtureSpec",
+      "required": [
+       "spell_id"
+      ],
+      "properties": {
+       "active": {
+        "enum": [
+         1,
+         129,
+         193
+        ],
+        "type": "integer",
+        "title": "Active",
+        "default": 193
+       },
+       "spell_id": {
+        "type": "integer",
+        "title": "Spell Id",
+        "minimum": 1
+       }
+      },
+      "description": "One persisted pet spell using stock VMaNGOS pet-action state values.",
+      "additionalProperties": false
+     },
+     "EquippedItemSeedSpec": {
+      "type": "object",
+      "title": "EquippedItemSeedSpec",
+      "required": [
+       "item_id"
+      ],
+      "properties": {
+       "enchant": {
+        "type": "integer",
+        "title": "Enchant",
+        "default": 0,
+        "minimum": 0
+       },
+       "item_id": {
+        "type": "integer",
+        "title": "Item Id",
+        "minimum": 1
+       }
+      },
+      "description": "One explicit equipped item for a normalized seeded loadout.",
+      "additionalProperties": false
+     },
+     "InitialCharacterSpec": {
+      "type": "object",
+      "title": "InitialCharacterSpec",
+      "required": [
+       "character_class"
+      ],
+      "properties": {
+       "race": {
+        "type": "string",
+        "title": "Race",
+        "default": "troll"
+       },
+       "gender": {
+        "enum": [
+         "male",
+         "female"
+        ],
+        "type": "string",
+        "title": "Gender",
+        "default": "male"
+       },
+       "allow_alliance": {
+        "type": "boolean",
+        "title": "Allow Alliance",
+        "default": false
+       },
+       "character_class": {
+        "type": "string",
+        "title": "Character Class",
+        "minLength": 1
+       }
+      },
+      "description": "Submitted identity preference for an account's first character.\n\nEvery stock-playable Vanilla race/class combination is available. Consumers\nmay create the character through the ordinary client or materialize a\nnormalized league fixture from the same identity.",
+      "additionalProperties": false
+     },
+     "CharacterCreationSpec": {
+      "type": "object",
+      "title": "CharacterCreationSpec",
+      "required": [
+       "character_class",
+       "name"
+      ],
+      "properties": {
+       "name": {
+        "type": "string",
+        "title": "Name",
+        "maxLength": 12,
+        "minLength": 2
+       },
+       "race": {
+        "type": "string",
+        "title": "Race",
+        "default": "troll"
+       },
+       "gender": {
+        "enum": [
+         "male",
+         "female"
+        ],
+        "type": "string",
+        "title": "Gender",
+        "default": "male"
+       },
+       "allow_alliance": {
+        "type": "boolean",
+        "title": "Allow Alliance",
+        "default": false
+       },
+       "character_class": {
+        "type": "string",
+        "title": "Character Class",
+        "minLength": 1
+       }
+      },
+      "description": "Character identity created through the ordinary Vanilla client path.",
+      "additionalProperties": false
+     },
+     "EpisodeCompletionSpec": {
+      "type": "object",
+      "title": "EpisodeCompletionSpec",
+      "properties": {
+       "minimum_total_xp_gained": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "minimum": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Minimum Total Xp Gained",
+        "default": null
+       },
+       "minimum_dungeon_bosses_defeated": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "minimum": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Minimum Dungeon Bosses Defeated",
+        "default": null
+       },
+       "minimum_dungeon_hostiles_defeated": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "minimum": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Minimum Dungeon Hostiles Defeated",
+        "default": null
+       }
+      },
+      "description": "Authoritative conditions that end an otherwise long-running episode.\n\nAn empty specification completes when every expected player is online.",
+      "additionalProperties": false
+     },
+     "KalimdorTraversalSpec": {
+      "type": "object",
+      "title": "KalimdorTraversalSpec",
+      "properties": {
+       "map_id": {
+        "type": "integer",
+        "const": 1,
+        "title": "Map Id",
+        "default": 1
+       },
+       "enabled": {
+        "type": "boolean",
+        "title": "Enabled",
+        "default": false
+       },
+       "goal_world_x": {
+        "type": "number",
+        "title": "Goal World X",
+        "default": 6687.333052
+       },
+       "goal_world_y": {
+        "type": "number",
+        "title": "Goal World Y",
+        "default": -4647.667
+       },
+       "goal_world_z": {
+        "type": "number",
+        "title": "Goal World Z",
+        "default": 721.678
+       },
+       "start_world_x": {
+        "type": "number",
+        "title": "Start World X",
+        "default": -9187.0
+       },
+       "goal_radius_yards": {
+        "type": "number",
+        "title": "Goal Radius Yards",
+        "default": 300.0,
+        "maximum": 1000,
+        "exclusiveMinimum": 0
+       }
+      },
+      "description": "Fixed south-to-north Kalimdor scoring boundary and Everlook goal.\n\nThe stock minimap projects geographic north/south from VMaNGOS world X,\nso northing is deliberately derived from world X rather than world Y.\nGoal completion is a three-dimensional radius around the terrain-verified\nEverlook anchor rather than the old world-X finish line.",
+      "additionalProperties": false
+     },
+     "PersistentEntrantSpec": {
+      "type": "object",
+      "title": "PersistentEntrantSpec",
+      "required": [
+       "player_id",
+       "policy_version_id"
+      ],
+      "properties": {
+       "player_id": {
+        "type": "string",
+        "title": "Player Id",
+        "maxLength": 128,
+        "minLength": 1
+       },
+       "player_name": {
+        "anyOf": [
+         {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Player Name",
+        "default": null
+       },
+       "runtime_mode": {
+        "enum": [
+         "bounded",
+         "persistent"
+        ],
+        "type": "string",
+        "title": "Runtime Mode",
+        "default": "bounded"
+       },
+       "initial_character": {
+        "anyOf": [
+         {
+          "$ref": "#/$defs/InitialCharacterSpec"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null
+       },
+       "policy_version_id": {
+        "type": "string",
+        "title": "Policy Version Id",
+        "maxLength": 128,
+        "minLength": 1
+       }
+      },
+      "description": "Stable account owner authored by the league Commissioner.",
+      "additionalProperties": false
+     },
+     "PersistentGatewaySpec": {
+      "type": "object",
+      "title": "PersistentGatewaySpec",
+      "required": [
+       "url",
+       "control_token_uri"
+      ],
+      "properties": {
+       "url": {
+        "type": "string",
+        "title": "Url",
+        "pattern": "^https?://",
+        "minLength": 1
+       },
+       "control_token_uri": {
+        "type": "string",
+        "title": "Control Token Uri",
+        "minLength": 1
+       }
+      },
+      "description": "Private gateway connection injected through a Coworld config overlay.",
+      "additionalProperties": false
+     },
+     "VmangosConfigOverrides": {
+      "type": "object",
+      "title": "VmangosConfigOverrides",
+      "properties": {
+       "class_deck": {
+        "$ref": "#/$defs/ClassDeckConfig"
+       },
+       "realm_ruleset": {
+        "enum": [
+         "stock",
+         "guild_wars",
+         "guild_wars_drain"
+        ],
+        "type": "string",
+        "title": "Realm Ruleset",
+        "default": "stock"
+       },
+       "npc_backstories": {
+        "type": "boolean",
+        "title": "Npc Backstories",
+        "default": false
+       },
+       "simulation_time_scale": {
+        "type": "integer",
+        "title": "Simulation Time Scale",
+        "default": 1,
+        "maximum": 10,
+        "minimum": 1
+       },
+       "realmd_config_overrides": {
+        "type": "object",
+        "title": "Realmd Config Overrides",
+        "additionalProperties": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "integer"
+          },
+          {
+           "type": "number"
+          }
+         ]
+        }
+       },
+       "mangosd_config_overrides": {
+        "type": "object",
+        "title": "Mangosd Config Overrides",
+        "additionalProperties": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "integer"
+          },
+          {
+           "type": "number"
+          }
+         ]
+        }
+       }
+      },
+      "additionalProperties": false
+     },
+     "CoworldStateParticipant": {
+      "type": "object",
+      "title": "CoworldStateParticipant",
+      "required": [
+       "player_id"
+      ],
+      "properties": {
+       "player_id": {
+        "type": "string",
+        "title": "Player Id",
+        "maxLength": 128,
+        "minLength": 1
+       }
+      },
+      "additionalProperties": false
+     },
+     "LeagueEntrantPreferences": {
+      "type": "object",
+      "title": "LeagueEntrantPreferences",
+      "properties": {
+       "dps": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Dps",
+        "default": null
+       },
+       "tank": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Tank",
+        "default": null
+       },
+       "healer": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Healer",
+        "default": null
+       },
+       "arena_slot_1": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Arena Slot 1",
+        "default": null
+       },
+       "arena_slot_2": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Arena Slot 2",
+        "default": null
+       },
+       "initial_character_race": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Initial Character Race",
+        "default": null
+       },
+       "initial_character_class": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Initial Character Class",
+        "default": null
+       },
+       "initial_character_gender": {
+        "anyOf": [
+         {
+          "enum": [
+           "male",
+           "female"
+          ],
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Initial Character Gender",
+        "default": null
+       }
+      },
+      "description": "Typed membership preferences projected into one scheduled player seat.",
+      "additionalProperties": false
+     },
+     "DungeonLabDifficultyOverride": {
+      "type": "object",
+      "title": "DungeonLabDifficultyOverride",
+      "properties": {
+       "armor_mult": {
+        "anyOf": [
+         {
+          "type": "number",
+          "exclusiveMinimum": 0
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Armor Mult",
+        "default": null
+       },
+       "damage_mult": {
+        "anyOf": [
+         {
+          "type": "number",
+          "exclusiveMinimum": 0
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Damage Mult",
+        "default": null
+       },
+       "health_mult": {
+        "anyOf": [
+         {
+          "type": "number",
+          "exclusiveMinimum": 0
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Health Mult",
+        "default": null
+       },
+       "level_shift": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "maximum": 62,
+          "minimum": -62
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Level Shift",
+        "default": null
+       }
+      },
+      "description": "Per-variant difficulty overrides layered over a dungeon definition.\n\nAny field left ``None`` keeps the definition's own ``difficulty`` value.\nBounds mirror ``dungeon.DifficultyMultipliers`` (the compiler clamps\nshifted clone levels into 1..63).",
+      "additionalProperties": false
+     }
+    },
+    "title": "ScenarioConfig",
+    "required": [
+     "tokens",
+     "players",
+     "max_ticks",
+     "tick_rate"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "title": "Seed",
+      "default": 0,
+      "maximum": 2147483647,
+      "minimum": 0
+     },
+     "arena": {
+      "$ref": "#/$defs/ArenaConfig"
+     },
+     "tower": {
+      "$ref": "#/$defs/TowerConfig"
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "title": "Tokens",
+      "maxItems": 7,
+      "minItems": 1
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "$ref": "#/$defs/PlayerSpec"
+      },
+      "title": "Players",
+      "maxItems": 7,
+      "minItems": 1
+     },
+     "vmangos": {
+      "$ref": "#/$defs/VmangosConfigOverrides"
+     },
+     "max_ticks": {
+      "type": "integer",
+      "title": "Max Ticks",
+      "maximum": 1080000,
+      "minimum": 1
+     },
+     "rfc_round": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/RfcRoundConfig"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "spell_lab": {
+      "$ref": "#/$defs/SpellLabConfig"
+     },
+     "tick_rate": {
+      "type": "number",
+      "title": "Tick Rate",
+      "maximum": 20,
+      "exclusiveMinimum": 0
+     },
+     "completion": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/EpisodeCompletionSpec"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "dungeon_lab": {
+      "$ref": "#/$defs/DungeonLabConfig"
+     },
+     "scenario_id": {
+      "type": "string",
+      "title": "Scenario Id",
+      "default": "vanilla_wow_session",
+      "minLength": 1
+     },
+     "sovereignty": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/SovereigntyConfig"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "coworld_state": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/CoworldStateSpec"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "world_snapshot": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/WorldSnapshotSpec"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "fixture_players": {
+      "type": "array",
+      "items": {
+       "$ref": "#/$defs/PlayerSpec"
+      },
+      "title": "Fixture Players",
+      "maxItems": 32
+     },
+     "roster_snapshot": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/RosterSnapshotSpec"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "kalimdor_traversal": {
+      "$ref": "#/$defs/KalimdorTraversalSpec"
+     },
+     "league_preferences": {
+      "type": "array",
+      "items": {
+       "$ref": "#/$defs/LeagueEntrantPreferences"
+      },
+      "title": "League Preferences",
+      "maxItems": 7,
+      "description": "Membership preferences aligned with policy seats by the platform commissioner."
+     },
+     "persistent_entrant": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/PersistentEntrantSpec"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "persistent_gateway": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/PersistentGatewaySpec"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "player_startup_timeout_seconds": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 3600,
+        "exclusiveMinimum": 0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Player Startup Timeout Seconds",
+      "default": null
+     }
+    },
+    "additionalProperties": false
+   },
+   "replay_viewer": {
+    "bundle": "sha256:7380a4a798f532187bce032e080298b14a10d1a51cb0591ba2c85e340936368c"
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores"
+    ],
+    "properties": {
+     "arena": {
+      "type": [
+       "object",
+       "null"
+      ]
+     },
+     "ticks": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "tower": {
+      "type": [
+       "object",
+       "null"
+      ]
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 1,
+      "description": "One score per player slot. Leveling episodes use level + XP / XP required for the next level; Kalimdor traversal uses authoritative mainland northing yards from the fixed southern origin; RFC speedruns use lower-is-better elapsed minutes (authoritative clear time, or 60.0 for a failed, timed-out, or otherwise unverified clear); Arena 2v2 uses the number of distinct opposing players eliminated by the slot's team; other dungeon variants use their objective score."
+     },
+     "score_metric": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": true
+   }
+  },
+  "tags": [
+   "mmorpg",
+   "multiplayer",
+   "reinforcement-learning",
+   "world-of-warcraft"
+  ],
+  "grader": [
+   {
+    "id": "vanilla-wow-rfc-grader",
+    "env": {},
+    "run": [
+     "vanilla-wow-rfc-grader"
+    ],
+    "name": "Vanilla WoW RFC Completion Grader",
+    "type": "grader",
+    "image": "img_62ebdf0b-ee17-4115-913b-3a1398da23fd",
+    "description": "Grades an RFC episode from 0 to 1 by the fraction of four boss objectives completed and preserves full-clear time as provenance."
+   }
+  ],
+  "player": [
+   {
+    "id": "real-playerbot",
+    "env": {},
+    "run": [
+     "tini",
+     "--",
+     "xvfb-run",
+     "-a",
+     "-s",
+     "-screen 0 1500x980x24",
+     "vanilla-wow-player",
+     "--controller=embedded",
+     "--presentation=headless",
+     "--bot=real-playerbot",
+     "--skip-cinematic"
+    ],
+    "name": "RealPlayerBot",
+    "type": "player",
+    "image": "img_9b5a42b8-b042-40ea-b037-1ad0b4c009c0",
+    "description": "Renderer-backed computer-use player. The canonical Observation combines semantic client truth with optional UI, scene, depth, and ground presentation; read-only navigation may guide input Actions through ordinary keyboard and mouse execution. The image keeps only the small UI atlas and streams render assets on demand."
+   }
+  ],
+  "reporter": [
+   {
+    "reporter": "hayb9m1pzz988c5nioyoffel/vanilla-wow-vanilla-wow-episode-report@2"
+   }
+  ],
+  "variants": [
+   {
+    "id": "custom-fresh-start-10x",
+    "name": "Custom Fresh Start 10x Time",
+    "description": "A fresh account on which the submitted player creates and selects a character through the ordinary Vanilla client flow, using its submitted initial race/class/gender when present. It runs for 720 wall seconds with the VMaNGOS gameplay clock accelerated 10x while XP, rest, money, and item-drop rates remain stock. This provides about two simulated hours in 12 minutes and ranks fresh-start episodes independently from Persistent Leveling.",
+    "game_config": {
+     "seed": 0,
+     "players": [
+      {
+       "name": "Entrant",
+       "driver": "bot"
+      }
+     ],
+     "vmangos": {
+      "simulation_time_scale": 10
+     },
+     "max_ticks": 7200,
+     "tick_rate": 10,
+     "scenario_id": "custom-fresh-start-10x"
+    }
+   },
+   {
+    "id": "kalimdor-south-to-north",
+    "name": "Kalimdor Race 10x Time",
+    "description": "One isolated level-60 character starts at a terrain-verified southern Tanaris anchor and has 270 wall seconds at 10x gameplay speed to traverse mainland Kalimdor to within 300 yards of Everlook, preserving the prior 45 simulated-minute horizon. Entrants may choose a valid Horde race, class, and gender; the default is a tauren druid. The account has no seeded flight paths, mount items, riding or mount spells, teleport items, money, or league-authored action-bar layout. Every policy receives the canonical Observation and emits an Action; RealPlayerBot uses the optional presentation to choose ordinary client input validated by VMaNGOS. The final authoritative server position scores mainland northing yards, capped at Everlook; reaching the goal requires entering the encoded three-dimensional Everlook radius.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Kalimdor Entrant",
+       "driver": "bot",
+       "character": {
+        "mana": 5000,
+        "name": "Northbound",
+        "race": "tauren",
+        "level": 60,
+        "start": {
+         "x": -9187.0,
+         "y": -2530.2498192,
+         "z": 14.093484,
+         "zone": 440,
+         "map_id": 1,
+         "orientation": 0.0
+        },
+        "health": 5000,
+        "money_gold": 0,
+        "gear_template": "dps-39-twink",
+        "spell_template": "feral-fc-39-twink",
+        "template_level": 39,
+        "character_class": "druid"
+       }
+      }
+     ],
+     "vmangos": {
+      "simulation_time_scale": 10
+     },
+     "max_ticks": 2700,
+     "tick_rate": 10,
+     "scenario_id": "kalimdor-south-to-north",
+     "kalimdor_traversal": {
+      "map_id": 1,
+      "enabled": true,
+      "goal_world_x": 6687.333052,
+      "goal_world_y": -4647.667,
+      "goal_world_z": 721.678,
+      "start_world_x": -9187.0,
+      "goal_radius_yards": 300.0
+     }
+    }
+   },
+   {
+    "id": "rfc-five-player-clear",
+    "name": "RFC Four-Player Clear",
+    "description": "A complete RFC party has one tank, one healer, and two DPS seats on normalized game-owned characters selected from each assigned policy's submitted tank, healer, and DPS profiles. The legacy variant ID is retained for deployed-league compatibility.",
+    "game_config": {
+     "players": [
+      {
+       "name": "RFC Tank Slot 1",
+       "driver": "bot",
+       "character": {
+        "mana": 0,
+        "name": "Botwartank",
+        "race": "orc",
+        "level": 19,
+        "health": 1200,
+        "bag_items": [
+         {
+          "count": 20,
+          "item_id": 3770
+         },
+         {
+          "count": 20,
+          "item_id": 2581
+         },
+         {
+          "count": 5,
+          "item_id": 929
+         }
+        ],
+        "equipment": [
+         {
+          "enchant": 1503,
+          "item_id": 19972
+         },
+         {
+          "enchant": 0,
+          "item_id": 20442
+         },
+         {
+          "enchant": 2606,
+          "item_id": 10657
+         },
+         {
+          "enchant": 1891,
+          "item_id": 10399
+         },
+         {
+          "enchant": 0,
+          "item_id": 6460
+         },
+         {
+          "enchant": 1506,
+          "item_id": 15511
+         },
+         {
+          "enchant": 911,
+          "item_id": 19969
+         },
+         {
+          "enchant": 1885,
+          "item_id": 4534
+         },
+         {
+          "enchant": 2564,
+          "item_id": 12994
+         },
+         {
+          "enchant": 0,
+          "item_id": 6414
+         },
+         {
+          "enchant": 0,
+          "item_id": 20429
+         },
+         {
+          "enchant": 0,
+          "item_id": 19024
+         },
+         {
+          "enchant": 0,
+          "item_id": 18834
+         },
+         {
+          "enchant": 849,
+          "item_id": 2059
+         },
+         {
+          "enchant": 2564,
+          "item_id": 1482
+         },
+         {
+          "enchant": 929,
+          "item_id": 3761
+         },
+         {
+          "enchant": 2523,
+          "item_id": 20437
+         }
+        ],
+        "spell_ids": [
+         71,
+         72,
+         100,
+         285,
+         355,
+         676,
+         694,
+         1160,
+         1715,
+         2565,
+         2687,
+         3127,
+         5242,
+         6546,
+         6572,
+         7384,
+         7386,
+         8198,
+         12727,
+         12753
+        ],
+        "money_gold": 0,
+        "spell_template": "arms-fury-19-twink",
+        "template_level": 19,
+        "character_class": "warrior",
+        "maxed_extra_skills": [
+         129
+        ]
+       },
+       "party_role": "tank",
+       "rfc_profile_id": "botwartank"
+      },
+      {
+       "name": "RFC Healer Slot 2",
+       "driver": "bot",
+       "character": {
+        "mana": 1200,
+        "name": "Botpriheal",
+        "race": "troll",
+        "level": 19,
+        "health": 1200,
+        "bag_items": [
+         {
+          "count": 20,
+          "item_id": 3770
+         },
+         {
+          "count": 20,
+          "item_id": 1205
+         },
+         {
+          "count": 20,
+          "item_id": 2581
+         },
+         {
+          "count": 5,
+          "item_id": 929
+         },
+         {
+          "count": 5,
+          "item_id": 3385
+         }
+        ],
+        "spell_ids": [
+         527,
+         528,
+         586,
+         588,
+         598,
+         600,
+         970,
+         1244,
+         2006,
+         2053,
+         2054,
+         6074,
+         8102,
+         8122,
+         15011,
+         17191,
+         15012
+        ],
+        "money_gold": 0,
+        "gear_template": "dps-19-twink",
+        "spell_template": "holy-shadow-19-twink",
+        "template_level": 19,
+        "character_class": "priest",
+        "maxed_extra_skills": [
+         129
+        ]
+       },
+       "party_role": "healer",
+       "rfc_profile_id": "botpriheal"
+      },
+      {
+       "name": "RFC Dps Slot 3",
+       "driver": "bot",
+       "character": {
+        "mana": 1200,
+        "name": "Botmagedpsa",
+        "race": "troll",
+        "level": 19,
+        "health": 1200,
+        "bag_items": [
+         {
+          "count": 20,
+          "item_id": 3770
+         },
+         {
+          "count": 20,
+          "item_id": 1205
+         },
+         {
+          "count": 20,
+          "item_id": 2581
+         },
+         {
+          "count": 5,
+          "item_id": 929
+         },
+         {
+          "count": 5,
+          "item_id": 3385
+         }
+        ],
+        "spell_ids": [
+         118,
+         122,
+         130,
+         475,
+         597,
+         604,
+         837,
+         1008,
+         1449,
+         1460,
+         2120,
+         2137,
+         2855,
+         3140,
+         5144,
+         5505,
+         7300,
+         16766,
+         29440,
+         12473
+        ],
+        "money_gold": 0,
+        "gear_template": "dps-19-twink",
+        "spell_template": "frost-19-twink",
+        "template_level": 19,
+        "character_class": "mage",
+        "maxed_extra_skills": [
+         129
+        ]
+       },
+       "party_role": "dps",
+       "rfc_profile_id": "botmagedps"
+      },
+      {
+       "name": "RFC Dps Slot 4",
+       "driver": "bot",
+       "character": {
+        "mana": 1200,
+        "name": "Botmagedpsb",
+        "race": "troll",
+        "level": 19,
+        "health": 1200,
+        "bag_items": [
+         {
+          "count": 20,
+          "item_id": 3770
+         },
+         {
+          "count": 20,
+          "item_id": 1205
+         },
+         {
+          "count": 20,
+          "item_id": 2581
+         },
+         {
+          "count": 5,
+          "item_id": 929
+         },
+         {
+          "count": 5,
+          "item_id": 3385
+         }
+        ],
+        "spell_ids": [
+         118,
+         122,
+         130,
+         475,
+         597,
+         604,
+         837,
+         1008,
+         1449,
+         1460,
+         2120,
+         2137,
+         2855,
+         3140,
+         5144,
+         5505,
+         7300,
+         16766,
+         29440,
+         12473
+        ],
+        "money_gold": 0,
+        "gear_template": "dps-19-twink",
+        "spell_template": "frost-19-twink",
+        "template_level": 19,
+        "character_class": "mage",
+        "maxed_extra_skills": [
+         129
+        ]
+       },
+       "party_role": "dps",
+       "rfc_profile_id": "botmagedps"
+      }
+     ],
+     "vmangos": {
+      "mangosd_config_overrides": {
+       "Coworld.RfcLaunchRoster": "Botwartank,Botpriheal,Botmagedpsa,Botmagedpsb",
+       "Coworld.RfcLaunchMaxAttempts": 4
+      }
+     },
+     "max_ticks": 10000,
+     "rfc_round": {
+      "leader_slot": 0,
+      "max_attempts": 4,
+      "loadout_version": "rfc-19-v2"
+     },
+     "tick_rate": 0.1,
+     "completion": {
+      "minimum_dungeon_bosses_defeated": 4
+     },
+     "dungeon_lab": {
+      "definition_path": "content/dungeons/example-ragefire.dungeon.json",
+      "maximum_player_level": 19
+     },
+     "scenario_id": "rfc-five-player-clear"
+    }
+   },
+   {
+    "id": "arena-two-v-two",
+    "name": "Arena 2v2",
+    "description": "Two entrants each control a configurable two-character team in a level-60 elimination match bounded to ten minutes of in-game time in the outdoor Ruins of Lordaeron above Undercity. The default fixture is Fury Warrior plus Shadow Priest, while the Arena commissioner may overlay any two supported normalized profiles per entrant. A team wins when both opponents have died; defeated seats remain dead until teardown, and every slot receives its team's authoritative elimination score.",
+    "game_config": {
+     "arena": {
+      "map_id": 0,
+      "enabled": true,
+      "team_size": 2,
+      "eliminations_to_win": 2
+     },
+     "players": [
+      {
+       "name": "Horde Warrior Policy",
+       "team": "horde",
+       "driver": "bot",
+       "character": {
+        "mana": 0,
+        "name": "Redblade",
+        "race": "orc",
+        "level": 60,
+        "start": {
+         "x": 1825.0,
+         "y": 238.0,
+         "z": 60.5,
+         "zone": 85,
+         "map_id": 0,
+         "orientation": 0.0
+        },
+        "health": 5000,
+        "action_bar": [
+         {
+          "action": 6603,
+          "button": 0
+         },
+         {
+          "action": 23894,
+          "button": 1
+         },
+         {
+          "action": 25286,
+          "button": 2
+         },
+         {
+          "action": 1680,
+          "button": 3
+         },
+         {
+          "action": 11578,
+          "button": 4
+         },
+         {
+          "action": 6554,
+          "button": 5
+         },
+         {
+          "action": 20662,
+          "button": 6
+         },
+         {
+          "action": 2687,
+          "button": 7
+         }
+        ],
+        "money_gold": 0,
+        "gear_template": "dps-phase6-bis",
+        "spell_template": "fury-dw-pve",
+        "template_level": 60,
+        "character_class": "warrior",
+        "maxed_extra_skills": [
+         129
+        ]
+       }
+      },
+      {
+       "name": "Horde Priest Policy",
+       "team": "horde",
+       "driver": "bot",
+       "character": {
+        "mana": 5000,
+        "name": "Redmend",
+        "race": "troll",
+        "level": 60,
+        "start": {
+         "x": 1825.0,
+         "y": 242.0,
+         "z": 60.5,
+         "zone": 85,
+         "map_id": 0,
+         "orientation": 0.0
+        },
+        "health": 5000,
+        "action_bar": [
+         {
+          "action": 5019,
+          "button": 0
+         },
+         {
+          "action": 10894,
+          "button": 1
+         },
+         {
+          "action": 10947,
+          "button": 2
+         },
+         {
+          "action": 18807,
+          "button": 3
+         },
+         {
+          "action": 10934,
+          "button": 4
+         },
+         {
+          "action": 15473,
+          "button": 5
+         },
+         {
+          "action": 10901,
+          "button": 6
+         },
+         {
+          "action": 10890,
+          "button": 7
+         },
+         {
+          "action": 10917,
+          "button": 8
+         },
+         {
+          "action": 15286,
+          "button": 9
+         },
+         {
+          "action": 988,
+          "button": 10
+         }
+        ],
+        "money_gold": 0,
+        "gear_template": "dps-phase6-bis",
+        "spell_template": "shadow-pve",
+        "template_level": 60,
+        "character_class": "priest",
+        "maxed_extra_skills": [
+         129
+        ]
+       }
+      },
+      {
+       "name": "Alliance Warrior Policy",
+       "team": "alliance",
+       "driver": "bot",
+       "character": {
+        "mana": 0,
+        "name": "Blueblade",
+        "race": "human",
+        "level": 60,
+        "start": {
+         "x": 1837.0,
+         "y": 238.0,
+         "z": 60.5,
+         "zone": 85,
+         "map_id": 0,
+         "orientation": 3.141593
+        },
+        "health": 5000,
+        "action_bar": [
+         {
+          "action": 6603,
+          "button": 0
+         },
+         {
+          "action": 23894,
+          "button": 1
+         },
+         {
+          "action": 25286,
+          "button": 2
+         },
+         {
+          "action": 1680,
+          "button": 3
+         },
+         {
+          "action": 11578,
+          "button": 4
+         },
+         {
+          "action": 6554,
+          "button": 5
+         },
+         {
+          "action": 20662,
+          "button": 6
+         },
+         {
+          "action": 2687,
+          "button": 7
+         }
+        ],
+        "money_gold": 0,
+        "gear_template": "dps-phase6-bis",
+        "allow_alliance": true,
+        "spell_template": "fury-dw-pve",
+        "template_level": 60,
+        "character_class": "warrior",
+        "maxed_extra_skills": [
+         129
+        ]
+       }
+      },
+      {
+       "name": "Alliance Priest Policy",
+       "team": "alliance",
+       "driver": "bot",
+       "character": {
+        "mana": 5000,
+        "name": "Bluemend",
+        "race": "dwarf",
+        "level": 60,
+        "start": {
+         "x": 1837.0,
+         "y": 242.0,
+         "z": 60.5,
+         "zone": 85,
+         "map_id": 0,
+         "orientation": 3.141593
+        },
+        "health": 5000,
+        "action_bar": [
+         {
+          "action": 5019,
+          "button": 0
+         },
+         {
+          "action": 10894,
+          "button": 1
+         },
+         {
+          "action": 10947,
+          "button": 2
+         },
+         {
+          "action": 18807,
+          "button": 3
+         },
+         {
+          "action": 10934,
+          "button": 4
+         },
+         {
+          "action": 15473,
+          "button": 5
+         },
+         {
+          "action": 10901,
+          "button": 6
+         },
+         {
+          "action": 10890,
+          "button": 7
+         },
+         {
+          "action": 10917,
+          "button": 8
+         },
+         {
+          "action": 15286,
+          "button": 9
+         },
+         {
+          "action": 988,
+          "button": 10
+         }
+        ],
+        "money_gold": 0,
+        "gear_template": "dps-phase6-bis",
+        "allow_alliance": true,
+        "spell_template": "shadow-pve",
+        "template_level": 60,
+        "character_class": "priest",
+        "maxed_extra_skills": [
+         129
+        ]
+       }
+      }
+     ],
+     "max_ticks": 60,
+     "tick_rate": 0.1,
+     "scenario_id": "arena-two-v-two"
+    }
+   }
+  ],
+  "diagnoser": [
+   {
+    "id": "vanilla-wow-rfc-diagnoser",
+    "env": {},
+    "run": [
+     "vanilla-wow-rfc-diagnoser"
+    ],
+    "name": "Vanilla WoW RFC Diagnoser",
+    "type": "diagnoser",
+    "image": "img_62ebdf0b-ee17-4115-913b-3a1398da23fd",
+    "description": "Produces deterministic policy-facing findings for missing RFC bosses, deaths, clear time, and god-view evidence coverage."
+   }
+  ],
+  "optimizer": [
+   {
+    "id": "vanilla-wow-rfc-optimizer",
+    "env": {},
+    "run": [
+     "vanilla-wow-rfc-optimizer"
+    ],
+    "name": "Vanilla WoW RFC Optimizer Seed",
+    "type": "optimizer",
+    "image": "img_62ebdf0b-ee17-4115-913b-3a1398da23fd",
+    "description": "Creates an RFC-specific policy-improvement plan from available report, grade, and diagnosis artifacts."
+   }
+  ],
+  "commissioner": [
+   {
+    "id": "vanilla-wow-ten-x-commissioner",
+    "env": {},
+    "run": [
+     "vanilla-wow-commissioner",
+     "--competition",
+     "ten-x"
+    ],
+    "name": "Vanilla WoW 10x Commissioner",
+    "type": "commissioner",
+    "image": "img_62ebdf0b-ee17-4115-913b-3a1398da23fd",
+    "description": "Runs the dedicated ten-x league lifecycle."
+   },
+   {
+    "id": "vanilla-wow-leveling-commissioner",
+    "env": {},
+    "run": [
+     "vanilla-wow-commissioner",
+     "--competition",
+     "ten-x"
+    ],
+    "name": "Vanilla WoW 10x Commissioner",
+    "type": "commissioner",
+    "image": "img_62ebdf0b-ee17-4115-913b-3a1398da23fd",
+    "description": "Runs the dedicated ten-x league lifecycle."
+   },
+   {
+    "id": "vanilla-wow-race-commissioner",
+    "env": {},
+    "run": [
+     "vanilla-wow-commissioner",
+     "--competition",
+     "race"
+    ],
+    "name": "Vanilla WoW Race Commissioner",
+    "type": "commissioner",
+    "image": "img_62ebdf0b-ee17-4115-913b-3a1398da23fd",
+    "description": "Runs the dedicated race league lifecycle."
+   },
+   {
+    "id": "vanilla-wow-traversal-commissioner",
+    "env": {},
+    "run": [
+     "vanilla-wow-commissioner",
+     "--competition",
+     "race"
+    ],
+    "name": "Vanilla WoW Race Commissioner",
+    "type": "commissioner",
+    "image": "img_62ebdf0b-ee17-4115-913b-3a1398da23fd",
+    "description": "Runs the dedicated race league lifecycle."
+   },
+   {
+    "id": "vanilla-wow-dungeon-commissioner",
+    "env": {},
+    "run": [
+     "vanilla-wow-commissioner",
+     "--competition",
+     "dungeon"
+    ],
+    "name": "Vanilla WoW Dungeon Commissioner",
+    "type": "commissioner",
+    "image": "img_62ebdf0b-ee17-4115-913b-3a1398da23fd",
+    "description": "Runs the dedicated dungeon league lifecycle."
+   },
+   {
+    "id": "vanilla-wow-dungeons-commissioner",
+    "env": {},
+    "run": [
+     "vanilla-wow-commissioner",
+     "--competition",
+     "dungeon"
+    ],
+    "name": "Vanilla WoW Dungeon Commissioner",
+    "type": "commissioner",
+    "image": "img_62ebdf0b-ee17-4115-913b-3a1398da23fd",
+    "description": "Runs the dedicated dungeon league lifecycle."
+   },
+   {
+    "id": "vanilla-wow-arena-commissioner",
+    "env": {},
+    "run": [
+     "vanilla-wow-commissioner",
+     "--competition",
+     "arena"
+    ],
+    "name": "Vanilla WoW Arena Commissioner",
+    "type": "commissioner",
+    "image": "img_62ebdf0b-ee17-4115-913b-3a1398da23fd",
+    "description": "Runs the dedicated arena league lifecycle."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "real-playerbot"
+    },
+    {
+     "player_id": "real-playerbot"
+    },
+    {
+     "player_id": "real-playerbot"
+    },
+    {
+     "player_id": "real-playerbot"
+    }
+   ],
+   "game_config": {
+    "players": [
+     {
+      "name": "RFC Tank Slot 1",
+      "driver": "bot",
+      "character": {
+       "mana": 0,
+       "name": "Botwartank",
+       "race": "orc",
+       "level": 19,
+       "health": 1200,
+       "bag_items": [
+        {
+         "count": 20,
+         "item_id": 3770
+        },
+        {
+         "count": 20,
+         "item_id": 2581
+        },
+        {
+         "count": 5,
+         "item_id": 929
+        }
+       ],
+       "equipment": [
+        {
+         "enchant": 1503,
+         "item_id": 19972
+        },
+        {
+         "enchant": 0,
+         "item_id": 20442
+        },
+        {
+         "enchant": 2606,
+         "item_id": 10657
+        },
+        {
+         "enchant": 1891,
+         "item_id": 10399
+        },
+        {
+         "enchant": 0,
+         "item_id": 6460
+        },
+        {
+         "enchant": 1506,
+         "item_id": 15511
+        },
+        {
+         "enchant": 911,
+         "item_id": 19969
+        },
+        {
+         "enchant": 1885,
+         "item_id": 4534
+        },
+        {
+         "enchant": 2564,
+         "item_id": 12994
+        },
+        {
+         "enchant": 0,
+         "item_id": 6414
+        },
+        {
+         "enchant": 0,
+         "item_id": 20429
+        },
+        {
+         "enchant": 0,
+         "item_id": 19024
+        },
+        {
+         "enchant": 0,
+         "item_id": 18834
+        },
+        {
+         "enchant": 849,
+         "item_id": 2059
+        },
+        {
+         "enchant": 2564,
+         "item_id": 1482
+        },
+        {
+         "enchant": 929,
+         "item_id": 3761
+        },
+        {
+         "enchant": 2523,
+         "item_id": 20437
+        }
+       ],
+       "spell_ids": [
+        71,
+        72,
+        100,
+        285,
+        355,
+        676,
+        694,
+        1160,
+        1715,
+        2565,
+        2687,
+        3127,
+        5242,
+        6546,
+        6572,
+        7384,
+        7386,
+        8198,
+        12727,
+        12753
+       ],
+       "money_gold": 0,
+       "spell_template": "arms-fury-19-twink",
+       "template_level": 19,
+       "character_class": "warrior",
+       "maxed_extra_skills": [
+        129
+       ]
+      },
+      "party_role": "tank",
+      "rfc_profile_id": "botwartank"
+     },
+     {
+      "name": "RFC Healer Slot 2",
+      "driver": "bot",
+      "character": {
+       "mana": 1200,
+       "name": "Botpriheal",
+       "race": "troll",
+       "level": 19,
+       "health": 1200,
+       "bag_items": [
+        {
+         "count": 20,
+         "item_id": 3770
+        },
+        {
+         "count": 20,
+         "item_id": 1205
+        },
+        {
+         "count": 20,
+         "item_id": 2581
+        },
+        {
+         "count": 5,
+         "item_id": 929
+        },
+        {
+         "count": 5,
+         "item_id": 3385
+        }
+       ],
+       "spell_ids": [
+        527,
+        528,
+        586,
+        588,
+        598,
+        600,
+        970,
+        1244,
+        2006,
+        2053,
+        2054,
+        6074,
+        8102,
+        8122,
+        15011,
+        17191,
+        15012
+       ],
+       "money_gold": 0,
+       "gear_template": "dps-19-twink",
+       "spell_template": "holy-shadow-19-twink",
+       "template_level": 19,
+       "character_class": "priest",
+       "maxed_extra_skills": [
+        129
+       ]
+      },
+      "party_role": "healer",
+      "rfc_profile_id": "botpriheal"
+     },
+     {
+      "name": "RFC Dps Slot 3",
+      "driver": "bot",
+      "character": {
+       "mana": 1200,
+       "name": "Botmagedpsa",
+       "race": "troll",
+       "level": 19,
+       "health": 1200,
+       "bag_items": [
+        {
+         "count": 20,
+         "item_id": 3770
+        },
+        {
+         "count": 20,
+         "item_id": 1205
+        },
+        {
+         "count": 20,
+         "item_id": 2581
+        },
+        {
+         "count": 5,
+         "item_id": 929
+        },
+        {
+         "count": 5,
+         "item_id": 3385
+        }
+       ],
+       "spell_ids": [
+        118,
+        122,
+        130,
+        475,
+        597,
+        604,
+        837,
+        1008,
+        1449,
+        1460,
+        2120,
+        2137,
+        2855,
+        3140,
+        5144,
+        5505,
+        7300,
+        16766,
+        29440,
+        12473
+       ],
+       "money_gold": 0,
+       "gear_template": "dps-19-twink",
+       "spell_template": "frost-19-twink",
+       "template_level": 19,
+       "character_class": "mage",
+       "maxed_extra_skills": [
+        129
+       ]
+      },
+      "party_role": "dps",
+      "rfc_profile_id": "botmagedps"
+     },
+     {
+      "name": "RFC Dps Slot 4",
+      "driver": "bot",
+      "character": {
+       "mana": 1200,
+       "name": "Botmagedpsb",
+       "race": "troll",
+       "level": 19,
+       "health": 1200,
+       "bag_items": [
+        {
+         "count": 20,
+         "item_id": 3770
+        },
+        {
+         "count": 20,
+         "item_id": 1205
+        },
+        {
+         "count": 20,
+         "item_id": 2581
+        },
+        {
+         "count": 5,
+         "item_id": 929
+        },
+        {
+         "count": 5,
+         "item_id": 3385
+        }
+       ],
+       "spell_ids": [
+        118,
+        122,
+        130,
+        475,
+        597,
+        604,
+        837,
+        1008,
+        1449,
+        1460,
+        2120,
+        2137,
+        2855,
+        3140,
+        5144,
+        5505,
+        7300,
+        16766,
+        29440,
+        12473
+       ],
+       "money_gold": 0,
+       "gear_template": "dps-19-twink",
+       "spell_template": "frost-19-twink",
+       "template_level": 19,
+       "character_class": "mage",
+       "maxed_extra_skills": [
+        129
+       ]
+      },
+      "party_role": "dps",
+      "rfc_profile_id": "botmagedps"
+     }
+    ],
+    "vmangos": {
+     "mangosd_config_overrides": {
+      "Coworld.RfcLaunchRoster": "Botwartank,Botpriheal,Botmagedpsa,Botmagedpsb",
+      "Coworld.RfcLaunchMaxAttempts": 4
+     }
+    },
+    "max_ticks": 600,
+    "rfc_round": {
+     "leader_slot": 0,
+     "max_attempts": 4,
+     "loadout_version": "rfc-19-v2"
+    },
+    "tick_rate": 1,
+    "completion": {
+     "minimum_dungeon_bosses_defeated": 4
+    },
+    "dungeon_lab": {
+     "definition_path": "content/dungeons/example-ragefire.dungeon.json",
+     "maximum_player_level": 19
+    },
+    "scenario_id": "rfc-five-player-clear",
+    "player_startup_timeout_seconds": 300
+   }
+  },
+  "episode_timeout_minutes": 60
+ },
+ "manifest_hash": "sha256:598ae46fc01ef4b6bca22b1124b18594b546826d183abe346a111066189a33da",
+ "size_bytes": 50842,
+ "created_at": "2026-08-27T00:01:11.680901Z",
+ "canonical": true
+}

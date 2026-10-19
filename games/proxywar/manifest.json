@@ -1,0 +1,1771 @@
+{
+ "id": "cow_3bda6df6-28c1-47f8-8a7b-e8ad91e90f0a",
+ "name": "proxywar",
+ "version": "0.1.68",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "proxywar-release-provenance",
+      "title": "Release provenance",
+      "content": {
+       "type": "text",
+       "value": "source_sha=0e489bbae5257d54c3dd6437a154c7401fd3ffcf\npr=0\nauthor=0xNad\ntested_head_sha=0e489bbae5257d54c3dd6437a154c7401fd3ffcf\nmerge_sha=0e489bbae5257d54c3dd6437a154c7401fd3ffcf\nbatch_prs=0\nbatch_queue_issues=0\nbatch_merge_shas=0e489bbae5257d54c3dd6437a154c7401fd3ffcf\nmain_ci_run_id=32919387128"
+      }
+     },
+     {
+      "id": "proxywar-structured-spatial-observation",
+      "title": "Structured spatial observation",
+      "content": {
+       "type": "text",
+       "value": "The canonical package enables PROXYWAR_TUNE_SPATIAL_OBSERVATION=1 and leaves PROXYWAR_TUNE_SPATIAL_MINIMAP absent. Each game-backed observation therefore carries mapInfo; after a seat owns land it may also carry the bounded schema-5 spatial block with provenance global-lockstep-public-map-v1, coordinate frame, front terrain and coverage, completed public structures and warships, and weighted rival/naval exposure. The optional minimap child remains disabled. Spatial data is context only: a policy may use it to rank the exact current legalActions[].id values, but coordinates, glyphs, and player IDs are never executable actions or raw intents."
+      }
+     }
+    ],
+    "readme": {
+     "type": "text",
+     "value": "# Proxy War Coworld\n\nProxy War is a simultaneous-turn territorial strategy game. This Coworld package runs Proxy War through the existing game runner and preserves the LegalAction.id decision path.\n\n## Rules Summary\n\nEach Coworld player controls one Proxy War slot. During a decision step, the game advances through the existing Proxy War game server and asks each connected player to choose from the current legal actions. The default variant uses a compact two-player map, 50 decision cycles, 100 turns per cycle, and a short replay tail so hosted tournaments produce meaningful expansion, economy, and combat evidence without requiring a 170-minute full match. Certification keeps a separate short smoke fixture so upload checks stay fast.\n\nA player may only select an action id that the game offered in the current request. The game passes that selected id back through Proxy War's existing AgentDecisionValidator, AgentLeagueMatchRunner, AgentRunner, and GameServer path. Invalid, stale, or missing selections are treated as fallback decisions by the adapter and are visible in the result artifact.\n\n## Player Protocol\n\nPlayers connect to COWORLD_PLAYER_WS_URL. The game sends decision_request messages containing protocolVersion, observation, legalActions, and responseContract fields; its envelope independently advertises protocol.maxActionsPerDecision for optional gameplay-action batching and protocol.maxSpawnPreferences=16 for spawn ranking. The player replies with decision_response, the same requestID, and selectedLegalActionId. selectedLegalActionId must match one offered legalActions[].id exactly. On a spawn-only menu, the optional spawnPreferenceLegalActionIds field may rank up to 16 exact offered spawn LegalAction.id values with selectedLegalActionId first. spawnPreferenceLegalActionIds is a spawn ballot independent of selectedLegalActionIds gameplay-action batching; never put the spawn ranking in selectedLegalActionIds. When offered, selectedDealActionId may separately select one exact deal_* id alongside that game action. Omitting the optional slot stays valid but ignores the diplomacy opportunity. Structured deals are breakable, referee-observed promises rather than engine alliances or permission changes. Non-aggression and trade-security bind both parties; joint_attack is an attack pledge by the proposer only; accepting support_request obligates the recipient to send the stated support.\n\nThe bundled starter player is proxywar-starter-websocket. It is intentionally simple: it reads the offered LegalAction.id values and chooses one legal id. It is useful for certification and smoke tests, not for competitive play.\n\n## Scoring\n\nThe adapter writes one numeric score per policy slot in results.scores. If Proxy War reports a winner, that slot receives 1 and every other slot receives 0. If a bounded episode ends without a winner, each slot receives its normalized owned-territory share among policy slots. Scores sum to 1 in normal proofs.\n\nThis scoring rule is the shipped ranking scalar. Softmax can re-rank with a different scalar after upload by changing only the results.scores values, not the game/player contract or the LegalAction.id path.\n\n## Artifacts\n\nEach episode writes Coworld-compatible results, replay bytes, game/player logs, and Proxy War match artifacts. The reporter, grader, diagnoser, and optimizer-plan runnables consume the episode bundle shape used by Coworld tooling. Reporter and grader contracts are exercised; diagnoser and optimizer are contract-shaped because Coworld 0.1.15 still marks those roles reserved or runtime-pending.\n\n## Hosted Status\n\nThis manifest is the canonical hosted Proxy War Coworld. It runs with the tsx loader so read-only episode pods do not need writable /tmp, sanitizes Coworld policy labels into Proxy War usernames, and serves global, replay, and player Coworld client routes from the native Proxy War viewer."
+    }
+   },
+   "name": "proxywar",
+   "owner": "proxywar",
+   "version": "0.1.68",
+   "runnable": {
+    "env": {
+     "PROXYWAR_TUNE_STRUCTURED_DEALS": "1",
+     "PROXYWAR_TUNE_FREETEXT_MESSAGES": "1",
+     "PROXYWAR_TUNE_SPATIAL_OBSERVATION": "1"
+    },
+    "run": [
+     "node",
+     "--max-old-space-size=640",
+     "--import",
+     "tsx/esm",
+     "/app/integration/src/no-docker-coworld-episode.ts"
+    ],
+    "type": "game",
+    "image": "img_1bf2d355-c94e-425d-b12a-777bd00db808"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "Proxy War Coworld global protocol: /global sends JSON status snapshots with the latest Proxy War spectator frame for machine consumers, and /replay sends the saved replay payload. /client/global and /client/replay serve the native Proxy War client shell, which waits for Coworld replay artifacts and loads the existing game-record.json replay path through /ai-league-runs/<runID>/.... /client/player serves the same native view and adds a Coworld player sidebar that connects to /player for offered LegalAction.id choices."
+    },
+    "player": {
+     "type": "text",
+     "value": "Proxy War Coworld player protocol: connect to COWORLD_PLAYER_WS_URL. The game sends {type:'decision_request', requestID, protocol:{maxActionsPerDecision,maxSpawnPreferences:16}, request:{protocolVersion:'proxywar-agent-v1', observation, legalActions, responseContract}}. protocol.maxSpawnPreferences is independent of protocol.maxActionsPerDecision. The player replies {type:'decision_response', requestID, selectedLegalActionId, selectedLegalActionIds?, spawnPreferenceLegalActionIds?, selectedMessageActionId?, messageText?, selectedDealActionId?, reason, confidence?}. selectedLegalActionId must be one offered LegalAction.id from legalActions[].id. On a spawn-only menu, spawnPreferenceLegalActionIds may rank up to protocol.maxSpawnPreferences exact offered spawn LegalAction.id values with selectedLegalActionId first. This spawn ballot is independent of selectedLegalActionIds action batching and must not be used to batch gameplay actions. When the responseContract advertises selectedMessageActionId and messageText and the menu offers message:* actions, the two fields must be sent together: selectedMessageActionId must exactly match one offered message id and messageText must be nonblank plain text of at most 280 characters. This optional comms slot is simulation-inert and independent of the gameplay, spawn, and structured-deal slots. selectedLegalActionIds may batch up to maxActionsPerDecision offered ids (deduplicated; element 0 is the scalar primary); send it ONLY when the request envelope advertised protocol.maxActionsPerDecision - older game images execute the scalar primary only. When the current menu offers deal_* actions, selectedDealActionId may independently select one exact offered deal_propose/deal_accept/deal_reject/deal_withdraw id alongside the game action; omitting it remains valid but ignores that diplomacy opportunity. Structured deals are breakable, referee-observed promises, not engine alliances or permission changes. The wire template joint_attack is an attack pledge by the proposer only. At episode end the game sends {type:'final', slot}; the player must finish any optional COWORLD_PLAYER_ARTIFACT_UPLOAD_URL upload before closing because websocket close acknowledges terminal work is complete. The game still validates decisions through Proxy War AgentDecisionValidator."
+    }
+   },
+   "description": "Territorial strategy game: agents fight over a world map \u2014 expansion, economy, nukes, alliances, and betrayal when it pays.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players",
+     "max_decision_steps",
+     "turns_per_decision_step",
+     "max_decision_ms",
+     "map",
+     "map_size",
+     "difficulty"
+    ],
+    "properties": {
+     "map": {
+      "enum": [
+       "Pangaea",
+       "Asia",
+       "World",
+       "GiantWorldMap",
+       "Europe",
+       "NorthAmerica",
+       "Africa",
+       "Mena",
+       "Britannia",
+       "EastAsia",
+       "Oceania",
+       "BlackSea"
+      ],
+      "type": "string"
+     },
+     "seed": {
+      "type": "integer",
+      "maximum": 11881375,
+      "minimum": 0,
+      "description": "Optional deterministic episode seed. Encoded under a fixed PWS prefix as five base-26 A-Z letters so OpenFront Math.abs(simpleHash(...)) remains injective over the supported range."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 25,
+      "minItems": 2
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 25,
+      "minItems": 2
+     },
+     "map_size": {
+      "enum": [
+       "Compact",
+       "Normal"
+      ],
+      "type": "string"
+     },
+     "difficulty": {
+      "enum": [
+       "Easy",
+       "Medium"
+      ],
+      "type": "string"
+     },
+     "num_agents": {
+      "type": "integer",
+      "maximum": 25,
+      "minimum": 2,
+      "description": "Connected real-policy seats for this variant (commissioner ladder routing)."
+     },
+     "episodeIndex": {
+      "type": "integer",
+      "maximum": 9007199254740991,
+      "minimum": 0,
+      "description": "Zero-based episode ordinal within deterministic same-variant recurrence blocks. The commissioner advances it once per scheduled episode; ProxyWar uses it only for report-independent spawn priority and fallback rotation. Defaults to 0 when omitted."
+     },
+     "max_decision_ms": {
+      "type": "integer",
+      "maximum": 180000,
+      "minimum": 250
+     },
+     "replay_tail_turns": {
+      "type": "integer",
+      "default": 0,
+      "maximum": 5000,
+      "minimum": 0
+     },
+     "max_decision_steps": {
+      "type": "integer",
+      "maximum": 600,
+      "minimum": 1
+     },
+     "episode_timeout_seconds": {
+      "type": "integer",
+      "maximum": 6000,
+      "minimum": 60,
+      "description": "Real wall-clock budget for this variant's episode. Explicit so the commissioner framework's max(300, 2x this) duration limit isn't computed from the unrelated player_connect_timeout_seconds fallback and truncate a real multi-minute match."
+     },
+     "turns_per_decision_step": {
+      "type": "integer",
+      "maximum": 1000,
+      "minimum": 1
+     },
+     "player_connect_timeout_seconds": {
+      "type": "number",
+      "default": 120,
+      "maximum": 300,
+      "minimum": 0
+     }
+    },
+    "additionalProperties": false
+   },
+   "replay_viewer": {
+    "bundle": "sha256:ff15338a11fa1be63c218e4e87ec9534f8dbcd414ca7db951c75d57a9347a251"
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "seed",
+     "game_id",
+     "scores",
+     "winner_slot",
+     "turn_count",
+     "tick",
+     "decision_count",
+     "accepted_decision_count",
+     "fallback_count",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "maximum": 11881375,
+      "minimum": 0
+     },
+     "tick": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "minimum": 0
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 25,
+      "minItems": 2
+     },
+     "game_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9]{8}$"
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "slot",
+        "name",
+        "score",
+        "tiles_owned",
+        "is_alive"
+       ],
+       "properties": {
+        "name": {
+         "type": "string"
+        },
+        "slot": {
+         "type": "integer",
+         "maximum": 24,
+         "minimum": 0
+        },
+        "score": {
+         "type": "number"
+        },
+        "is_alive": {
+         "type": [
+          "boolean",
+          "null"
+         ]
+        },
+        "tiles_owned": {
+         "type": [
+          "integer",
+          "null"
+         ],
+         "minimum": 0
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 25,
+      "minItems": 2
+     },
+     "turn_count": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "minimum": 0
+     },
+     "winner_slot": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "maximum": 24,
+      "minimum": 0
+     },
+     "decision_count": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "degraded_count": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "fallback_count": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "degraded_causes": {
+      "type": "object",
+      "properties": {
+       "plan-parse": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "plan-stale": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "unreported": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "brain-error": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "plan-warmup": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "plan-timeout": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "policy-error": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "brain-timeout": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "plan-rejected": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "plan-unavailable": {
+        "type": "integer",
+        "minimum": 0
+       }
+      },
+      "maxProperties": 10,
+      "additionalProperties": false
+     },
+     "accepted_decision_count": {
+      "type": "integer",
+      "minimum": 0
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "strategy",
+   "multiplayer",
+   "ai-agents"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "proxywar-starter-websocket",
+    "env": {},
+    "run": [
+     "node",
+     "/app/integration/src/starter-player.mjs"
+    ],
+    "name": "Proxy War Starter Websocket Player",
+    "type": "player",
+    "image": "img_68969cb9-5f93-4351-93b1-7af3bf3a23aa",
+    "description": "Minimal websocket player that chooses one offered LegalAction.id."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "qualifier",
+    "name": "Qualifier (crash/connect check)",
+    "description": "Bounded self-play smoke test for the Qualifiers staging division: one real policy duplicated into both seats for 5 decision steps, with the same LLM response window as tournament play, to confirm it connects, responds to LegalAction.id, and doesn't crash before it ever occupies a real head-to-head seat.",
+    "game_config": {
+     "map": "Pangaea",
+     "players": [
+      {
+       "name": "Qualifier Seat 1"
+      },
+      {
+       "name": "Qualifier Seat 2"
+      }
+     ],
+     "map_size": "Compact",
+     "difficulty": "Easy",
+     "num_agents": 2,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 0,
+     "max_decision_steps": 5,
+     "episode_timeout_seconds": 360,
+     "turns_per_decision_step": 25,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-2p-pangaea",
+    "name": "Qualifier (crash/connect check) - Pangaea",
+    "description": "Cheap self-play smoke test for the Qualifiers staging division: one real policy duplicated into both seats, a short 5-decision-step episode (well under a minute), just to confirm it connects, responds to LegalAction.id, and doesn't crash before it ever occupies a real head-to-head seat.",
+    "game_config": {
+     "map": "Pangaea",
+     "players": [
+      {
+       "name": "Qualifier Seat 1"
+      },
+      {
+       "name": "Qualifier Seat 2"
+      }
+     ],
+     "map_size": "Compact",
+     "difficulty": "Easy",
+     "num_agents": 2,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 0,
+     "max_decision_steps": 300,
+     "episode_timeout_seconds": 1200,
+     "turns_per_decision_step": 25,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-2p-asia",
+    "name": "Qualifier (crash/connect check) - Asia",
+    "description": "Cheap self-play smoke test for the Qualifiers staging division: one real policy duplicated into both seats, a short 5-decision-step episode (well under a minute), just to confirm it connects, responds to LegalAction.id, and doesn't crash before it ever occupies a real head-to-head seat.",
+    "game_config": {
+     "map": "Asia",
+     "players": [
+      {
+       "name": "Qualifier Seat 1"
+      },
+      {
+       "name": "Qualifier Seat 2"
+      }
+     ],
+     "map_size": "Compact",
+     "difficulty": "Easy",
+     "num_agents": 2,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 0,
+     "max_decision_steps": 300,
+     "episode_timeout_seconds": 1200,
+     "turns_per_decision_step": 25,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-4p-pangaea",
+    "name": "Four Player FFA - Pangaea",
+    "description": "Four-policy free-for-all on a compact map: up to 300 decision steps x 100 turns (~30000 turns), 300 decisions per seat. Four seats fight simultaneously until one player controls 80% of the map (the FFA win threshold) or the decision-step cap is reached; the match can end at the cap without a winner. Alliance, deal, message, attack, and elimination evidence is recorded only when those events actually occur. The step cap bounds per-episode policy calls; a full episode runs in well under 1GB of memory.",
+    "game_config": {
+     "map": "Pangaea",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      }
+     ],
+     "map_size": "Compact",
+     "difficulty": "Easy",
+     "num_agents": 4,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 300,
+     "episode_timeout_seconds": 2400,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-4p-asia",
+    "name": "Four Player FFA - Asia",
+    "description": "Four-policy free-for-all on a compact map: up to 300 decision steps x 100 turns (~30000 turns), 300 decisions per seat. Four seats fight simultaneously until one player controls 80% of the map (the FFA win threshold) or the decision-step cap is reached; the match can end at the cap without a winner. Alliance, deal, message, attack, and elimination evidence is recorded only when those events actually occur. The step cap bounds per-episode policy calls; a full episode runs in well under 1GB of memory.",
+    "game_config": {
+     "map": "Asia",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      }
+     ],
+     "map_size": "Compact",
+     "difficulty": "Easy",
+     "num_agents": 4,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 300,
+     "episode_timeout_seconds": 2400,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-4p-europe",
+    "name": "Four Player FFA - Europe",
+    "description": "Four-policy free-for-all on a compact map: up to 300 decision steps x 100 turns (~30000 turns), 300 decisions per seat. Four seats fight simultaneously until one player controls 80% of the map (the FFA win threshold) or the decision-step cap is reached; the match can end at the cap without a winner. Alliance, deal, message, attack, and elimination evidence is recorded only when those events actually occur. The step cap bounds per-episode policy calls; a full episode runs in well under 1GB of memory.",
+    "game_config": {
+     "map": "Europe",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      }
+     ],
+     "map_size": "Compact",
+     "difficulty": "Easy",
+     "num_agents": 4,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 300,
+     "episode_timeout_seconds": 2400,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-8p-pangaea",
+    "name": "Tournament 8P - Pangaea",
+    "description": "DRAFT, unvalidated by the game author: an 8-policy free-for-all, extrapolated from the shipped 4-player FFA (300 decision steps x 100 turns, first-to-80%-map-control win condition). Verify real wall-clock via `coworld run-episode --variant tournament-8p` before this rung ever seats a real league round.",
+    "game_config": {
+     "map": "Pangaea",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 8,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 400,
+     "episode_timeout_seconds": 3000,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-8p-world",
+    "name": "Tournament 8P - World",
+    "description": "DRAFT, unvalidated by the game author: an 8-policy free-for-all, extrapolated from the shipped 4-player FFA (300 decision steps x 100 turns, first-to-80%-map-control win condition). Verify real wall-clock via `coworld run-episode --variant tournament-8p` before this rung ever seats a real league round.",
+    "game_config": {
+     "map": "World",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 8,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 400,
+     "episode_timeout_seconds": 3000,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-8p-asia",
+    "name": "Tournament 8P - Asia",
+    "description": "DRAFT, unvalidated by the game author: an 8-policy free-for-all, extrapolated from the shipped 4-player FFA (300 decision steps x 100 turns, first-to-80%-map-control win condition). Verify real wall-clock via `coworld run-episode --variant tournament-8p` before this rung ever seats a real league round.",
+    "game_config": {
+     "map": "Asia",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 8,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 400,
+     "episode_timeout_seconds": 3000,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-12p-pangaea",
+    "name": "Tournament 12P - Pangaea",
+    "description": "DRAFT, unvalidated by the game author: a 12-policy free-for-all -- the seat count the author expects the game to 'shine' at. Extrapolated, not playtested; verify real wall-clock via `coworld run-episode --variant tournament-12p` before this rung ever seats a real league round.",
+    "game_config": {
+     "map": "Pangaea",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 12,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 3600,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-12p-world",
+    "name": "Tournament 12P - World",
+    "description": "Twelve-policy free-for-all on World (Normal): same seat count, step caps, clock, and scoring as the other Tournament 12P variants -- only the map differs. Quarantined 2026-08-11 from automatic Competition scheduling for round wall-time: engine cost per decision cycle scales with land tiles, so this map ran multi-hour league rounds. Retained for manual validation; re-add after engine-efficiency work plus a full-length hosted probe lands well inside the artifact deadline.",
+    "game_config": {
+     "map": "World",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 12,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 3600,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-12p-asia",
+    "name": "Tournament 12P - Asia",
+    "description": "Twelve-policy free-for-all on Asia (Normal): same seat count, step caps, clock, and scoring as the other Tournament 12P variants \u2014 only the map differs. Qualified for the rotation via the memory-regression gate (80-step native 12P episode under the hosted heap posture) before shipping.",
+    "game_config": {
+     "map": "Asia",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 12,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 3600,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-12p-eastasia",
+    "name": "Tournament 12P - East Asia",
+    "description": "Twelve-policy free-for-all on East Asia (Normal): same seat count, step caps, clock, and scoring as the other Tournament 12P variants \u2014 only the map differs. Qualified for the rotation via the memory-regression gate (80-step native 12P episode under the hosted heap posture) before shipping.",
+    "game_config": {
+     "map": "EastAsia",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 12,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 3600,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-12p-oceania",
+    "name": "Tournament 12P - Oceania",
+    "description": "Twelve-policy free-for-all on Oceania (Normal): same seat count, step caps, clock, and scoring as the other Tournament 12P variants \u2014 only the map differs. Qualified for the rotation via the memory-regression gate (80-step native 12P episode under the hosted heap posture) before shipping.",
+    "game_config": {
+     "map": "Oceania",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 12,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 3600,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-12p-blacksea",
+    "name": "Tournament 12P - Black Sea",
+    "description": "Twelve-policy free-for-all on Black Sea (Normal): same seat count, step caps, clock, and scoring as the other Tournament 12P variants \u2014 only the map differs. Qualified for the rotation via the memory-regression gate (80-step native 12P episode under the hosted heap posture) before shipping.",
+    "game_config": {
+     "map": "BlackSea",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 12,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 3600,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-12p-britannia",
+    "name": "Tournament 12P - Britannia",
+    "description": "Twelve-policy free-for-all on Britannia (Normal): same seat count, step caps, clock, and scoring as the other Tournament 12P variants \u2014 only the map differs. Qualified for the rotation via the memory-regression gate (80-step native 12P episode under the hosted heap posture) before shipping. Quarantined 2026-08-11 from automatic Competition scheduling for round wall-time: engine cost per decision cycle scales with land tiles, so this map ran multi-hour league rounds. Retained for manual validation; re-add after engine-efficiency work plus a full-length hosted probe lands well inside the artifact deadline.",
+    "game_config": {
+     "map": "Britannia",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 12,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 3600,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-12p-northamerica",
+    "name": "Tournament 12P - North America",
+    "description": "Twelve-policy free-for-all on North America (Normal): same seat count, step caps, clock, and scoring as the other Tournament 12P variants \u2014 only the map differs. Qualified for the rotation via the memory-regression gate (80-step native 12P episode under the hosted heap posture) before shipping. Quarantined 2026-08-11 from automatic Competition scheduling for round wall-time: engine cost per decision cycle scales with land tiles, so this map ran multi-hour league rounds. Retained for manual validation; re-add after engine-efficiency work plus a full-length hosted probe lands well inside the artifact deadline.",
+    "game_config": {
+     "map": "NorthAmerica",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 12,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 3600,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-12p-europe",
+    "name": "Tournament 12P - Europe",
+    "description": "Twelve-policy free-for-all on Europe (Normal): same seat count, step caps, clock, and scoring as the other Tournament 12P variants \u2014 only the map differs. Retained for manual validation, but quarantined from automatic Competition scheduling after repeated hosted runs exceeded the artifact deadline before producing results and replay.",
+    "game_config": {
+     "map": "Europe",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 12,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 3600,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-16p-pangaea",
+    "name": "Tournament 16P - Pangaea",
+    "description": "16-policy free-for-all backing the 16-seat Competition rung (opening map of the eight-map rotation; most battle-tested). Added 2026-08-10 for whole-company league events: at 25 entrants a round is ten 16-seat games instead of fourteen 12-seat ones, with denser per-game social interaction. A full local 16-seat episode (2026-08-10: decisive winner, 15,600 turns, all 1,451 decisions accepted, ~331MB peak RSS, 14MB replay, ~15 min native wall) validated seats/memory/artifacts; the rung is revertable by a commissioner-only patch.",
+    "game_config": {
+     "map": "Pangaea",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      },
+      {
+       "name": "Coworld Starter 13"
+      },
+      {
+       "name": "Coworld Starter 14"
+      },
+      {
+       "name": "Coworld Starter 15"
+      },
+      {
+       "name": "Coworld Starter 16"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 16,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 4500,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-16p-world",
+    "name": "Tournament 16P - World",
+    "description": "16-policy free-for-all widening the 16-seat Competition rotation to the proven 12P map pool (Europe excluded while quarantined). Added 2026-08-11: per-map 16-seat boot proof (spawn feasibility + game start) on this exact map before ship, bracketed by full-length 16-seat games on Pangaea and World (smallest/largest proven ends). Revertable per-map by a commissioner-only pool patch. Quarantined 2026-08-11 from automatic Competition scheduling for round wall-time: engine cost per decision cycle scales with land tiles, so this map ran multi-hour league rounds. Retained for manual validation; re-add after engine-efficiency work plus a full-length hosted probe lands well inside the artifact deadline.",
+    "game_config": {
+     "map": "World",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      },
+      {
+       "name": "Coworld Starter 13"
+      },
+      {
+       "name": "Coworld Starter 14"
+      },
+      {
+       "name": "Coworld Starter 15"
+      },
+      {
+       "name": "Coworld Starter 16"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 16,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 5400,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-16p-asia",
+    "name": "Tournament 16P - Asia",
+    "description": "16-policy free-for-all widening the 16-seat Competition rotation to the proven 12P map pool (Europe excluded while quarantined). Added 2026-08-11: per-map 16-seat boot proof (spawn feasibility + game start) on this exact map before ship, bracketed by full-length 16-seat games on Pangaea and World (smallest/largest proven ends). Revertable per-map by a commissioner-only pool patch.",
+    "game_config": {
+     "map": "Asia",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      },
+      {
+       "name": "Coworld Starter 13"
+      },
+      {
+       "name": "Coworld Starter 14"
+      },
+      {
+       "name": "Coworld Starter 15"
+      },
+      {
+       "name": "Coworld Starter 16"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 16,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 4500,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-16p-britannia",
+    "name": "Tournament 16P - Britannia",
+    "description": "16-policy free-for-all widening the 16-seat Competition rotation to the proven 12P map pool (Europe excluded while quarantined). Added 2026-08-11: per-map 16-seat boot proof (spawn feasibility + game start) on this exact map before ship, bracketed by full-length 16-seat games on Pangaea and World (smallest/largest proven ends). Revertable per-map by a commissioner-only pool patch. Quarantined 2026-08-11 from automatic Competition scheduling for round wall-time: engine cost per decision cycle scales with land tiles, so this map ran multi-hour league rounds. Retained for manual validation; re-add after engine-efficiency work plus a full-length hosted probe lands well inside the artifact deadline.",
+    "game_config": {
+     "map": "Britannia",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      },
+      {
+       "name": "Coworld Starter 13"
+      },
+      {
+       "name": "Coworld Starter 14"
+      },
+      {
+       "name": "Coworld Starter 15"
+      },
+      {
+       "name": "Coworld Starter 16"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 16,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 4500,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-16p-blacksea",
+    "name": "Tournament 16P - BlackSea",
+    "description": "16-policy free-for-all widening the 16-seat Competition rotation to the proven 12P map pool (Europe excluded while quarantined). Added 2026-08-11: per-map 16-seat boot proof (spawn feasibility + game start) on this exact map before ship, bracketed by full-length 16-seat games on Pangaea and World (smallest/largest proven ends). Revertable per-map by a commissioner-only pool patch.",
+    "game_config": {
+     "map": "BlackSea",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      },
+      {
+       "name": "Coworld Starter 13"
+      },
+      {
+       "name": "Coworld Starter 14"
+      },
+      {
+       "name": "Coworld Starter 15"
+      },
+      {
+       "name": "Coworld Starter 16"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 16,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 4500,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-16p-eastasia",
+    "name": "Tournament 16P - EastAsia",
+    "description": "16-policy free-for-all widening the 16-seat Competition rotation to the proven 12P map pool (Europe excluded while quarantined). Added 2026-08-11: per-map 16-seat boot proof (spawn feasibility + game start) on this exact map before ship, bracketed by full-length 16-seat games on Pangaea and World (smallest/largest proven ends). Revertable per-map by a commissioner-only pool patch.",
+    "game_config": {
+     "map": "EastAsia",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      },
+      {
+       "name": "Coworld Starter 13"
+      },
+      {
+       "name": "Coworld Starter 14"
+      },
+      {
+       "name": "Coworld Starter 15"
+      },
+      {
+       "name": "Coworld Starter 16"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 16,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 4500,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-16p-northamerica",
+    "name": "Tournament 16P - NorthAmerica",
+    "description": "16-policy free-for-all widening the 16-seat Competition rotation to the proven 12P map pool (Europe excluded while quarantined). Added 2026-08-11: per-map 16-seat boot proof (spawn feasibility + game start) on this exact map before ship, bracketed by full-length 16-seat games on Pangaea and World (smallest/largest proven ends). Revertable per-map by a commissioner-only pool patch. Quarantined 2026-08-11 from automatic Competition scheduling for round wall-time: engine cost per decision cycle scales with land tiles, so this map ran multi-hour league rounds. Retained for manual validation; re-add after engine-efficiency work plus a full-length hosted probe lands well inside the artifact deadline.",
+    "game_config": {
+     "map": "NorthAmerica",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      },
+      {
+       "name": "Coworld Starter 13"
+      },
+      {
+       "name": "Coworld Starter 14"
+      },
+      {
+       "name": "Coworld Starter 15"
+      },
+      {
+       "name": "Coworld Starter 16"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 16,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 4500,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   },
+   {
+    "id": "tournament-16p-oceania",
+    "name": "Tournament 16P - Oceania",
+    "description": "16-policy free-for-all widening the 16-seat Competition rotation to the proven 12P map pool (Europe excluded while quarantined). Added 2026-08-11: per-map 16-seat boot proof (spawn feasibility + game start) on this exact map before ship, bracketed by full-length 16-seat games on Pangaea and World (smallest/largest proven ends). Revertable per-map by a commissioner-only pool patch.",
+    "game_config": {
+     "map": "Oceania",
+     "players": [
+      {
+       "name": "Coworld Starter 1"
+      },
+      {
+       "name": "Coworld Starter 2"
+      },
+      {
+       "name": "Coworld Starter 3"
+      },
+      {
+       "name": "Coworld Starter 4"
+      },
+      {
+       "name": "Coworld Starter 5"
+      },
+      {
+       "name": "Coworld Starter 6"
+      },
+      {
+       "name": "Coworld Starter 7"
+      },
+      {
+       "name": "Coworld Starter 8"
+      },
+      {
+       "name": "Coworld Starter 9"
+      },
+      {
+       "name": "Coworld Starter 10"
+      },
+      {
+       "name": "Coworld Starter 11"
+      },
+      {
+       "name": "Coworld Starter 12"
+      },
+      {
+       "name": "Coworld Starter 13"
+      },
+      {
+       "name": "Coworld Starter 14"
+      },
+      {
+       "name": "Coworld Starter 15"
+      },
+      {
+       "name": "Coworld Starter 16"
+      }
+     ],
+     "map_size": "Normal",
+     "difficulty": "Easy",
+     "num_agents": 16,
+     "max_decision_ms": 60000,
+     "replay_tail_turns": 500,
+     "max_decision_steps": 500,
+     "episode_timeout_seconds": 4500,
+     "turns_per_decision_step": 100,
+     "player_connect_timeout_seconds": 120
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [
+   {
+    "id": "proxywar-optimizer-plan",
+    "env": {},
+    "run": [
+     "node",
+     "/app/integration/src/proxywar-optimizer-plan.mjs"
+    ],
+    "name": "Proxy War Optimizer Plan",
+    "type": "optimizer",
+    "image": "img_68969cb9-5f93-4351-93b1-7af3bf3a23aa",
+    "description": "Optimizer-plan writer for Coworld's reserved/tentative optimizer role. Writes an advisory policy-iteration plan from report and diagnosis inputs."
+   }
+  ],
+  "commissioner": [
+   {
+    "id": "proxywar-ladder-commissioner",
+    "env": {},
+    "run": [],
+    "name": "ProxyWar Ladder Commissioner",
+    "type": "commissioner",
+    "image": "img_56d7ef81-4c5a-4f45-a0b9-f96e87cf5961",
+    "description": "Config-driven ruleset_strategy commissioner (Qualifiers self-play crash check -> Competition), with one custom override: each Competition round counts the real distinct champions currently in the league and routes to the largest declared seat count (2/4/8/12/16) that fits them, then rotates that rung's deadline-proven map pool by round number. The 12-player Europe variant remains available for manual validation but is quarantined from automatic Competition scheduling after repeated hosted artifact timeouts; the World, Britannia, and NorthAmerica variants at both 12 and 16 seats are likewise quarantined (2026-08-11) for multi-hour round wall-times pending engine-efficiency work on large maps. Scoring is win-rate per episode aggregated into an OpenSkill (MMR) rating, since the same league runs episodes of varying size over time and only a placement-based rating is comparable across match sizes."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "proxywar-starter-websocket"
+    },
+    {
+     "player_id": "proxywar-starter-websocket"
+    }
+   ],
+   "game_config": {
+    "map": "Pangaea",
+    "players": [
+     {
+      "name": "Coworld Starter 1"
+     },
+     {
+      "name": "Coworld Starter 2"
+     }
+    ],
+    "map_size": "Compact",
+    "difficulty": "Easy",
+    "num_agents": 2,
+    "max_decision_ms": 15000,
+    "replay_tail_turns": 0,
+    "max_decision_steps": 2,
+    "episode_timeout_seconds": 300,
+    "turns_per_decision_step": 25,
+    "player_connect_timeout_seconds": 120
+   }
+  },
+  "episode_timeout_minutes": 100
+ },
+ "manifest_hash": "sha256:5bbd133f1897eb88083c16274f95c7862bf84935d9311ef426151c662a63925b",
+ "size_bytes": 43557,
+ "created_at": "2026-08-26T01:53:02.202017Z",
+ "canonical": true
+}

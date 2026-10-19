@@ -1,0 +1,86 @@
+diff --git a/examples/pudge_wars/game.nim b/examples/pudge_wars/game.nim
+index 8871956..5f47300 100644
+--- a/examples/pudge_wars/game.nim
++++ b/examples/pudge_wars/game.nim
+@@ -208,6 +208,15 @@ proc parseGameOptions(): GameOptions =
+       result.addHumanSlot(argument[8 .. ^1])
+     elif argument == "--duel":
+       result.duel = true
++    elif argument == "--offseats" or argument.startsWith("--offseats="):
++      let spec =
++        if argument == "--offseats": arguments.argumentValue(index, "--offseats")
++        else: argument[11 .. ^1]
++      for part in spec.split(','):
++        let seat = parseInt32(part.strip, "--offseats")
++        if seat < 0 or seat >= PudgeCount:
++          fail("--offseats seats are 0-" & $(PudgeCount - 1))
++        result.offSeats.add seat
+     elif argument == "--duellog":
+       result.matchLogDir = arguments.argumentValue(index, "--duellog")
+     elif argument.startsWith("--duellog="):
+@@ -414,6 +423,10 @@ proc parseGameOptions(): GameOptions =
+     let
+       bots = result.botGroups.botCount
+       humans = result.humanSlots.len
++    if result.offSeats.len > 0:
++      ## Off seats still take a bot entry (it is dropped at compaction),
++      ## so the count check is against the full board.
++      discard
+     if bots != seats and bots + humans != seats:
+       fail(
+         "live games need bots for all " & $seats &
+@@ -704,6 +717,20 @@ proc rebuildWithRoster*() =
+   run.botAimNoise = max(options.botAimNoise, 0'i32)
+   loadBots(run, activeBotGroups())
+ 
++proc applyOffSeats*() =
++  ## `--offseats a,b`: switch seats off from the command line, using the
++  ## host lobby's compaction so the board runs with fewer butchers
++  ## (a 2v2 is seats 2 and 5 off). No-op for replays and duels.
++  if options.offSeats.len == 0 or run.replayMode or options.duel:
++    return
++  var disabled: array[PudgeCount, bool]
++  for seat in options.offSeats:
++    disabled[int(seat)] = true
++  setRosterExperiment(disabled)
++  rebuildWithRoster()
++  for slot in options.humanSlots:
++    run.humanSlots.add int(slot)
++
+ proc restartMatch*() =
+   ## Rematch on the same arena: a fresh world with the launch options
+   ## and seats, keeping the already-baked map and terrain. When
+@@ -773,6 +800,7 @@ when defined(headless):
+         echo &"duel log: {matchLog.dir}"
+ 
+   proc runHeadless*() =
++    applyOffSeats()
+     let
+       stepLimit =
+         if run.replayMode:
+diff --git a/examples/pudge_wars/graphics.nim b/examples/pudge_wars/graphics.nim
+index 160486c..66b75e1 100644
+--- a/examples/pudge_wars/graphics.nim
++++ b/examples/pudge_wars/graphics.nim
+@@ -869,6 +869,7 @@ proc drawMeatHook(
+     renderer.addShuriken(headPos, yaw, teamColor, headRadius)
+ 
+ proc runGraphics*() =
++  applyOffSeats()
+   startProfileTrace()
+   profileBlock "atlas":
+     let builder = newHudAtlas(2048)
+diff --git a/src/polyworld/cli.nim b/src/polyworld/cli.nim
+index f37fd34..59874e0 100644
+--- a/src/polyworld/cli.nim
++++ b/src/polyworld/cli.nim
+@@ -44,6 +44,9 @@ type
+       ## Score-goal override for games with one. Zero keeps the default.
+     duel*: bool
+       ## One-a-side duel roster for games that support it.
++    offSeats*: seq[int32]
++      ## Roster seats switched off (spawn nothing), e.g. 2 and 5 for a
++      ## 2v2 on a six-seat board. Same compaction as the host lobby.
+     matchLogDir*: string
+       ## Directory for structured per-match analysis logs. Empty off.
+     botEvery*: int32

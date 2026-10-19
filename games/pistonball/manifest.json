@@ -1,0 +1,950 @@
+{
+ "id": "cow_768730a3-282a-4d75-9cff-01eea560e260",
+ "name": "pistonball",
+ "version": "0.1.3",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "Rules",
+      "content": {
+       "type": "text",
+       "value": "# Pistonball rules\n\nTwenty pistons stand shoulder to shoulder in a bank across the floor of a long,\nshallow box. The ball starts against the right wall. Every piston can push its\nhead up or let it down, and the ball rolls down whatever slope the bank happens\nto be making under it. Get the ball to the left wall.\n\n## The catch\n\nA piston can only see one metre either side of itself - five columns - so for\nmost of the run you cannot see the ball at all. You have to guess from your last\nsighting, from the two neighbours' heights you can see, and from a single number\ntelling you whether the bank as a whole gained ground. A wave is the only thing\nthat works, and nobody can see the whole wave.\n\n## Seats\n\nnum_agents = 20. One seat = one piston. Seat s drives piston perm[s], where perm\nis a permutation of 0..19 drawn once at t = 0 from config.seed. Piston indices\nrun 0 = leftmost (next to the goal) to 19 = rightmost (where the ball starts).\nIn-game the cog at piston i is called PST-<i+1> zero-padded to two digits. perm\nis written into the replay config JSON and into results.pistons, but it is never\nvisible to any seat.\n\n## World and units\n\nEverything in the simulation is an integer, because the replay is re-simulated\nby the emscripten/wasm32 build of the same module the native server ran and\ntheir per-tick gameHash chain must match bit-for-bit.\n\n| Quantity | Unit |\n|---|---|\n| Position, length, piston height | micrometres |\n| Linear velocity | micrometres per tick |\n| Ball angle (angleQ) | 1/16 brad, 0..4095 |\n| Angular velocity (spin) | 1/16 brad per tick |\n| Force | millinewtons |\n| Torque | millinewton-metres |\n| Mass | grams |\n| Moment of inertia | milli-kg m^2 |\n| Shared reward | milli-points |\n\nWorld box: x in [0, 9 600 000] um (9.60 m), y in [0, 4 800 000] um (4.80 m),\norigin top-left, y DOWN. Board render scale: 1 board pixel = 8 000 um, so the\nboard is 1200 x 600.\n\nView coordinates - the only coordinates a policy or the chrome ever sees - are\nmetres with the origin at the arena's bottom-left corner, x right, y up:\nX = x_um / 1 000 000, Y = (4 400 000 - y_um) / 1 000 000. The floor surface is\nY = 0 and piston heights are Y values directly.\n\n## Geometry\n\n| Part | Extent (um, world frame) |\n|---|---|\n| Floor surface | y = 4 400 000; below it is the piston housing, art only |\n| Ceiling | y = 0 |\n| Left wall (the GOAL wall) | x in [0, 800 000], full height |\n| Right wall | x in [8 800 000, 9 600 000], full height |\n| Piston bank | 20 heads spanning x in [800 000, 8 800 000]; piston i occupies x in [800 000 + 400 000 i, 800 000 + 400 000 (i+1)], centre 1 000 000 + 400 000 i |\n| Piston head i | x in [x_i, x_i + 400 000], top surface at y = 4 400 000 - h_i |\n\nConstants:\n\n    PistonWidth       =   400 000 um   (0.40 m)\n    Stroke            = 1 600 000 um   (0 .. 1.60 m of travel)\n    MaxPistonSpeed    =    80 000 um/tick (1.92 m/s; a full stroke takes 20 ticks)\n    BallRadius        =   400 000 um   (0.40 m)\n    BallMass          =     6 000 g    (6 kg)\n    BallInertia       =       480 milli-kg m^2\n    WindowHalfWidth   = 1 000 000 um   (1.00 m)\n    GoalX             = 1 200 000 um   (ball centre touching the goal wall)\n    BallStartX        = 8 400 000 um   (the drop line; the seeded offset below\n                                        moves the actual drop 2..20 cm left of it)\n    BallStartY        = 3 400 000 um   (1.00 m above the floor: the ball is DROPPED)\n    TravelDistance    = 7 200 000 um   (7.20 m)\n    GravityPerSubstep =     1 064 um/tick per substep (9.81 m/s^2 at 384 substeps/s)\n\nAt t = 0 the seeded stream that drew perm makes two more draws, and then it is\ndone for the episode:\n\n* every head is set to a small random rest height h_i = 10 000 * k for k in\n  0..40 - a slightly rough floor, so no two episodes open identically;\n* the ball is dropped at (BallStartX - startOffsetUm, BallStartY) at rest,\n  where startOffsetUm = 20 000 + 10 000 * k for k in 0..17, i.e. 2..20 cm left\n  of the drop line. This is not decoration. BallStartX sits exactly on the\n  boundary between columns 18 and 19, and a disc whose centre is exactly on a\n  head's edge sees a purely vertical normal: it balances on the corner and the\n  bank can lift it for ever without ever pushing it sideways. The offset puts\n  the drop point inside a column, where a rising neighbour's corner is a real\n  lateral push.\n\nThose three draws are the only random numbers the sim ever takes; nothing is\ndrawn after tick 0.\n\n## Time\n\nTargetFps = ReplayFps = 24. Each tick integrates 16 substeps of 1/384 s. The\ncontact spring is stiff - 150 mN per micrometre against a 6 kg ball - and a\nsemi-implicit integrator only behaves while the step is well inside the spring's\nperiod; sixteen substeps is what it takes to make the ball settle on the bank\ninstead of bouncing off it for ever. A run is at most maxTicks = 1800 ticks =\n75.0 s of sim time, divided into 8 decision turns of turnTicks = 225 ticks\n(9.375 s).\n\n## Resolution order, every tick\n\n1. Turn boundary. If tick mod 225 == 0 and the phase is Playing, the scripts\n   collected for the turn become each seat's active script and one `script`\n   chat record per seat is written. The script itself is NOT mixed into\n   gameHash - the per-tick command bytes it produces are recorded, and those\n   are what the viewer replays.\n2. Controller compile, in PISTON INDEX ORDER 0..19 (never seat order - seat\n   order varies with perm and the loop must not). The controller returns a\n   command byte cmd in 0..254, where\n   u = ((cmd - 127) * MaxPistonSpeed) div 127 um/tick is the commanded head\n   velocity (positive = rising); cmd = 255 is reserved and repairs to 127.\n   The byte is written to the replay only when it differs from the seat's last\n   recorded byte.\n3. Piston kinematics. h_i := clamp(h_i + u_i, 0, Stroke); pistonVel_i is the\n   ACHIEVED velocity after clamping. Pistons are KINEMATIC: they move the ball,\n   the ball never moves them.\n4. Sixteen substeps of 1/384 s, each: gravity; contacts (the ceiling, the left\n   wall, the right wall, then every piston head the broadphase returns,\n   ascending - a head at extension 0 has its top surface exactly on the floor\n   line, so the heads ARE the floor and there is no separate floor surface);\n   semi-implicit Euler with air and spin drag and the velocity clamps; the\n   pose update (the drawn angle advances by exactly `spin` per tick); and a\n   containment guard that clamps the centre into x in [1 200 000, 8 400 000],\n   y in [200 000, 4 300 000]. The vertical bounds carry 0.2 m of slack past\n   the resting geometry on purpose: the guard exists to keep a tunnelling\n   artefact bounded, and a guard set exactly on the resting line would undo\n   the contact penetration every substep and the bank would never touch the\n   ball at all.\n5. Progress accounting: progress accrues +100.000 points for the full 7.20 m\n   and a symmetric negative for backsliding, and the per-step penalty adds\n   0.010 points every tick.\n6. Phase accounting: a piston within 1.20 m of the ball is ENGAGED; an engaged\n   piston is IN PHASE when it is behind the ball and raised past 0.80 m, or in\n   front of it and lowered below 0.60 m.\n7. Hash: one gameHash per tick, mixing the tick, the phase, the ball pose and\n   motion, every head's extension and achieved velocity, bestX, the two\n   accumulators, the guard counter and the perm digest.\n8. End checks, in order: ballX <= GoalX ends complete/delivered; the wall-clock\n   stop ends deadline/wall_clock; maxTicks ends complete/out_of_time; a tripped\n   invariant ends fault/sim_fault.\n\nThere is no rescue rule. A bank that jams the ball in a pit of its own making\nburns the clock and ends out_of_time with partial credit.\n\n## Scoring\n\nThe game is FULLY COOPERATIVE: every seat receives the identical score.\n\n    progress = max(0, 100 * (ballDropX - ballFinalX) / TravelDistance)\n    penalty  = 0.010 * ticksElapsed\n    score    = progress - penalty\n\nHigher is better; leftward is positive. Range: score in [-18.000, +100.000).\nProgress is a telescoping sum, so only where the ball ENDED matters and giving\nground inside a run costs exactly what it gained - but the reported total is\nfloored at zero, so a bank that rolls the ball back into the right wall it was\ndropped beside scores the same -18.000 as one that never moved, and never\nworse. Delivering the ball ends the episode and therefore stops the penalty;\nthat, and not a bonus, is the reward for speed.\n\n| Outcome | ticks | final ball X (m) | progress | penalty | score |\n|---|---|---|---|---|---|\n| Textbook wave, delivered in 25 s | 600 | 1.20 | +100.000 | 6.000 | +94.000 |\n| Delivered late after two bounce-backs | 1520 | 1.20 | +100.000 | 15.200 | +84.800 |\n| Three-quarters of the way, out of time | 1800 | 3.00 | +75.000 | 18.000 | +57.000 |\n| Nudged it a metre and jammed | 1800 | 7.40 | +13.889 | 18.000 | -4.111 |\n| Twenty pistons that never moved | 1800 | 8.40 | 0.000 | 18.000 | -18.000 |\n\n(The rows measure from the 8.40 m drop line; the seeded 2..20 cm offset shifts\neach row by at most 0.3 points.)\n\nThe league ranks by the seat's mean results.scores value across its episodes -\nits cross-play mean. Elo is wrong for this coworld: with twenty identical\nscores every episode is a twenty-way draw and Elo cannot separate anybody.\n\n## End conditions\n\n| reason | endRule | When |\n|---|---|---|\n| complete | delivered | ballX <= GoalX |\n| complete | out_of_time | maxTicks reached with the ball still in play |\n| deadline | wall_clock | wallClockBudgetSeconds elapsed first |\n| fault | sim_fault | an invariant guard tripped |\n| fault | host_error | an unexpected server-side exception |\n\nA seat that never connects does NOT end the episode: the lobby join budget\nexpires, the no-show is reported to COGAME_PLAYER_FAILURE_URI, its piston is\ndriven by the wavebot baseline for the whole run, and the run plays to a normal\nending.\n"
+      }
+     },
+     {
+      "id": "protocol.md",
+      "title": "Wire protocol",
+      "content": {
+       "type": "text",
+       "value": "# Pistonball wire protocol\n\n## The player socket\n\n    GET /player?slot=<N>&token=<T>\n\nA bad slot or token is refused with 403 BEFORE the websocket upgrade.\n\nA seat sends exactly ONE kind of message, a Sprite v1 chat frame carrying its\nregistration:\n\n    {\"type\":\"register\",\n     \"prompt\":\"<strategy text or empty>\",\n     \"scripted\":\"wavebot\"|\"metronome\"|null,\n     \"policy\":\"<free label>\"}\n\nIt is re-sent for the first ~10 s of frames. Joins are strictly\nslot-sequential, so a seat's first registration routinely arrives before its\nplayer index exists; the server HOLDS an unappliable registration rather than\ndropping it. A seat that never registers, or registers with neither field, is\nscripted: \"wavebot\". The prompt is capped at 4000 runes at the transport\n(over-long is truncated, never rejected) and is NEVER written to the replay or\nthe results.\n\nSEATS SEND NO INPUTS. Every command byte is computed server-side by the\ndeterministic controller; an input mask arriving on a player socket is\ndiscarded. The seat sends the Sprite v1 Ready packet (0x85) after each received\nframe and otherwise only receives.\n\nEach seat's socket receives one binary Sprite v1 frame per tick, filtered by\nthe SAME window predicate the LLM view uses: the housing and floor, the five\npiston heads i-2 .. i+2, this seat's own head highlighted, and the ball only\nwhile its centre is inside the +/-1.00 m window. Everything else is dark. Board\nlabels carry only PST-nn.\n\n## The per-seat view\n\nOne function builds both the seat's frame filter and the LLM user message.\nNumbers are rounded to 2 decimals, in view coordinates (metres, origin\nbottom-left, y up) and degrees per second.\n\n    {\"turn\": 3, \"of\": 8,\n     \"clock\": {\"tick\": 675, \"of\": 1800, \"left_s\": 46.9},\n     \"you\": {\"alias\": \"PST-08\", \"piston\": 7, \"x_m\": 3.80,\n             \"height_m\": 0.92, \"velocity_m_s\": 0.00,\n             \"stroke_m\": 1.60, \"max_speed_m_s\": 1.92, \"width_m\": 0.40},\n     \"window\": {\"half_width_m\": 1.00, \"covers_pistons\": [5, 6, 7, 8, 9],\n                \"neighbour_heights_m\": {\"5\": 0.10, \"6\": 1.44, \"7\": 0.92,\n                                        \"8\": 0.31, \"9\": 0.00},\n                \"ball\": {\"dx_m\": -0.34, \"height_m\": 1.31, \"vx_m_s\": -2.14,\n                         \"vy_m_s\": 0.22, \"spin_deg_s\": -310.0, \"on_me\": true}},\n     \"sightings_count\": 41,\n     \"sightings\": [{\"tick\": 611, \"dx_m\": 0.98, \"height_m\": 0.55,\n                    \"vx_m_s\": -1.90, \"vy_m_s\": 0.05}],\n     \"shared_reward\": {\"last_turn\": 6.42, \"note\": \"...\"},\n     \"goal\": {\"direction\": \"left\", \"your_distance_to_goal_m\": 2.60,\n              \"note\": \"...\"},\n     \"your_last_script\": {...}}\n\nwindow.ball is null whenever the ball is outside the window, and sightings is\n[] when the seat saw nothing at all last turn - which is the common case.\nHidden with no exception: the ball's absolute position whenever it is outside\nthe window, the cumulative reward, bestX, the score so far, any piston height\noutside i-2 .. i+2, which entrant holds any other piston, any other seat's\nscript or note or say, perm, the seed, and every real player name.\n\n## The reply schema\n\n    {\"note\": \"<=160 runes\",\n     \"mode\": \"wave\"|\"lift\"|\"drop\"|\"hold\"|\"catch\"|\"ripple\",\n     \"trigger_m\": 0.0..1.0,\n     \"lead_ticks\": 0..24,\n     \"up_m\": 0.0..1.6,\n     \"down_m\": 0.0..1.6,\n     \"idle_m\": 0.0..1.6,\n     \"speed\": 0.0..1.0,\n     \"blind\": \"hold\"|\"idle\"|\"ripple\",\n     \"say\": \"<=48 runes\"}\n\nParsing is TOLERANT: markdown fences are stripped, the outermost balanced\n{...} is taken if the model prefixed prose, numeric strings are accepted,\ninteger percentages are divided by 100, centimetres are divided by 100, and\nmode/blind are matched case-insensitively. Every bounded field is REPAIRED\nrather than rejected. Only when no object with at least one usable field can be\nrecovered do the single retry and then the scripted fallback fire. Every\ntruncation lands on a RUNE boundary, never a byte boundary.\n\n## The global socket\n\n    GET /global      spectator snapshot, one binary Sprite v1 frame per tick\n\nThe board is perfect information. The broadcast chrome JSON rides the SAME\nbinary sprite channel as the board, as the label of a reserved never-drawn 1x1\nsprite (id 4090), because that is the only channel that survives a hosted\nreplay.\n\nOther routes: GET /healthz, GET /client/global, GET /client/player,\nGET /client/replay (all three serve real pages and none opens the player\nsocket), GET /replay-data.\n\n## The replay\n\nThe replay is the binary COWLDPST format: magic + format version + game\nname/version header, the RESOLVED config JSON (seed, perm, every geometry and\nphysics constant, the twenty rest heights, the roster with real names), then\nthe record stream - joins, leaves, per-tick input-change records (the command\nbytes), chat records (register / script / fallback / budget_guard / result) and\nONE gameHash per tick.\n\nThe static wasm viewer re-steps the sim from the recorded command bytes and\ncompares gameHash against the recorded hash every tick, so one divergent bit is\ncaught at the tick it happens.\n\ntools/replay_summary.py (Python 3 stdlib only) prints one strict-UTF-8 JSON\nobject describing any .replay file.\n"
+      }
+     },
+     {
+      "id": "scripts.md",
+      "title": "Writing a piston program",
+      "content": {
+       "type": "text",
+       "value": "# Writing a piston program\n\nYou are ONE piston in a bank of twenty. Every 9.4 seconds you set your piston's\nPROGRAM for the next 9.4 seconds, and a deterministic controller runs it 24\ntimes a second, watching your window for you. You choose WHEN to act and HOW\nFAR to move; it does the reacting.\n\n## The fields\n\n| Field | Meaning |\n|---|---|\n| mode | which rule the controller runs |\n| trigger_m | how near the ball must be before I act |\n| lead_ticks | aim at where the ball will be in this many ticks |\n| up_m | my raised height |\n| down_m | my lowered height |\n| idle_m | where I sit when the rule does not apply |\n| speed | fraction of my 1.92 m/s I use to get there |\n| blind | what I do while I cannot see the ball |\n| note | your reasoning, for the spectator feed |\n| say | one line for the spectator feed; no other piston ever sees it |\n\n## The modes\n\nWith dx = ball x minus my centre, vx the ball's x velocity and\ndxp = dx + vx * lead_ticks:\n\n* wave - ball within trigger_m and at-or-LEFT-of me (dxp <= 0, so I am BEHIND\n  it, on the side it came from): up_m; within trigger_m and to my RIGHT (I am\n  IN FRONT of it): down_m; otherwise idle_m. The only mode that both lifts\n  behind the ball and clears the way in front of it.\n* lift - ball anywhere in my window within trigger_m: up_m, else idle_m.\n* drop - ball anywhere in my window within trigger_m: down_m, else idle_m.\n* hold - always idle_m.\n* catch - up_m ONLY when the ball is rolling RIGHT (the wrong way, vx above\n  +0.20 m/s) and is at-or-LEFT-of me within trigger_m, so my head is the wall\n  it runs into; otherwise idle_m.\n* ripple - a 2 s travelling wave along the bank, blind, ignores the ball.\n\nWhile the ball is outside your window the `blind` field decides: hold keeps\nyour current height, idle goes to idle_m, ripple runs the travelling wave.\n\n## The mechanism\n\nThe ball rolls DOWNHILL. To send it left, the pistons BEHIND it (to its RIGHT,\nlarger x) go UP and the pistons IN FRONT of it (to its LEFT) go DOWN. Raise too\nearly and you build a wall it cannot climb; raise too late and it has already\nrolled past you. Timing is the whole game.\n\nA stranded raised piston five columns ahead of the ball is a wall the whole\nbank then has to fight, which is why `blind: \"idle\"` with a low idle_m is\nusually better than `blind: \"hold\"` for pistons in the left half of the bank.\n\n## The two shipped baselines\n\n* wavebot - mode wave, trigger_m 1.00, lead_ticks 6, up_m 1.45, down_m 0.10,\n  idle_m 0.25, speed 1.00, blind hold. Twenty of these converge on a travelling\n  wave with no communication at all.\n* metronome - mode ripple, up_m 1.20, down_m 0.10, idle_m 0.10, speed 0.80,\n  blind ripple. A blind travelling wave that never looks at the ball.\n\nBoth are legal by construction: they emit the identical object an LLM does and\nare compiled by the identical controller.\n"
+      }
+     }
+    ],
+    "readme": {
+     "type": "text",
+     "value": "# cogame-pistonball\n\nTwenty pistons, one ball, nobody sees more than their neighbours.\n\nTwenty pistons stand in a row under a heavy ball. Each piston sees only a\none-metre-wide window of the world. Together they must roll the ball the length\nof the bank and into the left wall - and for most of the run you cannot see the\nball at all.\n\nA policy is just a prompt. Every 9.4 seconds each seat's LLM emits one small\nJSON program for its own piston, and a deterministic controller executes it 24\ntimes a second. That per-tick command byte is the action, it is what the replay\nrecords, and it is what the static wasm viewer re-simulates.\n\n* Seats: 20, fully cooperative, identical shared score.\n* Score: +100 for delivering the ball to the goal wall, minus 0.24 points per\n  second. Doing nothing scores -18.\n* One image, two entrypoints: /bin/pistonball and /bin/pistonball-player.\n* Policies are env-switched: PLAYER_PROMPT makes a seat an LLM seat,\n  PLAYER_SCRIPTED=wavebot|metronome makes it a scripted seat.\n\nRules: docs/RULES.md. Wire protocol: docs/PROTOCOL.md. Writing a program:\ndocs/SCRIPTS.md.\n"
+    }
+   },
+   "name": "pistonball",
+   "owner": "daveey",
+   "version": "0.1.3",
+   "runnable": {
+    "env": {
+     "ANTHROPIC_API_KEY_URI": "secret://coworld/pistonball/anthropic_api_key"
+    },
+    "run": [
+     "/bin/pistonball"
+    ],
+    "type": "game",
+    "image": "img_2ab7c898-2e58-4aa6-9887-92e45f6200dd",
+    "source_url": "https://github.com/Metta-AI/cogame-pistonball/tree/30964b3d16bffe6a4df164e7c13b1c581f1a48e4"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "# Pistonball \u2014 the global socket and the spectator surfaces\n\n    GET /global      spectator snapshot, one binary Sprite v1 frame per tick\n\nThe board is PERFECT INFORMATION here, and only here: all twenty heads, the\nball, the trail, the contact puffs and up to three speech plates in the\nreserved band at the top of the arena. This is the opposite of the player\nsocket, which is filtered to one metre either side of a single head.\n\n## Chrome state rides the same binary channel\n\nThe broadcast chrome's JSON \u2014 clock, phase, scores, roster, bank, journey,\nbeats, endcard \u2014 is delivered as the LABEL of a reserved, never-drawn 1x1\nsprite (id 4090) inside the same Sprite v1 packet as the board. It is not a\nsecond socket and not a second recording, because a sidecar channel does not\nsurvive a hosted replay and the label does.\n\nThe roster the chrome receives is the ONLY place the two name spaces meet: it\nmaps each anonymous alias (PST-nn) to the real policy name for the plates, the\nlocker room and the endcard. Nothing on a player socket ever carries one.\n\n## The other routes\n\n    GET /healthz          liveness\n    GET /client/global    the spectator page (a real page, no player socket)\n    GET /client/player    the seat-view page (ditto)\n    GET /client/replay    the replay page (ditto)\n    GET /replay-data      the episode's replay bytes\n\nThe three /client/ routes serve real pages because the certifier probes them\nbefore it starts any player pod. None of them is how a spectator watches a\nfinished match: the platform viewer is the STATIC bundle\n(`game.replay_viewer.bundle = \"static-replay-viewer\"`), which is served from\nS3, fetches only its own `?replay=` URL, and never talks to a game pod.\n\n## The replay\n\nThe binary COWLDPST format: magic + format version + game name/version header,\nthe RESOLVED config JSON (seed, perm, every geometry and physics constant, the\ntwenty rest heights, the roster with real names), then the record stream \u2014\njoins, leaves, per-tick input-change records (the command bytes the controller\nproduced), chat records (register / script / fallback / budget_guard / result)\nand ONE gameHash per tick.\n\nThe static wasm viewer re-steps the SAME sim module the server ran from those\nrecorded command bytes and compares its own gameHash against the recorded one\nevery tick, so one divergent bit is caught at the tick it happens and reported\nas `data-replay-mismatch-tick`. The viewer derives everything it draws from\nthat re-derivation; there is no parallel recording of positions.\n\n`tools/replay_summary.py` (Python 3 stdlib only) prints one strict-UTF-8 JSON\nobject describing any .replay file \u2014 the config, the roster, every script\nrecord and the results document.\n"
+    },
+    "player": {
+     "type": "text",
+     "value": "# Pistonball \u2014 the player socket\n\n    GET /player?slot=<N>&token=<T>\n\nA bad slot or token is refused with 403 BEFORE the websocket upgrade. Joins are\nstrictly slot-sequential.\n\n## What a seat sends: one registration, and nothing else\n\nA seat sends exactly ONE kind of message, a Sprite v1 chat frame carrying its\nregistration:\n\n    {\"type\":\"register\",\n     \"prompt\":\"<strategy text or empty>\",\n     \"scripted\":\"wavebot\"|\"metronome\"|null,\n     \"policy\":\"<free label>\"}\n\nIt is re-sent for the first ~10 s of frames, because a seat's first\nregistration routinely arrives before its player index exists; the server HOLDS\nan unappliable registration rather than dropping it. A seat that never\nregisters, or registers with neither field, plays the scripted \"wavebot\"\nbaseline. `prompt` is capped at 4000 runes at the transport \u2014 over-long is\ntruncated, never rejected \u2014 and is NEVER written to the replay or the results.\n\nSEATS SEND NO INPUTS. Every command byte is computed server-side by the\ndeterministic controller from the seat's current script; an input mask arriving\non a player socket is discarded. The seat sends the Sprite v1 Ready packet\n(0x85) after each received frame and otherwise only receives.\n\n## What a seat receives: its own metre of the world\n\nOne binary Sprite v1 frame per tick, filtered by the SAME window predicate the\nLLM view uses: the housing and floor, the five piston heads i-2 .. i+2, this\nseat's own head highlighted, and the ball only while its centre is inside the\n+/-1.00 m window. Everything else is dark. Board labels carry only the\nanonymous alias PST-nn \u2014 never an entrant's name.\n\n## The per-seat view and the reply\n\nEvery 225 ticks (9.375 s) the server composes this seat's view \u2014 the same\nfunction that builds the frame filter \u2014 and asks the seat's policy for its\npiston's program for the next turn. Numbers are rounded to 2 decimals, in view\ncoordinates (metres, origin bottom-left, y up) and degrees per second.\n\n    {\"turn\": 3, \"of\": 8,\n     \"clock\": {\"tick\": 675, \"of\": 1800, \"left_s\": 46.9},\n     \"you\": {\"alias\": \"PST-08\", \"piston\": 7, \"x_m\": 3.80,\n             \"height_m\": 0.92, \"velocity_m_s\": 0.00,\n             \"stroke_m\": 1.60, \"max_speed_m_s\": 1.92, \"width_m\": 0.40},\n     \"window\": {\"half_width_m\": 1.00, \"covers_pistons\": [5, 6, 7, 8, 9],\n                \"neighbour_heights_m\": {\"5\": 0.10, \"6\": 1.44, \"7\": 0.92,\n                                        \"8\": 0.31, \"9\": 0.00},\n                \"ball\": {\"dx_m\": -0.34, \"height_m\": 1.31, \"vx_m_s\": -2.14,\n                         \"vy_m_s\": 0.22, \"spin_deg_s\": -310.0, \"on_me\": true}},\n     \"sightings_count\": 41,\n     \"sightings\": [{\"tick\": 611, \"dx_m\": 0.98, \"height_m\": 0.55,\n                    \"vx_m_s\": -1.90, \"vy_m_s\": 0.05}],\n     \"shared_reward\": {\"last_turn\": 6.42, \"note\": \"...\"},\n     \"goal\": {\"direction\": \"left\", \"your_distance_to_goal_m\": 2.60,\n              \"note\": \"...\"},\n     \"your_last_script\": {...}}\n\n`window.ball` is null whenever the ball is outside the window, and `sightings`\nis [] when the seat saw nothing at all last turn \u2014 which is the common case.\nHidden with no exception: the ball's absolute position whenever it is outside\nthe window, the cumulative reward, bestX, the score so far, any piston height\noutside i-2 .. i+2, which entrant holds any other piston, any other seat's\nscript or note or say, perm, the seed, and every real player name.\n\nThe reply is one JSON object:\n\n    {\"note\": \"<=160 runes\",\n     \"mode\": \"wave\"|\"lift\"|\"drop\"|\"hold\"|\"catch\"|\"ripple\",\n     \"trigger_m\": 0.0..1.0,\n     \"lead_ticks\": 0..24,\n     \"up_m\": 0.0..1.6,\n     \"down_m\": 0.0..1.6,\n     \"idle_m\": 0.0..1.6,\n     \"speed\": 0.0..1.0,\n     \"blind\": \"hold\"|\"idle\"|\"ripple\",\n     \"say\": \"<=48 runes\"}\n\nParsing is TOLERANT: markdown fences are stripped, the outermost balanced\n{...} is taken if the model prefixed prose, numeric strings are accepted,\ninteger percentages and centimetres are divided by 100, and mode/blind are\nmatched case-insensitively. Every bounded field is REPAIRED rather than\nrejected. Only when no object with at least one usable field can be recovered\ndo the single retry and then the scripted fallback fire. Every truncation lands\non a RUNE boundary, never a byte boundary.\n"
+    }
+   },
+   "description": "Pistonball: twenty LLM-piloted pistons and one ball. The pistons stand shoulder to shoulder in a bank across the floor of a long, shallow box; the ball is dropped against the right wall and rolls down whatever slope the bank happens to be making under it. Get it to the left wall. The catch is sight: a piston sees only one metre either side of itself, so for most of the run nobody can see the ball at all - you steer from your last sighting, your two visible neighbours' heights, and a single shared number saying whether the bank as a whole gained ground. A travelling wave is the only thing that works and no seat can see the whole wave. Fully cooperative: every seat scores the same, progress toward the goal wall minus a per-tick penalty, so speed is the only tiebreak. Seat-to-piston assignment is reshuffled every episode, so a policy cannot memorise a position.",
+   "config_schema": {
+    "type": "object",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer"
+     },
+     "model": {
+      "type": "string"
+     },
+     "slots": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "alias": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 20,
+      "minItems": 0
+     },
+     "speed": {
+      "type": "integer",
+      "maximum": 16,
+      "minimum": 1
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 20,
+      "minItems": 1
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "name": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 20,
+      "minItems": 1
+     },
+     "retryMs": {
+      "type": "integer",
+      "default": 6000,
+      "minimum": 1000
+     },
+     "fastMode": {
+      "type": "boolean",
+      "default": true
+     },
+     "maxGames": {
+      "type": "integer",
+      "default": 1,
+      "minimum": 1
+     },
+     "maxTicks": {
+      "type": "integer",
+      "default": 1800,
+      "minimum": 1
+     },
+     "strokeUm": {
+      "type": "integer",
+      "default": 1600000,
+      "minimum": 1
+     },
+     "turnTicks": {
+      "type": "integer",
+      "default": 225,
+      "minimum": 1
+     },
+     "attempt1Ms": {
+      "type": "integer",
+      "default": 12000,
+      "minimum": 1000
+     },
+     "minPlayers": {
+      "type": "integer",
+      "maximum": 20,
+      "minimum": 1
+     },
+     "num_agents": {
+      "type": "integer",
+      "default": 20,
+      "maximum": 20,
+      "minimum": 1
+     },
+     "ballRadiusUm": {
+      "type": "integer",
+      "default": 400000,
+      "minimum": 1
+     },
+     "closedRoster": {
+      "type": "boolean"
+     },
+     "turnBudgetMs": {
+      "type": "integer",
+      "default": 20000,
+      "minimum": 1000
+     },
+     "ballMassGrams": {
+      "type": "integer",
+      "default": 6000,
+      "minimum": 1
+     },
+     "gameOverTicks": {
+      "type": "integer",
+      "default": 72,
+      "minimum": 0
+     },
+     "startWaitTicks": {
+      "type": "integer",
+      "default": 24,
+      "minimum": 0
+     },
+     "maxOutputTokens": {
+      "type": "integer",
+      "default": 900,
+      "minimum": 1
+     },
+     "maxPistonSpeedUm": {
+      "type": "integer",
+      "default": 80000,
+      "minimum": 1
+     },
+     "showPlayerLabels": {
+      "type": "boolean",
+      "default": false
+     },
+     "stepPenaltyMilli": {
+      "type": "integer",
+      "default": 10,
+      "minimum": 0
+     },
+     "minBatchSpacingMs": {
+      "type": "integer",
+      "default": 45000,
+      "minimum": 0
+     },
+     "windowHalfWidthUm": {
+      "type": "integer",
+      "default": 1000000,
+      "minimum": 1
+     },
+     "lobbyJoinTimeoutTicks": {
+      "type": "integer",
+      "default": 1800,
+      "minimum": 0
+     },
+     "wallClockBudgetSeconds": {
+      "type": "integer",
+      "default": 660,
+      "minimum": 1
+     }
+    },
+    "additionalProperties": false
+   },
+   "replay_viewer": {
+    "bundle": "sha256:96c4ef5380a60740fd08a38b4b449d1caea98f0e31f49cb2b7f483d6c391379e"
+   },
+   "results_schema": {
+    "type": "object",
+    "required": [
+     "names",
+     "scores",
+     "win",
+     "reason",
+     "endRule",
+     "delivered",
+     "sharedScore",
+     "progress"
+    ],
+    "properties": {
+     "win": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 20,
+      "minItems": 20
+     },
+     "seed": {
+      "type": "integer"
+     },
+     "bestX": {
+      "type": "number"
+     },
+     "names": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 20,
+      "minItems": 20
+     },
+     "reason": {
+      "enum": [
+       "complete",
+       "deadline",
+       "fault"
+      ],
+      "type": "string"
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 20,
+      "minItems": 20
+     },
+     "aliases": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 20,
+      "minItems": 20
+     },
+     "endRule": {
+      "enum": [
+       "delivered",
+       "out_of_time",
+       "wall_clock",
+       "sim_fault",
+       "host_error"
+      ],
+      "type": "string"
+     },
+     "pistons": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 20,
+      "minItems": 20
+     },
+     "touches": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 20,
+      "minItems": 20
+     },
+     "llmTurns": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 20,
+      "minItems": 20
+     },
+     "progress": {
+      "type": "number"
+     },
+     "delivered": {
+      "type": "boolean"
+     },
+     "finalTick": {
+      "type": "integer"
+     },
+     "ballFinalX": {
+      "type": "number"
+     },
+     "ballStartX": {
+      "type": "number"
+     },
+     "stallTicks": {
+      "type": "integer"
+     },
+     "bounceBacks": {
+      "type": "integer"
+     },
+     "policyKinds": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 20,
+      "minItems": 20
+     },
+     "sharedScore": {
+      "type": "number"
+     },
+     "timePenalty": {
+      "type": "number"
+     },
+     "deliveryTicks": {
+      "type": "integer"
+     },
+     "fallbackTurns": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 20,
+      "minItems": 20
+     },
+     "phasePermille": {
+      "type": "integer"
+     },
+     "inPhasePermille": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 20,
+      "minItems": 20
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "physics",
+   "cooperative",
+   "local-observation",
+   "swarm",
+   "llm"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "baseline",
+    "env": {
+     "PLAYER_SCRIPTED": "wavebot",
+     "PLAYER_POLICY_LABEL": "wavebot"
+    },
+    "run": [
+     "/bin/pistonball-player"
+    ],
+    "name": "Pistonball Wavebot Baseline",
+    "type": "player",
+    "image": "img_2ab7c898-2e58-4aa6-9887-92e45f6200dd",
+    "resources": {
+     "limits": {
+      "cpu": "1"
+     },
+     "requests": {
+      "cpu": "100m",
+      "memory": "64Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-pistonball/tree/30964b3d16bffe6a4df164e7c13b1c581f1a48e4",
+    "description": "Reactive scripted piston: lift behind the ball, clear in front. No LLM."
+   },
+   {
+    "id": "metronome",
+    "env": {
+     "PLAYER_SCRIPTED": "metronome",
+     "PLAYER_POLICY_LABEL": "metronome"
+    },
+    "run": [
+     "/bin/pistonball-player"
+    ],
+    "name": "Pistonball Metronome Filler",
+    "type": "player",
+    "image": "img_2ab7c898-2e58-4aa6-9887-92e45f6200dd",
+    "resources": {
+     "limits": {
+      "cpu": "1"
+     },
+     "requests": {
+      "cpu": "100m",
+      "memory": "64Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-pistonball/tree/30964b3d16bffe6a4df164e7c13b1c581f1a48e4",
+    "description": "Blind two-second ripple: never looks at the ball. No LLM."
+   }
+  ],
+  "$schema": "https://softmax.com/schemas/coworld-manifest.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "default",
+    "name": "The Bank (20 pistons, 75 s)",
+    "description": "Twenty pistons, one ball, eight decision turns.",
+    "game_config": {
+     "slots": [
+      {
+       "alias": "PST-01"
+      },
+      {
+       "alias": "PST-02"
+      },
+      {
+       "alias": "PST-03"
+      },
+      {
+       "alias": "PST-04"
+      },
+      {
+       "alias": "PST-05"
+      },
+      {
+       "alias": "PST-06"
+      },
+      {
+       "alias": "PST-07"
+      },
+      {
+       "alias": "PST-08"
+      },
+      {
+       "alias": "PST-09"
+      },
+      {
+       "alias": "PST-10"
+      },
+      {
+       "alias": "PST-11"
+      },
+      {
+       "alias": "PST-12"
+      },
+      {
+       "alias": "PST-13"
+      },
+      {
+       "alias": "PST-14"
+      },
+      {
+       "alias": "PST-15"
+      },
+      {
+       "alias": "PST-16"
+      },
+      {
+       "alias": "PST-17"
+      },
+      {
+       "alias": "PST-18"
+      },
+      {
+       "alias": "PST-19"
+      },
+      {
+       "alias": "PST-20"
+      }
+     ],
+     "players": [
+      {
+       "name": "PST-01"
+      },
+      {
+       "name": "PST-02"
+      },
+      {
+       "name": "PST-03"
+      },
+      {
+       "name": "PST-04"
+      },
+      {
+       "name": "PST-05"
+      },
+      {
+       "name": "PST-06"
+      },
+      {
+       "name": "PST-07"
+      },
+      {
+       "name": "PST-08"
+      },
+      {
+       "name": "PST-09"
+      },
+      {
+       "name": "PST-10"
+      },
+      {
+       "name": "PST-11"
+      },
+      {
+       "name": "PST-12"
+      },
+      {
+       "name": "PST-13"
+      },
+      {
+       "name": "PST-14"
+      },
+      {
+       "name": "PST-15"
+      },
+      {
+       "name": "PST-16"
+      },
+      {
+       "name": "PST-17"
+      },
+      {
+       "name": "PST-18"
+      },
+      {
+       "name": "PST-19"
+      },
+      {
+       "name": "PST-20"
+      }
+     ],
+     "retryMs": 6000,
+     "fastMode": true,
+     "maxGames": 1,
+     "maxTicks": 1800,
+     "turnTicks": 225,
+     "attempt1Ms": 12000,
+     "minPlayers": 20,
+     "num_agents": 20,
+     "turnBudgetMs": 20000,
+     "minBatchSpacingMs": 45000,
+     "lobbyJoinTimeoutTicks": 1800,
+     "wallClockBudgetSeconds": 660
+    }
+   },
+   {
+    "id": "sprint",
+    "name": "Sprint (20 pistons, 50 s)",
+    "description": "Same bank and ball, six decision turns, for cheap ladder rounds.",
+    "game_config": {
+     "slots": [
+      {
+       "alias": "PST-01"
+      },
+      {
+       "alias": "PST-02"
+      },
+      {
+       "alias": "PST-03"
+      },
+      {
+       "alias": "PST-04"
+      },
+      {
+       "alias": "PST-05"
+      },
+      {
+       "alias": "PST-06"
+      },
+      {
+       "alias": "PST-07"
+      },
+      {
+       "alias": "PST-08"
+      },
+      {
+       "alias": "PST-09"
+      },
+      {
+       "alias": "PST-10"
+      },
+      {
+       "alias": "PST-11"
+      },
+      {
+       "alias": "PST-12"
+      },
+      {
+       "alias": "PST-13"
+      },
+      {
+       "alias": "PST-14"
+      },
+      {
+       "alias": "PST-15"
+      },
+      {
+       "alias": "PST-16"
+      },
+      {
+       "alias": "PST-17"
+      },
+      {
+       "alias": "PST-18"
+      },
+      {
+       "alias": "PST-19"
+      },
+      {
+       "alias": "PST-20"
+      }
+     ],
+     "players": [
+      {
+       "name": "PST-01"
+      },
+      {
+       "name": "PST-02"
+      },
+      {
+       "name": "PST-03"
+      },
+      {
+       "name": "PST-04"
+      },
+      {
+       "name": "PST-05"
+      },
+      {
+       "name": "PST-06"
+      },
+      {
+       "name": "PST-07"
+      },
+      {
+       "name": "PST-08"
+      },
+      {
+       "name": "PST-09"
+      },
+      {
+       "name": "PST-10"
+      },
+      {
+       "name": "PST-11"
+      },
+      {
+       "name": "PST-12"
+      },
+      {
+       "name": "PST-13"
+      },
+      {
+       "name": "PST-14"
+      },
+      {
+       "name": "PST-15"
+      },
+      {
+       "name": "PST-16"
+      },
+      {
+       "name": "PST-17"
+      },
+      {
+       "name": "PST-18"
+      },
+      {
+       "name": "PST-19"
+      },
+      {
+       "name": "PST-20"
+      }
+     ],
+     "retryMs": 6000,
+     "fastMode": true,
+     "maxGames": 1,
+     "maxTicks": 1200,
+     "turnTicks": 200,
+     "attempt1Ms": 12000,
+     "minPlayers": 20,
+     "num_agents": 20,
+     "turnBudgetMs": 20000,
+     "minBatchSpacingMs": 45000,
+     "lobbyJoinTimeoutTicks": 1800,
+     "wallClockBudgetSeconds": 480
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [],
+  "certification": {
+   "players": [
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    },
+    {
+     "player_id": "metronome"
+    }
+   ],
+   "game_config": {
+    "seed": 4417231,
+    "slots": [
+     {
+      "alias": "PST-01"
+     },
+     {
+      "alias": "PST-02"
+     },
+     {
+      "alias": "PST-03"
+     },
+     {
+      "alias": "PST-04"
+     },
+     {
+      "alias": "PST-05"
+     },
+     {
+      "alias": "PST-06"
+     },
+     {
+      "alias": "PST-07"
+     },
+     {
+      "alias": "PST-08"
+     },
+     {
+      "alias": "PST-09"
+     },
+     {
+      "alias": "PST-10"
+     },
+     {
+      "alias": "PST-11"
+     },
+     {
+      "alias": "PST-12"
+     },
+     {
+      "alias": "PST-13"
+     },
+     {
+      "alias": "PST-14"
+     },
+     {
+      "alias": "PST-15"
+     },
+     {
+      "alias": "PST-16"
+     },
+     {
+      "alias": "PST-17"
+     },
+     {
+      "alias": "PST-18"
+     },
+     {
+      "alias": "PST-19"
+     },
+     {
+      "alias": "PST-20"
+     }
+    ],
+    "players": [
+     {
+      "name": "PST-01"
+     },
+     {
+      "name": "PST-02"
+     },
+     {
+      "name": "PST-03"
+     },
+     {
+      "name": "PST-04"
+     },
+     {
+      "name": "PST-05"
+     },
+     {
+      "name": "PST-06"
+     },
+     {
+      "name": "PST-07"
+     },
+     {
+      "name": "PST-08"
+     },
+     {
+      "name": "PST-09"
+     },
+     {
+      "name": "PST-10"
+     },
+     {
+      "name": "PST-11"
+     },
+     {
+      "name": "PST-12"
+     },
+     {
+      "name": "PST-13"
+     },
+     {
+      "name": "PST-14"
+     },
+     {
+      "name": "PST-15"
+     },
+     {
+      "name": "PST-16"
+     },
+     {
+      "name": "PST-17"
+     },
+     {
+      "name": "PST-18"
+     },
+     {
+      "name": "PST-19"
+     },
+     {
+      "name": "PST-20"
+     }
+    ],
+    "retryMs": 6000,
+    "fastMode": true,
+    "maxGames": 1,
+    "maxTicks": 900,
+    "turnTicks": 225,
+    "attempt1Ms": 12000,
+    "minPlayers": 20,
+    "num_agents": 20,
+    "turnBudgetMs": 20000,
+    "minBatchSpacingMs": 0,
+    "lobbyJoinTimeoutTicks": 900,
+    "wallClockBudgetSeconds": 180
+   }
+  },
+  "episode_timeout_minutes": 20
+ },
+ "manifest_hash": "sha256:91c1207c7f679847f054a230f0d44e58aad9f52d927f8cc5678e3f619aa33915",
+ "size_bytes": 37155,
+ "created_at": "2026-08-26T06:01:17.289287Z",
+ "canonical": true
+}

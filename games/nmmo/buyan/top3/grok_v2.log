@@ -1,0 +1,25 @@
+[2m2026-09-12T14:59:37.886645Z[0m [33m WARN[0m tools allowlist had unmappable entries; keeping full grok toolset [3magent[0m[2m=[0mgrok-build-plan [3munresolved[0m[2m=[0m["run_terminal_command"] [3mallowed[0m[2m=[0m["read_file", "run_terminal_command"]
+[2m2026-09-12T14:59:37.933830Z[0m [33m WARN[0m hooks: skipped unrecognized event names (check for typos) [3mfile[0m[2m=[0m/Users/me/.claude/settings.json [3mskipped[0m[2m=[0m["PermissionRequest"]
+[2m2026-09-12T14:59:37.933876Z[0m [33m WARN[0m hook loading from settings file: failed to parse hook file /Users/me/.cursor/hooks.json: invalid matcher groups for event 'postToolUse': missing field `hooks`
+[2m2026-09-12T14:59:37.933893Z[0m [33m WARN[0m hook loading error [3merror[0m[2m=[0mParseFile { path: "/Users/me/.cursor/hooks.json", detail: "invalid matcher groups for event 'postToolUse': missing field `hooks`" }
+[2m2026-09-12T14:59:38.066525Z[0m [31mERROR[0m Failed to spawn MCP server 'metta-pr-similarity': No such file or directory (os error 2)
+[2m2026-09-12T14:59:38.066975Z[0m [33m WARN[0m Failed to spawn MCP server: Failed to spawn MCP server 'metta-pr-similarity': No such file or directory (os error 2)
+[2m2026-09-12T14:59:38.071052Z[0m [33m WARN[0m MCP server spawn failed, removing from initializing set [3mserver[0m[2m=[0m"metta-pr-similarity"
+[2m2026-09-12T14:59:38.168834Z[0m [31mERROR[0m worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer resource_metadata=\"https://mcp.figma.com/.well-known/oauth-protected-resource\",scope=\"mcp:connect\",authorization_uri=\"https://api.figma.com/.well-known/oauth-authorization-server\"" })
+[2m2026-09-12T14:59:38.207843Z[0m [31mERROR[0m worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer resource_metadata=\"https://mcp.figma.com/.well-known/oauth-protected-resource\",scope=\"mcp:connect\",authorization_uri=\"https://api.figma.com/.well-known/oauth-authorization-server\"" })
+[2m2026-09-12T14:59:38.207957Z[0m [33m WARN[0m both handshake phases failed (surfacing the legacy error) [3mserver[0m[2m=[0mfigma [3mprobe_error[0m[2m=[0mSend message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send discover request [3mlegacy_error[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request
+[2m2026-09-12T14:59:38.208111Z[0m [33m WARN[0m MCP server init failed [3mserver[0m[2m=[0mfigma [3merror[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request
+[2m2026-09-12T14:59:38.208145Z[0m [33m WARN[0m MCP server failed to initialize [3mserver[0m[2m=[0m"figma" [3melapsed_ms[0m[2m=[0m128 [3mtimeout_sec[0m[2m=[0m30 [3merror[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request [3mneeds_auth[0m[2m=[0mtrue
+Running both XP create commands now and writing the JSON receipts.Both hosted XP creates succeeded. Status is `pending` on each. No league submission.
+
+**XP IDs**
+- A: `xreq_405c3ae9-f438-46f3-8007-af98985034d8`
+- B: `xreq_7a7eaba7-3cd5-42dd-af4a-802e2a94adc9`
+
+**Receipt check (both)**
+- Own policy only: `buyan:v2` (two seats)
+- Owner: Andre von Auto `ply_3d22435e-30a2-4f2a-b037-a5c249583788`
+- Opponents only: `richard-nmmo:v1`, `nmmo-baseline:v1`, `relh-nmmo-consensus:v1` (two seats each)
+- 15 episodes each, 8-seat FFA
+
+Receipts: `games/nmmo/buyan/top3/response_v2_a.json` and `response_v2_b.json`. `games/nmmo/buyan/captures` is an existing file, not a directory, so those copies were not written there.

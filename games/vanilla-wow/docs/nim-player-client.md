@@ -1,0 +1,1 @@
+Open /client/player for the account and canonical authenticated /tcp/realmd and /tcp/world bridge details. The rendered Nim client retains WS /player and applies those WebSocket URLs directly to its login and world transports.

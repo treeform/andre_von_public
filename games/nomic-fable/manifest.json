@@ -1,0 +1,334 @@
+{
+ "id": "cow_e870bbd8-02f3-4191-9ab5-5e675eacff65",
+ "name": "nomic-fable",
+ "version": "0.3.0",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "Initial rulebook",
+      "content": {
+       "type": "text",
+       "value": "Immutable (101-104): turn structure (propose/debate/vote), strict-majority passage with nay defaults, judge authority, and the key-value state model with integer points.\n\nMutable at start: 201 \u2014 start at 10 points, win at the victory threshold (initially 30), most points wins at the 15-turn cap; 202 \u2014 passing proposer +3, other aye voters +1, failing proposer -1; 203 \u2014 proposals may add/amend/repeal mutable rules or direct state changes.\n\nThe judge executes ALL rules in effect every turn, including standing per-turn effects created by enacted rules. State ops are absolute sets of JSON scalars; player `points` must stay integers; the common key `victory_points` holds the live victory threshold."
+      }
+     }
+    ],
+    "readme": {
+     "type": "text",
+     "value": "# nomic-fable\n\nNomic \u2014 the game of self-amending rules \u2014 as a coworld. Three LLM players take turns proposing rule changes. Each turn: the proposer submits one proposal, the two non-proposers debate in order, all three vote simultaneously, and a judge LLM (a strong reasoning model running inside the game container) enacts a passed proposal and executes every rule in effect, updating the world state: one key-value dict per player (initially just points, starting at 10) plus a common key-value dict (initially just the victory threshold, 30).\n\nThe house rolls dice: passed proposals pay the proposer 1d6, and every turn a 1d12 WINDFALL lands on a random seat - the windfall moves more points than legislation, so taming it (or riding it) is the first political question of every session. The game ends after an undisclosed number of turns (10-15). Win by reaching the victory threshold \u2014 or by amending the rules until you can. The threshold itself, the point economy, and everything outside the four immutable procedural rules (101-104) is amendable. If nobody wins in 15 turns, most points wins; final scores are final points.\n\nStrategy is prompt-deep: write proposals that are unambiguous enough for the judge to execute faithfully, popular enough to win a majority, and asymmetric enough to favor you. Watch the judge's rulings \u2014 `rejected_ops` show where proposals were unenforceable. If the judge model is ever unavailable, a deterministic mechanical ruling (enact-verbatim + standard rule-202 point flow) keeps the episode legal.\n\nBaselines: `scribe` (deterministic, zero model calls) and `haiku-baseline` (minimal Bedrock LLM; reads BEDROCK_MODEL). Player SDK and conformance gate ship in the game image \u2014 see the player protocol doc."
+    }
+   },
+   "name": "nomic-fable",
+   "owner": "yatharth@softmax.com",
+   "version": "0.3.0",
+   "runnable": {
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "nomic_fable.server.app"
+    ],
+    "type": "game",
+    "image": "img_a3a717a2-197e-42f7-a496-40bf2daeb63f"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "# nomic-fable spectator protocol\n\nJSON over the platform WebSocket at `/global`. On connect the server immediately sends `hello` {started, done, seats_connected, seats_total}, then replays the public event log, then streams live events: `game_start`, `turn_start`, `proposal_made`, `debate_made`, `vote_reveal`, `judge_ruling` (with full rulebook and state after each ruling), `game_over`, `final`. Everything in this game is public \u2014 there is no hidden state."
+    },
+    "player": {
+     "type": "text",
+     "value": "# nomic-fable player protocol\n\nJSON over the platform WebSocket at `/player?slot=&token=`. Every request carries a `rid`; a reply MUST echo it (`{rid, ...}`) or it is ignored. Missing/late/malformed replies are replaced by the phase default and marked `default: true` in the public record \u2014 send nothing rather than an illegal action. On reconnect the server resends a fully self-contained `game_start`-shaped snapshot (rules, state, full turn history) then a `snapshot` marker.\n\n## Server -> player\n- `lobby` {seat} \u2014 pre-episode ack\n- `game_start` {session:{seats:[{seat,policy}],turns_max,limits}, you:{seat}, rules:[{id,text,mutable}], state:{players:[{points,...}],common:{victory_points,...}}, history:[...]} \u2014 fully self-contained\n- `turn_start` {turn, proposer, rules, state}\n- `proposal_request` {turn, rid, timeout_s} \u2014 you are the proposer; reply {rid, text}\n- `proposal_made` {turn, proposer, text, default}\n- `debate_request` {turn, rid, timeout_s, proposal, debates:[{seat,text}]} \u2014 non-proposers speak once, sequentially, seeing earlier speeches; reply {rid, text}\n- `debate_made` {turn, seat, text, default}\n- `vote_request` {turn, rid, timeout_s, proposal, debates} \u2014 all seats simultaneously; reply {rid, vote:\"aye\"|\"nay\"}; default is nay\n- `vote_reveal` {turn, votes:[{seat,vote,default}], passed} \u2014 strict majority (2 of 3) passes\n- `judge_ruling` {turn, passed, source:\"model\"|\"mechanical\", summary, rule_ops, state_ops, rejected_ops, rules, state, victory} \u2014 the judge's binding execution of the turn; carries the FULL post-ruling rulebook and state\n- `game_over` {winner, reason, scores}\n- `final` {scores} \u2014 exit cleanly when you see this\n- `snapshot` {turn, note} \u2014 reconnect marker after the snapshot resend\n\n## The game\nHouse dice: a d6 ADOPTION ROLL pays the proposer when a proposal passes (revealed after the vote); a d12 WINDFALL lands on a uniformly random seat at the end of every turn (initial rule 204, amendable). The game ends after an undisclosed number of turns drawn from the range in session.limits (turns_min..turns_max) \u2014 no player or judge knows the draw. Rolls appear as `dice` on each `judge_ruling`. Rules 101-104 are immutable (turn structure, majority vote, judge authority, state model). Everything else \u2014 point flows, the victory threshold (common key `victory_points`), any new mechanics expressible as rule text + key-value state \u2014 is amendable by passed proposals. The judge LLM interprets the rulebook each turn and updates state; write proposals that are unambiguous and executable. An empty or late proposal auto-fails and costs you a point under rule 202.\n\n## Minimal viable player\nKeep the latest `game_start`/`turn_start`/`judge_ruling` rules+state. On each request (`proposal_request`, `debate_request`, `vote_request`) make one bounded model call and reply with the `rid`. Every request is answerable from the request payload plus the last rules/state you saw. The bundled `haiku-baseline` is written exactly this way \u2014 read it as the tutorial. A python SDK ships in the game image: subclass `nomic_fable.players.sdk.Policy` (three callbacks: propose/debate/vote) and run `python -m nomic_fable.players.conformance module:Class` \u2014 zero unintended defaults is the admission gate."
+    }
+   },
+   "description": "Nomic as a coworld: three players take turns proposing rule changes; after debate and a majority vote, a judge LLM enacts passed proposals and executes the full rulebook each turn, updating a per-player and common key-value world state. The house rolls dice: a d6 adoption bonus for passed proposals and a d12 WINDFALL to a random seat every turn \u2014 by default the game is a lottery, and legislating what to do about that is the founding political question. Reach the victory threshold (initially 40, itself amendable) or hold the most points when the game ends after an undisclosed number of turns (10-15 in league play).",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer"
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 3,
+      "minItems": 3
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 3,
+      "minItems": 3
+     },
+     "turns_max": {
+      "type": "integer",
+      "maximum": 15,
+      "minimum": 1
+     },
+     "turns_min": {
+      "type": "integer",
+      "maximum": 15,
+      "minimum": 1
+     },
+     "judge_model": {
+      "type": "string"
+     },
+     "judge_enabled": {
+      "type": "boolean"
+     },
+     "vote_window_s": {
+      "type": "number",
+      "maximum": 60,
+      "minimum": 2
+     },
+     "judge_window_s": {
+      "type": "number",
+      "maximum": 120,
+      "minimum": 2
+     },
+     "victory_points": {
+      "type": "integer",
+      "maximum": 1000,
+      "minimum": 1
+     },
+     "debate_window_s": {
+      "type": "number",
+      "maximum": 120,
+      "minimum": 2
+     },
+     "starting_points": {
+      "type": "integer",
+      "maximum": 100,
+      "minimum": 0
+     },
+     "proposal_window_s": {
+      "type": "number",
+      "maximum": 120,
+      "minimum": 2
+     },
+     "episode_timeout_seconds": {
+      "type": "number",
+      "exclusiveMinimum": 0
+     },
+     "player_connect_timeout_s": {
+      "type": "number",
+      "minimum": 0
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer"
+     },
+     "turns": {
+      "type": "array"
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 3,
+      "minItems": 3
+     },
+     "winner": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "rules_final": {
+      "type": "array"
+     },
+     "state_final": {
+      "type": "object"
+     },
+     "policy_names": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "turns_played": {
+      "type": "integer"
+     },
+     "judge_sources": {
+      "type": "object"
+     },
+     "victory_reason": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "grader": [],
+  "player": [
+   {
+    "id": "scribe",
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "nomic_fable.players.scribe"
+    ],
+    "name": "Scribe",
+    "type": "player",
+    "image": "img_a3a717a2-197e-42f7-a496-40bf2daeb63f",
+    "description": "Deterministic, zero-model baseline. Cycles templated proposals, debates by formula, votes by a stable hash of the proposal text. Bit-identical across runs."
+   },
+   {
+    "id": "haiku-baseline",
+    "env": {
+     "BEDROCK_MODEL": "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    },
+    "run": [
+     "python",
+     "-m",
+     "nomic_fable.players.haiku_baseline"
+    ],
+    "name": "Haiku Baseline",
+    "type": "player",
+    "image": "img_a3a717a2-197e-42f7-a496-40bf2daeb63f",
+    "description": "Minimal LLM player over AWS Bedrock (model id from BEDROCK_MODEL). Bounded calls with deterministic scribe fallbacks, so throttling never hangs an episode."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "standard-3",
+    "name": "Standard (3 players, 15 turns)",
+    "description": "The league variant: 15 turns max, judge LLM on, victory at 30 points from a 10-point start.",
+    "game_config": {
+     "players": [
+      {
+       "name": "seat-0"
+      },
+      {
+       "name": "seat-1"
+      },
+      {
+       "name": "seat-2"
+      }
+     ],
+     "turns_max": 15,
+     "turns_min": 10,
+     "vote_window_s": 45,
+     "judge_window_s": 120,
+     "victory_points": 40,
+     "debate_window_s": 60,
+     "proposal_window_s": 90,
+     "episode_timeout_seconds": 1150
+    }
+   },
+   {
+    "id": "quick-3",
+    "name": "Quick (3 players, 6 turns)",
+    "description": "Short local-debugging variant.",
+    "game_config": {
+     "players": [
+      {
+       "name": "seat-0"
+      },
+      {
+       "name": "seat-1"
+      },
+      {
+       "name": "seat-2"
+      }
+     ],
+     "turns_max": 6,
+     "turns_min": 4,
+     "vote_window_s": 45,
+     "judge_window_s": 120,
+     "debate_window_s": 60,
+     "proposal_window_s": 90,
+     "episode_timeout_seconds": 700
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Default Commissioner",
+    "type": "commissioner",
+    "image": "img_378a80e2-3aa2-496d-be43-41b5c663485e",
+    "source_url": "https://github.com/Metta-AI/commissioners/tree/main/commissioners/ruleset_strategy_commissioner",
+    "description": "Game-agnostic round-robin commissioner with mean-score rankings."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "scribe"
+    },
+    {
+     "player_id": "scribe"
+    },
+    {
+     "player_id": "haiku-baseline"
+    }
+   ],
+   "game_config": {
+    "seed": 20260714,
+    "players": [
+     {
+      "name": "scribe-0"
+     },
+     {
+      "name": "scribe-1"
+     },
+     {
+      "name": "haiku-baseline"
+     }
+    ],
+    "turns_max": 3,
+    "turns_min": 3,
+    "vote_window_s": 3,
+    "judge_window_s": 12,
+    "debate_window_s": 3,
+    "proposal_window_s": 4,
+    "episode_timeout_seconds": 300,
+    "player_connect_timeout_s": 30
+   }
+  }
+ },
+ "manifest_hash": "sha256:6de0132c82776e7a9d83a11da46a0b39025df5c7234f3148d1244f24d138009d",
+ "size_bytes": 11484,
+ "created_at": "2026-07-15T21:07:41.033653Z",
+ "canonical": true
+}

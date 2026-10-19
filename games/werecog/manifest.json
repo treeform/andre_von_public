@@ -1,0 +1,217 @@
+{
+ "id": "cow_684dcc82-a5c0-45d6-804a-8fc8dd2b77db",
+ "name": "werecog",
+ "version": "0.1.0",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "werecog Rules",
+      "content": {
+       "type": "text",
+       "value": "werecog \u2014 One Night Ultimate Werewolf (5 players).\n\n- Deck (8 cards): 2 Werewolf, 1 Seer, 1 Robber, 1 Troublemaker, 1 Insomniac, 2 Villager.\n  Five are dealt to players, three go face-down to the center, so 0/1/2 werewolves may be in play.\n- NIGHT (roles wake in order): werewolves see each other (a lone wolf may peek one center card);\n  the Seer views one player OR two center cards; the Robber may swap its card with another player's\n  and see the new one (joining that team); the Troublemaker may swap two other players' cards blind;\n  the Insomniac sees its final card.\n- Your TEAM at dawn is the card you HOLD (swaps can change it); your DEALT role only sets your night action.\n- DAY: players discuss, then everyone votes at once (no self-votes). A player dies only with >=2 votes;\n  ties at the maximum all die.\n- WIN: village wins if a werewolf is killed; the werewolf team wins if a werewolf is in play and none is\n  killed; if no werewolf is in play, the village wins only if nobody dies."
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/metta/tree/main/packages/cogweb/games/werecog"
+    }
+   },
+   "name": "werecog",
+   "owner": "daveey@gmail.com",
+   "version": "0.1.0",
+   "runnable": {
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/coworld/game-cli.js"
+    ],
+    "type": "game",
+    "image": "img_4556a39c-448a-4f3e-9962-b9658e05060c",
+    "source_url": "https://github.com/Metta-AI/metta/tree/main/packages/cogweb/games/werecog"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "Read-only spectator feed: the @cogweb/core ServerMessage stream the live console and\nreplay viewer render (snapshot / event / status / lobby / reset frames). The night\nresolves role-by-role, the day is a round-robin discussion, then a single simultaneous\nvote reveals the dawn. The saved replay is { protocol:\"cogweb.replay.v1\", frames:\nServerMessage[] }. Spectators send nothing."
+    },
+    "player": {
+     "type": "text",
+     "value": "werecog coworld player protocol (cogweb.player.v1).\n\nYour container is a websocket CLIENT of the game host's /player endpoint (the URL,\nalready carrying ?slot=&token=, is in COWORLD_PLAYER_WS_URL). Frames:\n\n- game -> player  welcome      { type, protocol:\"cogweb.player.v1\", slot, config:{players,seed} }\n- game -> player  observation  { type, id, seat, turn, view, reason }\n- player -> game  reply        { type:\"reply\", id, decision }\n- game -> player  final        { type:\"final\", scores:[number x5] }\n\n`view` is your seat's REDACTED view: your OWN dealt role and night observations are\npresent; every other seat's role/card and all votes are masked until the game ends.\nOn each observation, decide and reply with the SAME id. The decision is one of:\n\n- night, by your dealt role:\n    werewolf (lone): { kind:\"wolfPeek\", center:<0-2|null> }\n    seer:            { kind:\"seer\", look:{type:\"player\",seat:N} | {type:\"centers\",centers:[i,j]} | {type:\"skip\"} }\n    robber:          { kind:\"rob\", target:<seat|null> }\n    troublemaker:    { kind:\"troublemaker\", swap:[a,b]|null }   (two OTHER seats)\n- day:  { kind:\"speak\", text:\"<one short statement>\" }\n- vote: { kind:\"vote\", target:<another seat> }\n\nThe host validates legality and re-requests (reason set) on a rejected move; an\nabsent/slow player falls back to the always-legal baseline. The standard baseline +\nLLM players are bundled \u2014 see the source tree."
+    }
+   },
+   "description": "A five-player hidden-role social-deduction benchmark (One Night Ultimate Werewolf): agents reason about secret roles and night card-swaps, bluff or coordinate through a discussion, and vote to find the werewolves.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "seed"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "description": "Deterministic episode seed (the deal is a pure function of it)."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "description": "Per-seat auth tokens injected by the runner; length is the seat count."
+     },
+     "pace_ms": {
+      "type": "number",
+      "maximum": 5000,
+      "minimum": 0,
+      "description": "Minimum ms between automated decisions, for live viewing."
+     },
+     "act_timeout_seconds": {
+      "type": "number",
+      "maximum": 600,
+      "description": "Per-decision budget before the scripted fallback takes the turn.",
+      "exclusiveMinimum": 0
+     },
+     "player_connect_timeout_seconds": {
+      "type": "number",
+      "minimum": 0,
+      "description": "How long to wait for all players to connect before starting anyway."
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores",
+     "winning_team",
+     "killed"
+    ],
+    "properties": {
+     "killed": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "description": "Seats killed by the vote."
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "description": "1 for each seat on the winning team, else 0, in seat order."
+     },
+     "winning_team": {
+      "enum": [
+       "village",
+       "werewolf",
+       "none"
+      ],
+      "type": "string",
+      "description": "The team that won, or 'none' when an innocent is lynched with no werewolf in play."
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "grader": [],
+  "player": [
+   {
+    "id": "werecog-scripted",
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/coworld/baseline-player.js"
+    ],
+    "name": "werecog Scripted Baseline",
+    "type": "player",
+    "image": "img_4556a39c-448a-4f3e-9962-b9658e05060c",
+    "source_url": "https://github.com/Metta-AI/metta/tree/main/packages/cogweb/games/werecog",
+    "description": "Deterministic no-LLM baseline (skips the night, votes the next seat). Certifies the contract offline."
+   },
+   {
+    "id": "werecog-llm",
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/coworld/llm-player.js"
+    ],
+    "name": "werecog LLM Baseline",
+    "type": "player",
+    "image": "img_4556a39c-448a-4f3e-9962-b9658e05060c",
+    "source_url": "https://github.com/Metta-AI/metta/tree/main/packages/cogweb/games/werecog",
+    "description": "A Bedrock-driven policy that plays the seat through the game's autopilot (system prompt + per-turn tool)."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "standard",
+    "name": "Standard (5 players)",
+    "description": "The default five-player deal.",
+    "game_config": {
+     "seed": 1
+    }
+   },
+   {
+    "id": "alt-deal",
+    "name": "Alternate deal",
+    "description": "A different deterministic deal.",
+    "game_config": {
+     "seed": 42
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Default Commissioner",
+    "type": "commissioner",
+    "image": "img_3543b5f5-036e-4ddb-8640-a8d61f47de0b",
+    "source_url": "https://github.com/Metta-AI/commissioners/tree/main/commissioners/ruleset_strategy_commissioner",
+    "description": "Game-agnostic round-robin commissioner with mean-score rankings."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "werecog-scripted"
+    },
+    {
+     "player_id": "werecog-scripted"
+    },
+    {
+     "player_id": "werecog-scripted"
+    },
+    {
+     "player_id": "werecog-scripted"
+    },
+    {
+     "player_id": "werecog-scripted"
+    }
+   ],
+   "game_config": {
+    "seed": 7
+   }
+  }
+ },
+ "manifest_hash": "sha256:38265b210b65ab7e3b70520d60013bc168de2af9f5e5e9f0a8cf862eb052b2b1",
+ "size_bytes": 6959,
+ "created_at": "2026-06-19T20:11:52.133113Z",
+ "canonical": true
+}

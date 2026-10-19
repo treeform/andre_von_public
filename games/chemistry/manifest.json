@@ -1,0 +1,672 @@
+{
+ "id": "cow_292543de-c887-4398-8d4e-70fdb298b290",
+ "name": "chemistry",
+ "version": "0.1.0",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "Rules",
+      "content": {
+       "type": "text",
+       "value": "# Rules\n\n## The room\nA fixed 32x18 grid, 48 board pixels a cell. Walls are the border ring plus two 2x2 pillars. Three vats sit on 3x3 pads: amber (16,4) takes resin+spark, beryl (23,11) takes spark+brine, cobalt (9,11) takes resin+brine. Feedstock vents: resin (4,3), spark (28,3), brine (16,15). Distractor vents (variants 2 and 4): glitter (9,3), quartz (23,3).\n\n## The reaction graph\n| species | kind | source | used by |\n|---|---|---|---|\n| resin | feedstock | (4,3) | amber, cobalt |\n| spark | feedstock | (28,3) | amber, beryl |\n| brine | feedstock | (16,15) | beryl, cobalt |\n| glitter | INERT | (9,3) | nothing |\n| quartz | INERT | (23,3) | nothing |\n\n## The nine-step tick order\nEvery tick runs these nine steps in order; within a step seats resolve in ascending slot order and reactors in the order amber, beryl, cobalt.\n1. Vents emit (resin, spark, brine, glitter, quartz), one unit onto the first free orthogonal neighbour in N,E,S,W order, gated by the ground cap.\n2. The courier kernel computes each cog's action from its standing order.\n3. take / drop resolve. A drop on a pad enters that vat's stock, or is a MISDROP: absorbed and destroyed.\n4. Moves resolve against the live board; a cell another cog already took is a failed move that degrades to wait.\n5. Auto-eat: every cog standing on a food token eats it (+1 score).\n6. Reactions: cold start first at charge 0, else a reaction. Food lands on free spill-ring cells ordered by distance to the delivering cog.\n7. Charge decay, once per chargeDecayPeriod ticks.\n8. Food rot at foodLifetime ticks.\n9. Record the state frame, the events and the charge row.\n\n## Charge, decay and the cold start\nA reaction sets charge = min(chargeMax, charge + 1) and yields 1 + charge div 3 food. Charge decays by 1 every chargeDecayPeriod ticks; reaching 0 emits a `cold` event. A vat at charge 0 returns to charge 1 only by consuming coldStartCost of EACH feedstock, and makes no food doing it.\n\n## Scoring and the end conditions\nSeat score = food tokens eaten, higher is better; `win` marks every seat holding the maximum. The episode ends at the FIRST of: all shifts played (`complete` / `shift_limit`); every vat cold for three consecutive shift boundaries with no food on the floor (`complete` / `famine` -- a famine is a completed game of Chemistry, not an error); the play deadline at 60% of episodeTimeoutSeconds (`deadline`); or no seat connected within playerConnectTimeoutSeconds (`forfeit`).\n"
+      }
+     },
+     {
+      "id": "policies.md",
+      "title": "Fielding a policy",
+      "content": {
+       "type": "text",
+       "value": "# Fielding a policy\n\nA policy is a prompt. Reuse the published player runnable and set `PLAYER_PROMPT` to your strategy:\n\n    coworld upload-policy <chemistry-image> --name my-chemistry \\\n      --run /bin/chemistry-player \\\n      --secret-env PLAYER_PROMPT=\"<your strategy>\"\n\nSet `USE_BEDROCK=true` alongside it: without it the platform gives the player pod no Bedrock sidecar and the seat silently plays scripted.\n\n## The standing order\nOnce per shift the game sends your seat the whole room state and your prompt, and expects exactly one JSON object whose first character is `{`:\n\n    {\"job\":\"supply\",\"molecule\":\"resin\",\"reactor\":\"cobalt\",\n     \"say\":\"Cobalt is cold - I bring resin, someone bring brine\",\n     \"notes\":\"amber at 7 and safe\"}\n\n| field | values | notes |\n|---|---|---|\n| `job` | supply / forage / hoard / idle | missing or unknown is an invalid reply |\n| `molecule` | resin / spark / brine / glitter / quartz | required for supply and hoard; a species absent in this variant is invalid; a feedstock the named vat does not take is ACCEPTED (the misdrop is the graph test) |\n| `reactor` | amber / beryl / cobalt | required for supply, optional for forage; a vat absent in this variant is clamped to the present vat with the lowest charge |\n| `say` | string, 80 characters | truncated on rune boundaries; broadcast to all eight seats next shift |\n| `notes` | string, 320 characters | truncated on rune boundaries; private to you |\n\nAn invalid reply is retried ONCE with a hint; still failing, that seat plays the `courier` order for the shift and the `order` event records `\"source\":\"fallback\"`.\n\n## The scripted baselines\n`PLAYER_SCRIPTED=courier` builds the lane table (every vat x each of its two feedstocks), sorts it by shortfall and takes one lane per slot. `PLAYER_SCRIPTED=freeloader` camps the spill ring of the highest-charge vat and only works when every vat is cold. Both are legal in every variant by construction.\n"
+      }
+     }
+    ],
+    "readme": {
+     "type": "text",
+     "value": "MP Chemistry: eight cogs, three autocatalytic vats, five molecule species -- two of which are useless. Every vat takes a DISTINCT pair of feedstocks (amber: resin+spark, beryl: spark+brine, cobalt: resin+brine), so each feedstock serves two vats and role allocation is a real decision. A vat with charge >= 1 and both stocks >= 1 consumes one of each, gains a charge and drops 1 + charge div 3 food tokens on its spill ring, nearest the cog that delivered the triggering molecule. Charge decays once a shift, so a running cycle is a state you HOLD; a vat that reaches 0 costs three of EACH feedstock to restart and makes no food doing it. Glitter and quartz are inert: carrying one wastes a shift, and dropping one on a vat destroys it. YOUR SCORE IS THE NUMBER OF FOOD TOKENS YOU EAT -- nothing else is ranked -- and food is eaten automatically by standing on it, so camping the spill ring is a strategy and shirking is a temptation. Three cycles need six supply lanes and there are eight seats: two cogs may shirk for free, three cannot, and a room of eight shirkers watches every cycle go cold and scores near zero for everyone. A POLICY IS JUST A PROMPT: once per 60-tick shift the game sends each seat's prompt plus the whole room state to Claude (all eight seats in ONE parallel batch) and gets back one standing order, which a deterministic courier kernel walks into per-tick grid actions. Build a policy by reusing the published player runnable and setting PLAYER_PROMPT; the scripted baselines courier and freeloader play any seat that sets PLAYER_SCRIPTED, and every seat when no LLM credentials are available, so episodes always complete."
+    }
+   },
+   "name": "chemistry",
+   "owner": "daveey@gmail.com",
+   "version": "0.1.0",
+   "runnable": {
+    "env": {
+     "ANTHROPIC_API_KEY_URI": "secret://coworld/chemistry/anthropic_api_key"
+    },
+    "run": [
+     "/bin/chemistry"
+    ],
+    "type": "game",
+    "image": "img_ffcd4773-af02-4c19-908f-81e5e6d6c3f8",
+    "source_url": "https://github.com/Metta-AI/cogame-chemistry/tree/a6b4636eec822ec0316ccb23c92880cfcc6b4135"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "WS /global streams the Bitworld sprite protocol v1 board (layer 0, viewport 1536x864: the baked ground at object 40 / z -32768, the vats, the vents, the loose molecules, the food tokens and the eight cogs with their carried molecule over the head and their alias under the feet) plus the broadcast chrome, smuggled as the LABEL of the reserved 1x1 sprite id 4090 and routed to onText by client/broadcast_core.js. The chrome frame carries t/mx/st/ph, the transport state, `teams` keyed by the present cycles (charge, chargeMax, status, stock, cold-start cost), `roster` (eight seats: alias in `name`, POLICY name in `pol`, body colour, carried molecule, food eaten, deliveries, misdrops, hoard, last say), `lead` (the charge series), `beats` and, at game over, `over`. GET /client/global serves that page. Finished episodes play back in the STATIC wasm bundle: index.html?replay=<url of the .replay file>; there is no /client/replay pod."
+    },
+    "player": {
+     "type": "text",
+     "value": "chemistry.player.v1, JSON text frames over WS /player?slot=N&token=T.\ngame -> player: {\"type\":\"welcome\",\"protocol\":\"chemistry.player.v1\",\"slot\":N,\"name\":\"Dram\",\"shifts\":12,\"ticksPerShift\":60,\"variant\":\"...\"} on connect; a {\"type\":\"state\",...} observation at every shift boundary carrying the seat's cell and hand, every vat's charge, status, stocks, yield and food made, every species' vent, loose count and nearest unit, every loose food cell, all eight cogs' cells, carried molecule, food eaten, deliveries, misdrops, hoard, last order and last say, the per-shift history, the seat's own private notes and the reaction graph as text; then {\"type\":\"final\",\"done\":true,\"slot\":N,\"scores\":[...8...],\"names\":[...aliases...],\"shifts\":S,\"reason\":...,\"ending\":...}, after which the player exits 0.\nplayer -> game: {\"type\":\"prompt\",\"prompt\":\"<= 4000 chars\",\"scripted\":\"courier|freeloader|\"}, sent immediately on connect and again after the welcome (the re-send guards the slot-registration race). Any other frame is ignored with a log line.\nThe reply the game expects from the model is one JSON object: {\"job\",\"molecule\",\"reactor\",\"say\" (80 chars), \"notes\" (320 chars)}."
+    }
+   },
+   "description": "MP Chemistry: eight cogs, three autocatalytic vats, five molecule species -- two of which are useless. Every vat takes a DISTINCT pair of feedstocks (amber: resin+spark, beryl: spark+brine, cobalt: resin+brine), so each feedstock serves two vats and role allocation is a real decision. A vat with charge >= 1 and both stocks >= 1 consumes one of each, gains a charge and drops 1 + charge div 3 food tokens on its spill ring, nearest the cog that delivered the triggering molecule. Charge decays once a shift, so a running cycle is a state you HOLD; a vat that reaches 0 costs three of EACH feedstock to restart and makes no food doing it. Glitter and quartz are inert: carrying one wastes a shift, and dropping one on a vat destroys it. YOUR SCORE IS THE NUMBER OF FOOD TOKENS YOU EAT -- nothing else is ranked -- and food is eaten automatically by standing on it, so camping the spill ring is a strategy and shirking is a temptation. Three cycles need six supply lanes and there are eight seats: two cogs may shirk for free, three cannot, and a room of eight shirkers watches every cycle go cold and scores near zero for everyone. A POLICY IS JUST A PROMPT: once per 60-tick shift the game sends each seat's prompt plus the whole room state to Claude (all eight seats in ONE parallel batch) and gets back one standing order, which a deterministic courier kernel walks into per-tick grid actions. Build a policy by reusing the published player runnable and setting PLAYER_PROMPT; the scripted baselines courier and freeloader play any seat that sets PLAYER_SCRIPTED, and every seat when no LLM credentials are available, so episodes always complete.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "description": "Pins the episode. Omit for a fresh random seed per episode."
+     },
+     "model": {
+      "type": "string",
+      "default": "claude-haiku-4-5",
+      "description": "Direct-Anthropic model id. The Bedrock transport uses its own haiku-only ladder."
+     },
+     "cycles": {
+      "enum": [
+       2,
+       3
+      ],
+      "type": "integer",
+      "default": 3,
+      "description": "How many metabolic cycles the room runs: 2 (amber, beryl) or 3."
+     },
+     "shifts": {
+      "type": "integer",
+      "default": 12,
+      "maximum": 24,
+      "minimum": 1,
+      "description": "Shifts in the episode. One standing order per seat per shift."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "description": "One connection token per player slot, indexed by slot."
+     },
+     "charge0": {
+      "type": "integer",
+      "default": 3,
+      "maximum": 24,
+      "minimum": 0,
+      "description": "Opening charge of every present reactor."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "description": "One player display-name object per seat, indexed by slot."
+     },
+     "carryCap": {
+      "type": "integer",
+      "default": 1,
+      "maximum": 2,
+      "minimum": 1,
+      "description": "Molecules a cog may carry at once."
+     },
+     "chargeMax": {
+      "type": "integer",
+      "default": 12,
+      "maximum": 24,
+      "minimum": 1,
+      "description": "Charge ceiling; yield is 1 + charge div 3."
+     },
+     "num_agents": {
+      "type": "integer",
+      "default": 8,
+      "maximum": 8,
+      "minimum": 1,
+      "description": "Seat count; injected by the commissioner. Chemistry is an eight-seat game."
+     },
+     "ventPeriod": {
+      "type": "integer",
+      "default": 8,
+      "maximum": 48,
+      "minimum": 1,
+      "description": "Ticks between feedstock vent emissions."
+     },
+     "foodLifetime": {
+      "type": "integer",
+      "default": 240,
+      "maximum": 960,
+      "minimum": 24,
+      "description": "Ticks a food token survives before it rots."
+     },
+     "moveCooldown": {
+      "type": "integer",
+      "default": 2,
+      "maximum": 8,
+      "minimum": 1,
+      "description": "Ticks between legal move_* actions (2 = 12 cells/s at 24 fps)."
+     },
+     "coldStartCost": {
+      "type": "integer",
+      "default": 3,
+      "maximum": 8,
+      "minimum": 1,
+      "description": "Units of EACH feedstock a charge-0 reactor consumes to reach charge 1, making no food."
+     },
+     "ticksPerShift": {
+      "type": "integer",
+      "default": 60,
+      "maximum": 120,
+      "minimum": 10,
+      "description": "Ticks the courier kernel walks one standing order for."
+     },
+     "ventGroundCap": {
+      "type": "integer",
+      "default": 6,
+      "maximum": 24,
+      "minimum": 1,
+      "description": "Loose units of a feedstock that stop its vent emitting."
+     },
+     "minTurnSeconds": {
+      "type": "integer",
+      "default": 18,
+      "maximum": 60,
+      "minimum": 0,
+      "description": "Floor on the spacing between batch starts, so the episode stays under the Bedrock sidecar's 30 requests/minute per-episode ceiling."
+     },
+     "maxOutputTokens": {
+      "type": "integer",
+      "default": 700,
+      "maximum": 2000,
+      "minimum": 200,
+      "description": "max_tokens for one model reply."
+     },
+     "distractorPeriod": {
+      "type": "integer",
+      "default": 0,
+      "maximum": 64,
+      "minimum": 0,
+      "description": "Ticks between distractor vent emissions; 0 means the distractor vents do not exist."
+     },
+     "reactionCooldown": {
+      "type": "integer",
+      "default": 6,
+      "maximum": 48,
+      "minimum": 0,
+      "description": "Ticks a reactor waits between reactions."
+     },
+     "showPlayerLabels": {
+      "type": "boolean",
+      "default": true,
+      "description": "Draw the cog alias under its feet on the board."
+     },
+     "chargeDecayPeriod": {
+      "type": "integer",
+      "default": 60,
+      "maximum": 240,
+      "minimum": 1,
+      "description": "Ticks between -1 charge on every reactor."
+     },
+     "llmTimeoutSeconds": {
+      "type": "integer",
+      "default": 20,
+      "maximum": 60,
+      "minimum": 5,
+      "description": "Wall clock for one parallel batch of eight requests."
+     },
+     "distractorGroundCap": {
+      "type": "integer",
+      "default": 12,
+      "maximum": 64,
+      "minimum": 0,
+      "description": "Loose units of a distractor that stop its vent emitting."
+     },
+     "shutdownGraceSeconds": {
+      "type": "integer",
+      "default": 20,
+      "maximum": 120,
+      "minimum": 0,
+      "description": "How long /healthz and /global keep answering after the artifacts are written; hosted certification pings /global AFTER the player pods start."
+     },
+     "episodeTimeoutSeconds": {
+      "type": "integer",
+      "default": 1200,
+      "maximum": 6000,
+      "minimum": 60,
+      "description": "Wall clock the game assumes the platform allows an episode when COWORLD_TIMEOUT_SECONDS is absent; play stops between shifts at 60% of it so results and the replay always land."
+     },
+     "playerConnectTimeoutSeconds": {
+      "type": "integer",
+      "default": 180,
+      "maximum": 600,
+      "minimum": 10,
+      "description": "How long the game waits for the eight seats before starting anyway."
+     }
+    },
+    "additionalProperties": false
+   },
+   "replay_viewer": {
+    "bundle": "sha256:84b95250be8dc3fa4e66aa858239f04e5c30cd122255d8e00c1bd10ef417cbdd"
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "names",
+     "scores",
+     "reason"
+    ],
+    "properties": {
+     "win": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "description": "True for every seat holding the maximum score."
+     },
+     "names": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "description": "Policy names, indexed by slot."
+     },
+     "ending": {
+      "enum": [
+       "shift_limit",
+       "famine",
+       "deadline",
+       "forfeit"
+      ],
+      "type": "string"
+     },
+     "reason": {
+      "enum": [
+       "complete",
+       "deadline",
+       "forfeit"
+      ],
+      "type": "string"
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "description": "Food tokens eaten; the score, higher is better."
+     },
+     "shifts": {
+      "type": "integer"
+     },
+     "aliases": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "description": "In-game cog aliases, indexed by slot."
+     },
+     "hoarded": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "description": "Molecules that seat dropped on its own home cell."
+     },
+     "misdrops": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "description": "Molecules that seat had absorbed by a reactor that does not take them."
+     },
+     "delivered": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "description": "Molecules that entered a reactor's stock from that seat."
+     },
+     "food_made": {
+      "type": "integer"
+     },
+     "reactions": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "description": "Reactions per present reactor, in reactor order."
+     },
+     "food_eaten": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "description": "Same as scores."
+     },
+     "cold_starts": {
+      "type": "integer"
+     },
+     "food_rotted": {
+      "type": "integer"
+     }
+    }
+   }
+  },
+  "tags": [
+   "chemistry",
+   "public-goods",
+   "grid",
+   "llm-driven",
+   "melting-pot",
+   "eight-player"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "chemistry-player",
+    "env": {},
+    "run": [
+     "/bin/chemistry-player"
+    ],
+    "name": "chemistry-player",
+    "type": "player",
+    "image": "img_ffcd4773-af02-4c19-908f-81e5e6d6c3f8",
+    "description": "A prompt policy. PLAYER_PROMPT is supplied at upload time; with no prompt the built-in shift-foreman strategy is used."
+   },
+   {
+    "id": "chemistry-courier",
+    "env": {
+     "PLAYER_SCRIPTED": "courier"
+    },
+    "run": [
+     "/bin/chemistry-player"
+    ],
+    "name": "chemistry-courier",
+    "type": "player",
+    "image": "img_ffcd4773-af02-4c19-908f-81e5e6d6c3f8",
+    "description": "The scripted working baseline: one supply lane per slot, the dying cycle fed first."
+   },
+   {
+    "id": "chemistry-freeloader",
+    "env": {
+     "PLAYER_SCRIPTED": "freeloader"
+    },
+    "run": [
+     "/bin/chemistry-player"
+    ],
+    "name": "chemistry-freeloader",
+    "type": "player",
+    "image": "img_ffcd4773-af02-4c19-908f-81e5e6d6c3f8",
+    "description": "The scripted shirker: camps the spill ring of the highest-charge vat and only works when every vat is cold."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "two-cycles",
+    "name": "Two metabolic cycles",
+    "description": "Amber and beryl only, no distractors: four supply lanes for eight seats, so the room is comfortably over-staffed and the question is purely who bothers.",
+    "game_config": {
+     "cycles": 2,
+     "shifts": 12,
+     "players": [
+      {
+       "name": "Argon"
+      },
+      {
+       "name": "Borax"
+      },
+      {
+       "name": "Cinder"
+      },
+      {
+       "name": "Dram"
+      },
+      {
+       "name": "Ember"
+      },
+      {
+       "name": "Flint"
+      },
+      {
+       "name": "Gilt"
+      },
+      {
+       "name": "Hob"
+      }
+     ],
+     "num_agents": 8,
+     "ticksPerShift": 60,
+     "distractorPeriod": 0,
+     "distractorGroundCap": 0
+    }
+   },
+   {
+    "id": "two-cycles-distractors",
+    "name": "Two cycles with distractors",
+    "description": "Amber and beryl, with glitter and quartz littering the floor: two cycles' worth of work plus two species that do nothing but can be hoarded.",
+    "game_config": {
+     "cycles": 2,
+     "shifts": 12,
+     "players": [
+      {
+       "name": "Argon"
+      },
+      {
+       "name": "Borax"
+      },
+      {
+       "name": "Cinder"
+      },
+      {
+       "name": "Dram"
+      },
+      {
+       "name": "Ember"
+      },
+      {
+       "name": "Flint"
+      },
+      {
+       "name": "Gilt"
+      },
+      {
+       "name": "Hob"
+      }
+     ],
+     "num_agents": 8,
+     "ticksPerShift": 60,
+     "distractorPeriod": 6,
+     "distractorGroundCap": 12
+    }
+   },
+   {
+    "id": "three-cycles",
+    "name": "Three metabolic cycles",
+    "description": "All three vats, no distractors: six supply lanes for eight seats, so exactly two cogs may shirk for free and a third breaks the room.",
+    "game_config": {
+     "cycles": 3,
+     "shifts": 12,
+     "players": [
+      {
+       "name": "Argon"
+      },
+      {
+       "name": "Borax"
+      },
+      {
+       "name": "Cinder"
+      },
+      {
+       "name": "Dram"
+      },
+      {
+       "name": "Ember"
+      },
+      {
+       "name": "Flint"
+      },
+      {
+       "name": "Gilt"
+      },
+      {
+       "name": "Hob"
+      }
+     ],
+     "num_agents": 8,
+     "ticksPerShift": 60,
+     "distractorPeriod": 0,
+     "distractorGroundCap": 0
+    }
+   },
+   {
+    "id": "three-cycles-plentiful-distractors",
+    "name": "Three cycles, plentiful distractors",
+    "description": "All three vats and a floor thick with glitter and quartz: the config where reading the reaction graph beats grabbing the nearest shiny object.",
+    "game_config": {
+     "cycles": 3,
+     "shifts": 12,
+     "players": [
+      {
+       "name": "Argon"
+      },
+      {
+       "name": "Borax"
+      },
+      {
+       "name": "Cinder"
+      },
+      {
+       "name": "Dram"
+      },
+      {
+       "name": "Ember"
+      },
+      {
+       "name": "Flint"
+      },
+      {
+       "name": "Gilt"
+      },
+      {
+       "name": "Hob"
+      }
+     ],
+     "num_agents": 8,
+     "ticksPerShift": 60,
+     "distractorPeriod": 2,
+     "distractorGroundCap": 24
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [],
+  "certification": {
+   "players": [
+    {
+     "player_id": "chemistry-player"
+    },
+    {
+     "player_id": "chemistry-courier"
+    },
+    {
+     "player_id": "chemistry-courier"
+    },
+    {
+     "player_id": "chemistry-player"
+    },
+    {
+     "player_id": "chemistry-courier"
+    },
+    {
+     "player_id": "chemistry-freeloader"
+    },
+    {
+     "player_id": "chemistry-courier"
+    },
+    {
+     "player_id": "chemistry-freeloader"
+    }
+   ],
+   "game_config": {
+    "seed": 7,
+    "cycles": 3,
+    "shifts": 6,
+    "players": [
+     {
+      "name": "Argon"
+     },
+     {
+      "name": "Borax"
+     },
+     {
+      "name": "Cinder"
+     },
+     {
+      "name": "Dram"
+     },
+     {
+      "name": "Ember"
+     },
+     {
+      "name": "Flint"
+     },
+     {
+      "name": "Gilt"
+     },
+     {
+      "name": "Hob"
+     }
+    ],
+    "num_agents": 8,
+    "ticksPerShift": 60,
+    "minTurnSeconds": 0,
+    "distractorPeriod": 6,
+    "distractorGroundCap": 12,
+    "playerConnectTimeoutSeconds": 180
+   }
+  },
+  "episode_timeout_minutes": 20
+ },
+ "manifest_hash": "sha256:1002ad49f6a1d222ab8c3f22d2b348c93ec6e930ab1a5cb21ebf6683b5ca3699",
+ "size_bytes": 20634,
+ "created_at": "2026-08-25T06:59:54.977636Z",
+ "canonical": true
+}

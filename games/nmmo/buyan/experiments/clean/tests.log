@@ -1,0 +1,8 @@
+Testing clean observation URL handling
+Testing unsupported observations preserve legacy decisions
+Testing support witness and reset boundaries
+Testing confirmed static target and unchanged health gates
+Testing activation and telemetry do not mutate policy twice
+buyan-clean {"experiment":"clean","event":"activation","tick":1,"agent":0,"action":5,"baselineAction":25,"verifiedClean":true,"clearedCells":1,"extraHints":1,"counterfactual":"trust-only"}
+buyan-clean {"experiment":"clean","event":"summary","tick":1,"verifiedClean":true,"verifiedSteps":1,"clearedCells":1,"extraHints":1,"actionChanges":1,"counterfactual":"trust-only","note":"not hosted score; trust-only counterfactual on identical clean input"}
+Clean isolation tests passed

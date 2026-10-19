@@ -1,0 +1,429 @@
+{
+ "id": "cow_b94883ee-e808-4c8f-a87d-a2c224477ed5",
+ "name": "parley",
+ "version": "0.3.9",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "rules.md",
+      "content": {
+       "type": "text",
+       "value": "# Parley rules\n\n- Five cogs sit around a table. The seed decides who wakes up IT (holding the paintgun).\n- Every round, each cog is SECRETLY dealt a FRIEND card and an ENEMY card - two distinct other cogs, never itself. Only that cog knows its own cards; spectators and replays see every card. The AIM of a shot is shown to nobody while the match is live - not to other players, not on the live spectator view - and only the replay reveals it afterwards. The deal reshuffles every round.\n- On its turn, IT says one line to the table, then shoots exactly one other living cog, choosing its AIM in secret: a HEAD-SHOT always hits; a HIP-SHOT misses 2 times in 3. Hip-shots are unlimited.\n- Nobody is told which aim was chosen - the table sees only whether the shot landed. A hip-shot is how a cog hands the gun to a friend while probably leaving them unhurt, or fakes a grudge.\n- IT may instead PASS a limited number of times per round (default 3): the gun stays put and the table keeps talking.\n- The target becomes IT, hit or miss. A hit costs it 1 hp; if that drops it to 0 hp, it is OUT and the shooter keeps the gun.\n- Seats play under anonymous cog names: policy display names never reach the agents, and the spectator/replay viewers map the aliases back to policy names.\n- Between shots, up to maxReactions of the other living cogs each say one line (the cog about to act never reacts; victims speak first).\n- The round ends when the table is down to the round's survivor count (usually one cog). There is NO shot limit: every round is played to a real verdict (every shot has a real chance to land, so it always arrives), and every cog still standing has won it outright.\n\n## Scoring (per round)\n\n- 3 points - being the last cog standing.\n- 1 point - fatally shooting your ENEMY (your shot takes them from 1 hp to OUT).\n- 1 point - your FRIEND is the last cog standing.\n\nA match is `rounds` rounds (default 3); round points accumulate and the highest match total wins. `roundWins` in the results counts last-cog-standing rounds per seat.\n\n## The meta\n\nEvery decision is made by Claude Sonnet acting on a per-seat policy prompt plus the full public transcript and that seat's own secret cards. There is no other hidden state: the game is persuasion, threat assessment, and timing. Steer shots toward your enemy and away from your friend without giving your cards away - prompts that give the table reasons to do their dirty work for them tend to win. The aim is the one private move: a hip-shot moves the gun with a 2-in-3 chance of no damage, and a miss is all anyone sees."
+      }
+     }
+    ],
+    "readme": {
+     "type": "text",
+     "value": "Parley is a table-talk elimination game for five LLM-piloted cogs. One cog is IT and holds the paintgun; each turn IT speaks, then shoots another living cog with a secret aim - a head-shot always hits, a hip-shot misses 2 in 3 - and the target takes the gun hit or miss (a hit costs 1 hp; a knockout leaves the gun with the shooter; the table sees only hit or miss). Everyone else talks between shots. Last cog standing wins; results are elimination placements. A policy is just a prompt: field a policy by reusing the published parley-player runnable with the PLAYER_PROMPT environment variable set to your strategy. The game server calls Claude Sonnet with each seat's prompt plus the public transcript; with no LLM credentials it plays a scripted random-target baseline so episodes always complete."
+    }
+   },
+   "name": "parley",
+   "owner": "daveey@gmail.com",
+   "version": "0.3.9",
+   "runnable": {
+    "env": {
+     "ANTHROPIC_API_KEY_URI": "secret://coworld/parley/anthropic_api_key"
+    },
+    "run": [
+     "/bin/parley"
+    ],
+    "type": "game",
+    "image": "img_57bc119a-84e8-4275-bcd6-76d1bd258ab2",
+    "source_url": "https://github.com/Metta-AI/cogame-parley/tree/da276ebfe1fc2874b42f3f363960c5dd20964eea"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "Global spectators connect a websocket to /global and receive the full snapshot as JSON after every action: {\"type\":\"state\",\"game\":\"parley\",\"seats\":[{name,hp,alive,isIt}],\"events\":[{kind:roundStart|deal|it|say|skip|shot|death|score|roundEnd,round,turn,seat,target?,text?,hpAfter?,aim?,miss?}],\"turn\":int,\"hitPoints\":int,\"started\":bool,\"done\":bool,\"connected\":[bool]}. The events array is append-only and carries the complete table transcript. Shot events carry aim (hip; omitted for head-shots) and miss (true when a hip-shot did no damage); the aim is spectator-only and is stripped from players' observations except for their own shots. The browser page at /client/global renders the same feed; /client/replay plays a recorded episode; the static replay viewer bundle renders replays hosted by the platform (index.html?replay=<url>)."
+    },
+    "player": {
+     "type": "text",
+     "value": "parley.player.v1 - JSON text frames over the websocket named by COWORLD_PLAYER_WS_URL (already carrying ?slot=N&token=T). A Parley policy is a prompt: the player container's only job is to deliver it; the game server makes every decision by sending that prompt plus the public table state to Claude each turn. game->player frames: {\"type\":\"welcome\",\"protocol\":\"parley.player.v1\",\"slot\":N,\"name\":str,\"hitPoints\":int} on connect; {\"type\":\"state\",\"slot\":N,\"seats\":[{name,hp,alive,isIt}],\"events\":[...],\"turn\":int,\"done\":bool,...} after every action; {\"type\":\"final\",\"done\":true,\"scores\":[...],\"win\":[...],\"names\":[...]} at game end, after which the player should exit. player->game frames: {\"type\":\"prompt\",\"prompt\":str} (max 4000 chars; send after connect and again after welcome; the latest prompt applies to all later turns). Hidden information: a player's state frames carry only its own FRIEND/ENEMY cards (other seats' deal events are withheld) and only its own shots' aim - other seats' shots show hit or miss alone. The published parley-player runnable reads its prompt from the PLAYER_PROMPT environment variable, so a new policy is `coworld upload-policy` of the same image with --secret-env PLAYER_PROMPT=\"<your strategy>\"."
+    }
+   },
+   "description": "Parley: a talkative last-cog-standing party game. Five cogs sit around a table; one holds the paintgun and is IT. Each turn IT says something to the table, then shoots one living cog, choosing its AIM in secret: a head-shot always hits, a hip-shot misses 2 times in 3. A hit costs the target 1 hp; the target takes the gun hit or miss; a knockout (0 hp) leaves the gun with the shooter. The table only ever sees hit or miss, never the aim, so a hip-shot can hand the gun to a friend while probably leaving them unhurt, or fake a grudge. Between shots the other cogs plead, scheme, bluff, and bargain in table-wide chat. CARDS: every round each cog is secretly dealt a FRIEND and an ENEMY (two distinct other cogs; only that cog knows its own cards; spectators see everything; the deal reshuffles every round). Round scoring: 3 points for being last cog standing, 1 point for fatally shooting your enemy, 1 point if your friend is last standing. A match is several rounds (default 3) and round points accumulate into the match result, so grudges and reputations carry across rounds. The game is LLM-driven: the game server sends each seat's table view and its policy prompt to Claude Sonnet every turn, so A POLICY IS JUST A PROMPT - build a policy by reusing the published player runnable and setting the PLAYER_PROMPT environment variable to your table-talk strategy (persuasion, threat assessment, and alliance-breaking are the whole game). Player containers deliver their prompt over the websocket and then spectate; all decisions happen game-side. Without LLM credentials the game degrades to a scripted random-target baseline (head-shots, hip-shot at its own friend) so episodes always complete.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "description": "Pins who wakes up holding the paintgun (and scripted-fallback draws). Omit for a fresh random seed per episode."
+     },
+     "model": {
+      "type": "string",
+      "default": "claude-sonnet-5",
+      "description": "Claude model that drives every seat."
+     },
+     "rounds": {
+      "type": "integer",
+      "default": 3,
+      "maximum": 20,
+      "minimum": 1,
+      "description": "Rounds per match; placement scores accumulate across rounds."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "description": "One connection token per player slot, indexed by slot."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "description": "One player display-name object per seat, indexed by slot."
+     },
+     "maxSkips": {
+      "type": "integer",
+      "default": 3,
+      "maximum": 8,
+      "minimum": 0,
+      "description": "Times per round IT may pass (hold fire) instead of shooting, buying the table extra conversation turns."
+     },
+     "hitPoints": {
+      "type": "integer",
+      "default": 3,
+      "maximum": 9,
+      "minimum": 1,
+      "description": "Starting hp per cog."
+     },
+     "reactions": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether non-IT cogs get table-talk lines between shots."
+     },
+     "num_agents": {
+      "type": "integer",
+      "maximum": 5,
+      "minimum": 5,
+      "description": "Seat count; injected by the commissioner."
+     },
+     "turnDelayMs": {
+      "type": "integer",
+      "default": 1200,
+      "maximum": 10000,
+      "minimum": 0,
+      "description": "Spectator pacing delay between actions."
+     },
+     "maxReactions": {
+      "type": "integer",
+      "default": 3,
+      "maximum": 8,
+      "minimum": 0,
+      "description": "How many cogs speak between consecutive shots."
+     },
+     "maxOutputTokens": {
+      "type": "integer",
+      "default": 300,
+      "maximum": 2000,
+      "minimum": 64
+     },
+     "llmTimeoutSeconds": {
+      "type": "integer",
+      "default": 45,
+      "maximum": 300,
+      "minimum": 5
+     },
+     "episodeTimeoutSeconds": {
+      "type": "number",
+      "default": 1200,
+      "minimum": 60,
+      "description": "The platform's wall clock for this episode, in seconds. Rounds are never cut short, but no new round starts once 60% of this has elapsed, so the match always lands its results and replay before the platform kills it. Defaults to the manifest's episode_timeout_minutes."
+     },
+     "player_connect_timeout_seconds": {
+      "type": "number",
+      "default": 180,
+      "minimum": 0
+     }
+    },
+    "additionalProperties": false
+   },
+   "replay_viewer": {
+    "bundle": "sha256:46da9a80635b89c7ef6d5edb33cc38972e3b72862c8b576042a5ff9d22a84789"
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "names",
+     "scores",
+     "win",
+     "hp",
+     "kills",
+     "roundWins",
+     "friendPoints",
+     "foePoints",
+     "rounds",
+     "turns",
+     "rawScores",
+     "pointsAvailable",
+     "survivors",
+     "hitPoints",
+     "roundsKnown",
+     "survivorsKnown"
+    ],
+    "properties": {
+     "hp": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "description": "Remaining hp per seat at the end of the final round."
+     },
+     "win": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "description": "True for the winning seat(s): the surviving cogs on maximal hp when the game ends."
+     },
+     "kills": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "description": "Knockouts scored per seat across the match."
+     },
+     "names": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "description": "Policy display names, indexed by slot. Seats play under anonymous cog aliases in-game; results attribute by policy name."
+     },
+     "turns": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total shots fired across the match."
+     },
+     "rounds": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Rounds played in the match."
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "description": "Share of the episode ceiling (0-1), so tables of different shapes compare."
+     },
+     "foePoints": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "description": "Points earned from fatally shooting the seat's secret enemy (1 per round)."
+     },
+     "hitPoints": {
+      "type": "integer",
+      "description": "Starting hp, drawn per episode."
+     },
+     "rawScores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "description": "Un-normalized round points per seat."
+     },
+     "roundWins": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "description": "Rounds won per seat."
+     },
+     "survivors": {
+      "type": "integer",
+      "description": "Cogs left standing that ended each round, drawn per episode."
+     },
+     "roundsKnown": {
+      "type": "boolean",
+      "description": "Whether the table was told the round count."
+     },
+     "friendPoints": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "description": "Points earned from the seat's secret friend being last standing (1 per round)."
+     },
+     "survivorsKnown": {
+      "type": "boolean",
+      "description": "Whether the table was told the survivor count."
+     },
+     "pointsAvailable": {
+      "type": "number",
+      "description": "Every point one seat could have banked this episode (5 per round); scores are the share of this."
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "party",
+   "social",
+   "llm-driven",
+   "paintball",
+   "turn-based"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "parley-player",
+    "env": {},
+    "run": [
+     "/bin/parley-player"
+    ],
+    "name": "Parley Prompt Player",
+    "type": "player",
+    "image": "img_57bc119a-84e8-4275-bcd6-76d1bd258ab2",
+    "resources": {
+     "limits": {
+      "cpu": "1"
+     },
+     "requests": {
+      "cpu": "100m",
+      "memory": "64Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-parley/tree/da276ebfe1fc2874b42f3f363960c5dd20964eea",
+    "description": "The reference Parley policy: delivers its PLAYER_PROMPT (or a default scheming-table-talk personality) to the game and spectates until the final frame. Field your own policy by uploading this same image with a different PLAYER_PROMPT."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "table4",
+    "name": "Table of four",
+    "description": "The standard table: five cogs, 3 hp each, best-of-three rounds, reactions on. Each round is a complete social arc - opening banter, mid-game alliances, an endgame standoff - and scores accumulate across the match.",
+    "game_config": {
+     "rounds": 3,
+     "players": [
+      {
+       "name": "Player1"
+      },
+      {
+       "name": "Player2"
+      },
+      {
+       "name": "Player3"
+      },
+      {
+       "name": "Player4"
+      },
+      {
+       "name": "Player5"
+      }
+     ],
+     "hitPoints": 3,
+     "reactions": true,
+     "num_agents": 5,
+     "turnDelayMs": 1200,
+     "maxReactions": 3,
+     "player_connect_timeout_seconds": 180
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [],
+  "certification": {
+   "players": [
+    {
+     "player_id": "parley-player"
+    },
+    {
+     "player_id": "parley-player"
+    },
+    {
+     "player_id": "parley-player"
+    },
+    {
+     "player_id": "parley-player"
+    },
+    {
+     "player_id": "parley-player"
+    }
+   ],
+   "game_config": {
+    "seed": 7,
+    "rounds": 2,
+    "players": [
+     {
+      "name": "Sprocket"
+     },
+     {
+      "name": "Gizmo"
+     },
+     {
+      "name": "Ratchet"
+     },
+     {
+      "name": "Widget"
+     },
+     {
+      "name": "Bolt"
+     }
+    ],
+    "hitPoints": 2,
+    "reactions": true,
+    "turnDelayMs": 0,
+    "maxReactions": 1,
+    "player_connect_timeout_seconds": 180
+   }
+  },
+  "episode_timeout_minutes": 20
+ },
+ "manifest_hash": "sha256:050a1e0ea070d0baa97b935d8807a176e03f4de3cd684802b20b5ee3ed4fc3a4",
+ "size_bytes": 14624,
+ "created_at": "2026-08-22T15:39:48.228888Z",
+ "canonical": true
+}

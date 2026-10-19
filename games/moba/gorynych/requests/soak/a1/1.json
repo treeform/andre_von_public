@@ -1,0 +1,23 @@
+{
+  "idempotency_key": "moba-20260912-soak-a1-1",
+  "target": {
+    "league_id": "league_becba59f-4201-43a5-9cd6-970bd92857d9",
+    "variant_id": "team"
+  },
+  "roster": [
+    {
+      "player": {
+        "policy_ref": "gorynych:v5"
+      },
+      "slot": -1
+    },
+    {
+      "player": {
+        "policy_ref": "pufferlib-baseline:v1"
+      },
+      "slot": -1
+    }
+  ],
+  "num_episodes": 10,
+  "notes": "MOBA Grok single-change soak; batch a1; frozen nearest-MMR field 20260912; opponent pufferlib-baseline:v1; compare to submitted gorynych:v1. Hosted scores only."
+}

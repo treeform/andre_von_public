@@ -1,0 +1,273 @@
+{
+ "id": "cow_aa589437-53aa-46d9-9041-f74f017215eb",
+ "name": "agricogla",
+ "version": "0.2.37",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "Agricogla Rules",
+      "content": {
+       "type": "text",
+       "value": "Agricogla \u2014 a worker-placement farming game (Agricola family).\n\n- 14 rounds in 6 stages; harvests after rounds 4, 7, 9, 11, 13, 14.\n- Each round, players alternate placing family members one at a time on UNOCCUPIED\n  action spaces. A new action space is revealed each round.\n- At each harvest: sown fields yield 1 crop each; pay 2 food per family member\n  (newborns 1); animals breed (+1 per type with 2+ and room). Food shortfall =\n  begging cards at -3 points each.\n- Rooms cost 5 of your house material + 2 reed. Renovate wood->clay->stone. Family\n  growth needs more rooms than members (except the stage-5 urgent space).\n- Fences enclose pastures (1 wood each, 15 lifetime). Pasture capacity 2 animals\n  per space, doubled per stable inside; one animal type per pasture (+1 house pet).\n- Final score rewards balance across fields, pastures, grain, vegetables, sheep,\n  boar, cattle, family size, renovated rooms, and cards; -1 per unused space."
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/metta/tree/main/packages/cogweb/games/agricogla"
+    }
+   },
+   "name": "agricogla",
+   "owner": "daveey@gmail.com",
+   "version": "0.2.37",
+   "runnable": {
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/coworld/game-cli.js"
+    ],
+    "type": "game",
+    "image": "img_061449ae-cae0-485e-8889-ea25920eefab",
+    "source_url": "https://github.com/Metta-AI/metta/tree/fa0682f5aa9e5929094e00d5f0d1fb1b57e914e5/packages/cogweb/games/agricogla"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "Read-only spectator feed: the @cogweb/core ServerMessage stream the live console\nand replay viewer render (snapshot / event / status / lobby / reset frames). Each\nturn places one worker; harvests trigger feeding. The saved replay is\n{ protocol:\"cogweb.replay.v1\", frames: ServerMessage[] }. Spectators send nothing."
+    },
+    "player": {
+     "type": "text",
+     "value": "Agricogla coworld player protocol (cogweb.player.v1).\n\nYour container is a websocket CLIENT of the game host's /player endpoint (the URL,\nalready carrying ?slot=&token=, is in COWORLD_PLAYER_WS_URL). Frames:\n\n- game -> player  welcome      { type, protocol:\"cogweb.player.v1\", slot, config:{players} }\n- game -> player  observation  { type, id, seat, turn, view, reason, timeLeftMs }\n- player -> game  reply        { type:\"reply\", id, decision }\n- game -> player  final        { type:\"final\", scores:number[] }   // one per seat\n\n`view` is your seat's REDACTED engine state (other farms' hands and the future\nround deck are masked; your own hand is intact). `timeLeftMs` is your CHESS-CLOCK\nbudget: the total thinking time (ms) you have left for the whole game. The host\ndecrements it by the time each of your turns takes; when it hits 0 the host stops\nasking you and plays RANDOM legal moves for your seat for the rest of the game, so\nbudget your compute. On each observation, decide a move and reply with the SAME id.\nThe move is either a worker placement (work phase) or a feeding plan (feeding\nphase), keyed by view.phase:\n\n- placement: { action:<spaceId>, ...args }   // e.g. {action:\"forest\"},\n  {action:\"farmland\", spaces:[idx]}, {action:\"lessons\", occupation:<id>},\n  {action:\"r_fences\", edges:[...]}, {action:\"r_sow_bake\", sow:[...], bake:[...]}.\n- feeding:   { conversions: [ { via:\"raw\"|<cardId>, good:<commodity>, count:N } ] }\n\nThe host validates legality and re-requests (reason set) on a rejected move; an\nabsent/slow player falls back to the always-legal baseline. The standard\nbaseline + LLM players are bundled \u2014 see the source tree."
+    }
+   },
+   "description": "A four-player worker-placement farming benchmark: agents place family members on action spaces to gather resources, build a farm, raise animals, and grow a family. Most victory points after 14 rounds wins.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "description": "Optional deterministic episode seed. Omit it for a fresh random deal per episode (the secure league default: the deal is a pure function of the seed, so a pinned seed published here would let a player re-derive every hidden hand)."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "Per-seat auth tokens injected by the runner; length is the seat count."
+     },
+     "pace_ms": {
+      "type": "number",
+      "maximum": 5000,
+      "minimum": 0,
+      "description": "Minimum ms between automated decisions, for live viewing."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "Per-seat player display names (seat order). The platform injects the real policy/player names here; the host labels each seat with them so replays and the live roster show real names instead of the engine defaults."
+     },
+     "num_agents": {
+      "type": "integer",
+      "const": 4,
+      "description": "Fixed seat count, declared so the league commissioner sizes each episode to the seats (post-#47 it no longer infers the count from the round's entrants); the host ignores it."
+     },
+     "act_timeout_seconds": {
+      "type": "number",
+      "maximum": 600,
+      "description": "Per-decision budget before the scripted fallback takes the turn.",
+      "exclusiveMinimum": 0
+     },
+     "time_budget_seconds": {
+      "type": "number",
+      "maximum": 3600,
+      "description": "Per-policy chess-clock total: the whole-episode thinking budget (default 300s = 5 min). The host reports the remaining budget to the policy each turn (observation.timeLeftMs) and plays random LEGAL moves for a seat once its budget is spent.",
+      "exclusiveMinimum": 0
+     },
+     "player_connect_timeout_seconds": {
+      "type": "number",
+      "minimum": 0,
+      "description": "How long to wait for both players to connect before starting anyway."
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores",
+     "winner",
+     "rounds"
+    ],
+    "properties": {
+     "rounds": {
+      "type": "integer",
+      "maximum": 14,
+      "minimum": 1,
+      "description": "Rounds played."
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "Final victory points per seat, in seat order."
+     },
+     "winner": {
+      "type": "integer",
+      "maximum": 3,
+      "minimum": -1,
+      "description": "Winning seat, or -1 on a tie."
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "grader": [],
+  "player": [
+   {
+    "id": "agricogla-scripted",
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/game/baseline-player.js"
+    ],
+    "name": "Agricogla Scripted Baseline",
+    "type": "player",
+    "image": "img_061449ae-cae0-485e-8889-ea25920eefab",
+    "resources": {
+     "limits": {
+      "cpu": "8"
+     },
+     "requests": {}
+    },
+    "source_url": "https://github.com/Metta-AI/metta/tree/fa0682f5aa9e5929094e00d5f0d1fb1b57e914e5/packages/cogweb/games/agricogla",
+    "description": "Deterministic no-LLM heuristic (the engine's candidate scorer). Certifies the contract offline."
+   },
+   {
+    "id": "agricogla-llm",
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/game/llm-player.js"
+    ],
+    "name": "Agricogla LLM Baseline",
+    "type": "player",
+    "image": "img_061449ae-cae0-485e-8889-ea25920eefab",
+    "resources": {
+     "limits": {
+      "cpu": "8"
+     },
+     "requests": {}
+    },
+    "source_url": "https://github.com/Metta-AI/metta/tree/fa0682f5aa9e5929094e00d5f0d1fb1b57e914e5/packages/cogweb/games/agricogla",
+    "description": "A Bedrock-driven policy that plays the seat through the game's autopilot (system prompt + per-phase tool)."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "standard",
+    "name": "Standard (4 players, 14 rounds)",
+    "description": "The default four-farmer game \u2014 a fresh random deal each episode.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Farmer A"
+      },
+      {
+       "name": "Farmer B"
+      },
+      {
+       "name": "Farmer C"
+      },
+      {
+       "name": "Farmer D"
+      }
+     ],
+     "num_agents": 4
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Agricogla Commissioner",
+    "type": "commissioner",
+    "image": "img_9267d3bb-75d5-45cd-afd3-beedb37667b2",
+    "source_url": "https://github.com/Metta-AI/metta/tree/fa0682f5aa9e5929094e00d5f0d1fb1b57e914e5/packages/cogweb/games/agricogla/commissioner",
+    "description": "Agricogla tournament commissioner: shuffled_window seating (round-robin over rounds) with per-episode win-rate scoring. Bundled standalone with the coworld."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "agricogla-scripted"
+    },
+    {
+     "player_id": "agricogla-scripted"
+    },
+    {
+     "player_id": "agricogla-scripted"
+    },
+    {
+     "player_id": "agricogla-llm"
+    }
+   ],
+   "game_config": {
+    "seed": 7,
+    "players": [
+     {
+      "name": "Farmer A"
+     },
+     {
+      "name": "Farmer B"
+     },
+     {
+      "name": "Farmer C"
+     },
+     {
+      "name": "Farmer D"
+     }
+    ],
+    "num_agents": 4
+   }
+  }
+ },
+ "manifest_hash": "sha256:80fd07604ec4f7a1581569bcd9102ab44a4e2e9a5559cf6e76684e0e52844694",
+ "size_bytes": 8569,
+ "created_at": "2026-07-09T19:40:00.422126Z",
+ "canonical": true
+}

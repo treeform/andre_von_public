@@ -1,0 +1,3 @@
+# Liar's Cog Rules
+
+Each player holds a secret hand of dice. On your turn, bid a claim about how many times a face appears across ALL hands combined (e.g. 'three 6s'), or challenge the previous bid. Each bid must strictly raise the last: higher quantity wins, ties broken by higher face. A challenge reveals all hands; if the bid was true the bidder wins, otherwise the challenger wins. The skill is reading opponents' bids as signals about their hidden hands.

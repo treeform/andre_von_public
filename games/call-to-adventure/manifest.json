@@ -1,0 +1,223 @@
+{
+  "id": "cow_e843c737-6683-4ce6-802b-106c649d8067",
+  "name": "Call to Adventure",
+  "version": "2026.9.9.3",
+  "manifest": {
+    "game": {
+      "docs": {
+        "pages": [],
+        "readme": {
+          "type": "text",
+          "value": "# Call to Adventure\n\nFour BASIC heroes explore a dungeon and return with treasure. Living heroes who returned with the highest personal banked gold score one win. Tied leaders share the win. Dead or unreturned heroes score zero; nobody returning means no winner.\n\nSlots 0\u20133 control Fighter, Wizard, Rogue, and Cleric respectively. Platform slots are zero-based. Upload a `.bas` file containing BASIC source. The game reads the staged file directly, with no player container or network connection.\n\nStart with the bundled `players/base.bas`. The [game documentation](https://github.com/Metta-AI/polyworld/blob/main/examples/call_to_adventure/docs/index.html) describes observations and available BASIC commands. The same source is available under `examples/call_to_adventure/bots.nim` and `content.nim`.\n\nBASIC `PRINT` output, compiler diagnostics, runtime errors, and VM lifecycle messages go to the owning player's private log. Each log is limited to 10 MiB. Runtime limit errors disable that VM; other seats continue. Invalid BASIC syntax fails the episode with a player failure diagnostic. Public game logs and action replays contain no BASIC source or private print output.\n\nMatches run up to 28,800 deterministic ticks (20 simulated minutes), without real-time pacing. Replays run entirely in the browser with playback, seeking, speed, and loop controls. The server exposes `/healthz`; legacy clients are static stubs.\n\nThe Competition league runs every 30 minutes with at least two episodes per entrant. Separate baseline filler policies complete short rosters. Fillers are not ranked entrants. Standings use binary win scores and platform Elo.\n"
+        }
+      },
+      "name": "Call to Adventure",
+      "owner": "treeform",
+      "version": "2026.9.9.3",
+      "runnable": {
+        "env": {},
+        "run": [],
+        "type": "game",
+        "image": "img_dea33496-83aa-41fd-a0a0-aa8d4cf4b611",
+        "source_url": "https://github.com/Metta-AI/polyworld/tree/028cc5f1692fa51f3dab65b8b261fa327013a543/examples/call_to_adventure"
+      },
+      "protocols": {
+        "global": {
+          "type": "text",
+          "value": "GET /client/global returns a static status page. /global sends one JSON status message after WebSocket upgrade and echoes Ping frames with Pong. No gameplay traffic uses WebSockets. Other legacy endpoints return explicit stubs."
+        },
+        "player": {
+          "type": "text",
+          "value": "Slots 0\u20133 control Fighter, Wizard, Rogue, and Cleric respectively. Supply a raw BASIC file. The existing Polyworld BASIC host API runs with bounded source, memory, work, and instruction limits. PRINT is private. See the game guide and bundled base.bas for a complete working player."
+        }
+      },
+      "description": "Four BASIC heroes explore a dungeon and return with treasure. Living heroes who returned with the highest personal banked gold score one win. Tied leaders share the win. Dead or unreturned heroes score zero; nobody returning means no winner.",
+      "config_schema": {
+        "type": "object",
+        "required": [
+          "tokens",
+          "players",
+          "seed",
+          "max_ticks"
+        ],
+        "properties": {
+          "seed": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": -2147483648
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "maxItems": 4,
+            "minItems": 4
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false
+            },
+            "maxItems": 4,
+            "minItems": 4
+          },
+          "max_ticks": {
+            "type": "integer",
+            "maximum": 28800,
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "replay_viewer": {
+        "bundle": "sha256:903ef02245bfbcc324f4dc4751bcd33f6f9187d19fc684879db91e9deb4da456",
+        "replay_compression": "gzip"
+      },
+      "player_runtime": "game-hosted",
+      "results_schema": {
+        "type": "object",
+        "required": [
+          "scores",
+          "ticks",
+          "seed",
+          "outcome"
+        ],
+        "properties": {
+          "seed": {
+            "type": "integer"
+          },
+          "ticks": {
+            "type": "integer",
+            "maximum": 28800,
+            "minimum": 0
+          },
+          "scores": {
+            "type": "array",
+            "items": {
+              "enum": [
+                0,
+                1
+              ],
+              "type": "integer"
+            },
+            "maxItems": 4,
+            "minItems": 4
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "returned": {
+            "type": "array",
+            "items": {
+              "type": "boolean"
+            }
+          },
+          "banked_gold": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "tags": [
+      "strategy",
+      "basic",
+      "polyworld"
+    ],
+    "grader": [],
+    "player": [
+      {
+        "id": "baseline",
+        "env": {},
+        "run": [],
+        "file": "sha256:705996fc72efe3c1429da2ed85b19b46d10e283feb1f442439338279da3a11d1",
+        "name": "Baseline",
+        "type": "player",
+        "description": "Unmodified Call to Adventure BASIC baseline."
+      }
+    ],
+    "reporter": [],
+    "variants": [
+      {
+        "id": "competition",
+        "name": "Competition",
+        "description": "Full-length deterministic competition match.",
+        "game_config": {
+          "seed": 2026,
+          "players": [
+            {
+              "name": "Baseline 0"
+            },
+            {
+              "name": "Baseline 1"
+            },
+            {
+              "name": "Baseline 2"
+            },
+            {
+              "name": "Baseline 3"
+            }
+          ],
+          "max_ticks": 28800
+        }
+      }
+    ],
+    "diagnoser": [],
+    "optimizer": [],
+    "commissioner": [],
+    "certification": {
+      "players": [
+        {
+          "player_id": "baseline"
+        },
+        {
+          "player_id": "baseline"
+        },
+        {
+          "player_id": "baseline"
+        },
+        {
+          "player_id": "baseline"
+        }
+      ],
+      "game_config": {
+        "seed": 2026,
+        "players": [
+          {
+            "name": "Baseline 0"
+          },
+          {
+            "name": "Baseline 1"
+          },
+          {
+            "name": "Baseline 2"
+          },
+          {
+            "name": "Baseline 3"
+          }
+        ],
+        "max_ticks": 28800
+      }
+    }
+  },
+  "manifest_hash": "sha256:589992f55ae1fb9166c66e27742bd14010f49f848bfe39e4821a8ffdc802c7ef",
+  "size_bytes": 4902,
+  "created_at": "2026-09-09T19:14:06.348902Z",
+  "canonical": true
+}

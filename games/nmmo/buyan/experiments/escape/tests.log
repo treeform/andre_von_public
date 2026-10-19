@@ -1,0 +1,52 @@
+Hint: used config file '/Users/me/.nimby/nim/config/nim.cfg' [Conf]
+Hint: used config file '/Users/me/.nimby/nim/config/config.nims' [Conf]
+Hint: used config file '/Users/me/p/nim.cfg' [Conf]
+Hint: used config file '/Users/me/p/andre_von_auto/nim.cfg' [Conf]
+..............................................................................................................................................................
+/Users/me/p/andre_von_auto/games/nmmo/buyan/experiments/escape/candidate.nim(229, 6) Hint: 'combatLevel' is declared but not used [XDeclaredButNotUsed]
+/Users/me/p/andre_von_auto/games/nmmo/buyan/experiments/escape/candidate.nim(879, 6) Hint: 'main' is declared but not used [XDeclaredButNotUsed]
+CC: system/exceptions.nim
+CC: std/private/digitsutils.nim
+CC: std/assertions.nim
+CC: std/private/dragonbox.nim
+CC: std/formatfloat.nim
+CC: system/dollars.nim
+CC: system.nim
+CC: hashes.nim
+CC: math.nim
+CC: tables.nim
+CC: strutils.nim
+CC: json.nim
+CC: posix.nim
+CC: times.nim
+CC: std/cmdline.nim
+CC: nativesockets.nim
+CC: random.nim
+CC: asyncfutures.nim
+CC: asyncdispatch.nim
+CC: httpclient.nim
+CC: tests.nim
+Hint:  [Link]
+Hint: mm: orc; threads: on; opt: none (DEBUG BUILD, `-d:release` generates faster code)
+79617 lines; 0.917s; 142.301MiB peakmem; proj: /Users/me/p/andre_von_auto/games/nmmo/buyan/experiments/escape/tests.nim; out: /Users/me/.cache/nim/tests_d/tests_E5C75E70D3F85464588F682ECFFA119DC4ADF7B7 [SuccessX]
+Hint: /Users/me/.cache/nim/tests_d/tests_E5C75E70D3F85464588F682ECFFA119DC4ADF7B7 [Exec]
+{"event":"escape_issue","tick":10,"agent":0,"generation":0,"previousRun":22,"baselineAction":22,"action":24,"issued":1}
+{"event":"escape_issue","tick":10,"agent":0,"generation":0,"previousRun":23,"baselineAction":23,"action":24,"issued":1}
+{"event":"escape_issue","tick":10,"agent":0,"generation":0,"previousRun":24,"baselineAction":24,"action":22,"issued":1}
+{"event":"escape_issue","tick":10,"agent":0,"generation":0,"previousRun":25,"baselineAction":25,"action":22,"issued":1}
+{"event":"escape_issue","tick":0,"agent":0,"generation":0,"previousRun":22,"baselineAction":0,"action":2,"issued":1}
+{"event":"escape_issue","tick":40,"agent":2,"generation":0,"previousRun":22,"baselineAction":22,"action":24,"issued":1}
+{"event":"escape_result","tick":41,"issueTick":40,"agent":2,"generation":0,"action":24,"anim":6,"success":true,"dr":0,"dc":2,"issued":1,"confirmed":1,"failed":0}
+{"event":"escape_issue","tick":7,"agent":0,"generation":0,"previousRun":22,"baselineAction":22,"action":24,"issued":1}
+{"event":"escape_result","tick":8,"issueTick":7,"agent":0,"generation":0,"action":24,"anim":1,"success":true,"dr":0,"dc":1,"issued":1,"confirmed":1,"failed":0}
+{"event":"escape_issue","tick":7,"agent":0,"generation":0,"previousRun":22,"baselineAction":22,"action":24,"issued":1}
+{"event":"escape_result","tick":8,"issueTick":7,"agent":0,"generation":0,"action":24,"anim":6,"success":true,"dr":0,"dc":2,"issued":1,"confirmed":1,"failed":0}
+{"event":"escape_issue","tick":7,"agent":0,"generation":0,"previousRun":22,"baselineAction":22,"action":24,"issued":1}
+{"event":"escape_result","tick":8,"issueTick":7,"agent":0,"generation":0,"action":24,"anim":0,"success":false,"dr":0,"dc":0,"issued":1,"confirmed":0,"failed":1}
+{"event":"escape_issue","tick":5,"agent":0,"generation":0,"previousRun":22,"baselineAction":22,"action":24,"issued":1}
+{"event":"escape_issue","tick":0,"agent":0,"generation":0,"previousRun":22,"baselineAction":22,"action":24,"issued":1}
+{"event":"escape_issue","tick":50,"agent":0,"generation":0,"previousRun":22,"baselineAction":22,"action":25,"issued":1}
+{"event":"escape_issue","tick":0,"agent":0,"generation":0,"previousRun":22,"baselineAction":22,"action":3,"issued":1}
+{"event":"escape_issue","tick":60,"agent":0,"generation":0,"previousRun":22,"baselineAction":22,"action":8,"issued":1}
+{"event":"escape_result","tick":61,"issueTick":60,"agent":0,"generation":0,"action":8,"anim":0,"success":false,"dr":0,"dc":0,"issued":1,"confirmed":0,"failed":1}
+Escape isolation assertions passed.

@@ -1,0 +1,265 @@
+{
+ "id": "cow_ef99543d-7a12-483d-bff2-96470cf4fe48",
+ "name": "paintarena",
+ "version": "0.1.33",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "rules.md",
+      "content": {
+       "type": "text",
+       "value": "# Paint Arena Rules\n\nTwo players move around a grid and paint the tile they stand on. Painting overwrites the previous owner. Final scores are the number of tiles painted with each player's color."
+      }
+     },
+     {
+      "id": "play_paintarena.md",
+      "title": "play_paintarena.md",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld/blob/main/src/coworld/examples/paintarena/README.md"
+      }
+     },
+     {
+      "id": "optimizer",
+      "title": "optimizer.md",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld/blob/main/src/coworld/examples/paintarena/optimizer/README.md"
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld/blob/main/src/coworld/examples/paintarena/README.md"
+    }
+   },
+   "name": "paintarena",
+   "owner": "coworld@softmax.com",
+   "version": "0.1.33",
+   "runnable": {
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "coworld.examples.paintarena.game.server"
+    ],
+    "type": "game",
+    "image": "img_6ff189c8-9ffe-40e2-8a51-bc2761ae53af",
+    "source_url": "https://github.com/Metta-AI/coworld/tree/main/src/coworld/examples/paintarena/game"
+   },
+   "protocols": {
+    "global": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld/blob/main/src/coworld/examples/paintarena/game/docs/global_protocol_spec.md"
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld/blob/main/src/coworld/examples/paintarena/game/docs/player_protocol_spec.md"
+    }
+   },
+   "description": "Continuous tick-based territory painting game used to certify the Coworld contract.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players",
+     "width",
+     "height",
+     "max_ticks",
+     "tick_rate"
+    ],
+    "properties": {
+     "width": {
+      "type": "integer",
+      "maximum": 40,
+      "minimum": 4
+     },
+     "height": {
+      "type": "integer",
+      "maximum": 40,
+      "minimum": 4
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 2,
+      "minItems": 2
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 2,
+      "minItems": 2
+     },
+     "max_ticks": {
+      "type": "integer",
+      "maximum": 10000,
+      "minimum": 1
+     },
+     "tick_rate": {
+      "type": "number",
+      "maximum": 60,
+      "exclusiveMinimum": 0
+     },
+     "player_connect_timeout_seconds": {
+      "type": "number",
+      "default": 180,
+      "minimum": 0
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores",
+     "painted_tiles",
+     "ticks"
+    ],
+    "properties": {
+     "ticks": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 4,
+      "minItems": 1
+     },
+     "painted_tiles": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 4,
+      "minItems": 1
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "grader": [],
+  "player": [
+   {
+    "id": "sweep-painter",
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "coworld.examples.paintarena.player.player"
+    ],
+    "name": "Sweep Painter",
+    "type": "player",
+    "image": "img_6ff189c8-9ffe-40e2-8a51-bc2761ae53af",
+    "source_url": "https://github.com/Metta-AI/coworld/tree/main/src/coworld/examples/paintarena/player",
+    "description": "Deterministic player that sweeps across the arena repainting tiles."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "default",
+    "name": "Default",
+    "description": "Short two-player territory painting smoke-test configuration.",
+    "game_config": {
+     "width": 12,
+     "height": 8,
+     "players": [
+      {
+       "name": "Sweep Painter 1"
+      },
+      {
+       "name": "Sweep Painter 2"
+      }
+     ],
+     "max_ticks": 100,
+     "tick_rate": 5,
+     "player_connect_timeout_seconds": 180
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [
+   {
+    "id": "paint-arena-reference-optimizer",
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "coworld.examples.paintarena.optimizer.paint_arena_optimizer"
+    ],
+    "name": "Paint Arena Reference Optimizer",
+    "type": "optimizer",
+    "image": "img_6ff189c8-9ffe-40e2-8a51-bc2761ae53af",
+    "source_url": "https://github.com/Metta-AI/coworld/tree/main/src/coworld/examples/paintarena/optimizer",
+    "description": "Reference optimizer: reads a Coworld manifest plus optional report, grader, and diagnoser artifact URI lists, then writes a deterministic PaintArena policy-improvement plan."
+   }
+  ],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Default Commissioner",
+    "type": "commissioner",
+    "image": "img_afc1ae1b-6325-4c9c-b33c-2b37f914ebf4",
+    "source_url": "https://github.com/Metta-AI/commissioners/tree/main/commissioners/default",
+    "description": "Game-agnostic round-robin commissioner with mean-score rankings."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "sweep-painter"
+    },
+    {
+     "player_id": "sweep-painter"
+    }
+   ],
+   "game_config": {
+    "width": 12,
+    "height": 8,
+    "players": [
+     {
+      "name": "Sweep Painter 1"
+     },
+     {
+      "name": "Sweep Painter 2"
+     }
+    ],
+    "max_ticks": 100,
+    "tick_rate": 5,
+    "player_connect_timeout_seconds": 180
+   }
+  }
+ },
+ "manifest_hash": "sha256:dcde3948939b5005aeedd7d99fb7b3b2d9212bd15f3efa4fde857cc050ff49d6",
+ "size_bytes": 5581,
+ "created_at": "2026-06-22T17:38:33.787154Z",
+ "canonical": true
+}

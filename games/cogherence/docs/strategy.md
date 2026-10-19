@@ -1,0 +1,4 @@
+- **Back your frontier.** A tile heals (+1/turn per allied neighbor) only if its upkeep is paid; isolated salients rot. Expand in connected blobs, not thin spikes.
+- **Balance the treasury.** Only full C+O+Ge+S sets convert efficiently; lopsided piles are dead weight. Trade for what you lack — but deals are non-binding, so price in betrayal.
+- **Win hearts cheaply.** The auction is second-price: bid your true value; you pay the runner-up's price. Track rivals' likely energy.
+- **Exploit is scorched earth.** A one-time windfall that permanently scars the tile and frays shared coherence. Use it to deny or to cash out a losing position, not as your main engine.

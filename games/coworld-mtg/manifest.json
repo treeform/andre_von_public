@@ -1,0 +1,336 @@
+{
+ "id": "cow_dd386b56-17c1-4337-9f9b-0d6be60503e4",
+ "name": "coworld-mtg",
+ "version": "0.1.12",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "Coworld MTG rules",
+      "content": {
+       "type": "text",
+       "value": "Coworld MTG is a two-player Magic duel using two real 40-card Secrets of Strixhaven Premier Draft decks captured from MTG Arena play data: Lorehold Excavation and Fractal Convergence. Each published variant is one game, with a companion variant that reverses deck assignments so each challenger pilots each deck once. A fresh root seed is generated for every episode unless one is explicitly supplied; Phase derives the initial library shuffles and every later random outcome from that single serialized ChaCha20 stream. The pinned Phase engine is authoritative for draws, mana, casting, timing, targets, priority, the stack, combat, triggers, state-based actions, and game outcomes. Hidden hands, libraries, and RNG state remain redacted from players and spectators. Clocks and explicit concessions are enforced by the host."
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld-mtg/blob/265a8fedc8b5e1e30fcca43a062b08fdb5a1d9b1/README.md"
+    }
+   },
+   "name": "coworld-mtg",
+   "owner": "nishu.builder@gmail.com",
+   "version": "0.1.12",
+   "runnable": {
+    "env": {},
+    "run": [
+     "/app/coworld-mtg-server"
+    ],
+    "type": "game",
+    "image": "img_c5010de9-a0e8-4108-a657-805d7efad5d3",
+    "source_url": "https://github.com/Metta-AI/coworld-mtg/tree/265a8fedc8b5e1e30fcca43a062b08fdb5a1d9b1"
+   },
+   "protocols": {
+    "global": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld-mtg/blob/265a8fedc8b5e1e30fcca43a062b08fdb5a1d9b1/docs/protocol.md"
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld-mtg/blob/265a8fedc8b5e1e30fcca43a062b08fdb5a1d9b1/docs/protocol.md"
+    }
+   },
+   "description": "Two-player Magic: The Gathering powered by the Phase rules engine, with enforced mana, timing, priority, stack, combat, hidden information, scoring, and replay.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Optional reproducibility seed. Omit it to generate a fresh root seed for the episode."
+     },
+     "decks": {
+      "type": "array",
+      "items": {
+       "enum": [
+        "lorehold_excavation",
+        "fractal_convergence"
+       ],
+       "type": "string"
+      },
+      "maxItems": 2,
+      "minItems": 2
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 2,
+      "minItems": 2
+     },
+     "clock_s": {
+      "type": "number",
+      "maximum": 3600,
+      "exclusiveMinimum": 0
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 2,
+      "minItems": 2
+     },
+     "num_agents": {
+      "type": "integer",
+      "const": 2,
+      "description": "Fixed player count used by league commissioners when scheduling episodes."
+     },
+     "games_to_win": {
+      "type": "integer",
+      "maximum": 5,
+      "minimum": 1
+     },
+     "decision_cap_s": {
+      "type": "number",
+      "maximum": 600,
+      "exclusiveMinimum": 0
+     },
+     "swap_decks_each_game": {
+      "type": "boolean"
+     },
+     "player_connect_timeout_s": {
+      "type": "number",
+      "maximum": 600,
+      "exclusiveMinimum": 0
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores",
+     "games",
+     "seed",
+     "policy_names"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "games": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "game_number",
+        "winner_slot",
+        "reason",
+        "turns",
+        "final_life",
+        "seed"
+       ],
+       "properties": {
+        "seed": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "turns": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "reason": {
+         "type": "string"
+        },
+        "final_life": {
+         "type": "array",
+         "items": {
+          "type": "integer"
+         },
+         "maxItems": 2,
+         "minItems": 2
+        },
+        "game_number": {
+         "type": "integer",
+         "minimum": 1
+        },
+        "winner_slot": {
+         "type": [
+          "integer",
+          "null"
+         ],
+         "maximum": 1,
+         "minimum": 0
+        }
+       },
+       "additionalProperties": false
+      }
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number",
+       "minimum": 0
+      },
+      "maxItems": 2,
+      "minItems": 2
+     },
+     "policy_names": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 2,
+      "minItems": 2
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "card-game",
+   "strategy",
+   "magic-the-gathering"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "coworld-mtg-goldfish",
+    "env": {},
+    "run": [
+     "/app/goldfish"
+    ],
+    "name": "Coworld MTG Phase Goldfish",
+    "type": "player",
+    "image": "img_c5010de9-a0e8-4108-a657-805d7efad5d3",
+    "source_url": "https://github.com/Metta-AI/coworld-mtg/tree/265a8fedc8b5e1e30fcca43a062b08fdb5a1d9b1",
+    "description": "A deterministic baseline that ranks and submits only the exact legal actions supplied by Phase."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "lorehold-vs-fractals",
+    "name": "Lorehold vs Fractals",
+    "description": "One Secrets of Strixhaven Premier Draft game with a fresh private seed: Challenger A pilots Lorehold Excavation and Challenger B pilots Fractal Convergence.",
+    "game_config": {
+     "decks": [
+      "lorehold_excavation",
+      "fractal_convergence"
+     ],
+     "clock_s": 480,
+     "players": [
+      {
+       "name": "Challenger A"
+      },
+      {
+       "name": "Challenger B"
+      }
+     ],
+     "num_agents": 2,
+     "games_to_win": 1,
+     "decision_cap_s": 30,
+     "swap_decks_each_game": false,
+     "player_connect_timeout_s": 60
+    }
+   },
+   {
+    "id": "fractals-vs-lorehold",
+    "name": "Fractals vs Lorehold",
+    "description": "The companion single game with deck assignments reversed: Challenger A pilots Fractal Convergence and Challenger B pilots Lorehold Excavation.",
+    "game_config": {
+     "decks": [
+      "fractal_convergence",
+      "lorehold_excavation"
+     ],
+     "clock_s": 480,
+     "players": [
+      {
+       "name": "Challenger A"
+      },
+      {
+       "name": "Challenger B"
+      }
+     ],
+     "num_agents": 2,
+     "games_to_win": 1,
+     "decision_cap_s": 30,
+     "swap_decks_each_game": false,
+     "player_connect_timeout_s": 60
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Default Commissioner",
+    "type": "commissioner",
+    "image": "img_71dfde60-7429-4045-acf5-9f4143aaefb2",
+    "source_url": "https://github.com/Metta-AI/coworld-mtg/tree/265a8fedc8b5e1e30fcca43a062b08fdb5a1d9b1",
+    "description": "Coworld MTG commissioner with rolling pairings and eight appearances per entrant each round."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "coworld-mtg-goldfish"
+    },
+    {
+     "player_id": "coworld-mtg-goldfish"
+    }
+   ],
+   "game_config": {
+    "seed": 4242,
+    "decks": [
+     "lorehold_excavation",
+     "fractal_convergence"
+    ],
+    "clock_s": 120,
+    "players": [
+     {
+      "name": "Lorehold goldfish"
+     },
+     {
+      "name": "Fractal goldfish"
+     }
+    ],
+    "num_agents": 2,
+    "games_to_win": 1,
+    "decision_cap_s": 5,
+    "swap_decks_each_game": false,
+    "player_connect_timeout_s": 30
+   }
+  }
+ },
+ "manifest_hash": "sha256:8dd37da2302ca1068d3cdd1dac4eaf287e881825af4876e3e72647e9c13f0b5e",
+ "size_bytes": 6197,
+ "created_at": "2026-08-27T23:30:03.527055Z",
+ "canonical": true
+}

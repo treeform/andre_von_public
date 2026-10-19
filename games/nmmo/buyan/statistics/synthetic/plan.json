@@ -1,0 +1,44 @@
+{
+  "source": "softmax-hosted-xp",
+  "experiment": "armor",
+  "coworld_id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+  "coworld_version": "0.1.5",
+  "synthetic": true,
+  "baseline": {
+    "policy_name": "buyan",
+    "version": 1,
+    "policy_version_id": "a611afbe-e669-418f-99ae-89251052d393"
+  },
+  "candidate": {
+    "policy_name": "buyan-armor",
+    "version": 1,
+    "policy_version_id": "UPLOAD_ID_REQUIRED"
+  },
+  "opponents": [
+    {
+      "policy_name": "relh-nmmo-consensus",
+      "version": 1,
+      "policy_version_id": "87adca41-a779-43a0-addf-282af50800a8",
+      "seats": 2
+    },
+    {
+      "policy_name": "nmmo-opt",
+      "version": 6,
+      "policy_version_id": "a319845e-01db-4d23-a938-3f4ed55f02be",
+      "seats": 2
+    },
+    {
+      "policy_name": "daveey-nmmo-nim",
+      "version": 11,
+      "policy_version_id": "ee828572-195d-4318-bdbb-0b4cb2bc1295",
+      "seats": 2
+    }
+  ],
+  "requests": [
+    {
+      "xp_id": "xreq_actual",
+      "episodes_file": "episodes.json",
+      "episode_count": 10
+    }
+  ]
+}

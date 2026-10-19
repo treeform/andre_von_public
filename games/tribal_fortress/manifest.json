@@ -1,0 +1,756 @@
+{
+ "id": "cow_9e96eb8e-33f8-4c6a-803f-5638d89a9af7",
+ "name": "tribal_fortress",
+ "version": "0.1.3",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "Shared Tribal Fortress and Quest rules",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-tribal-fortress/blob/f0e3202a2e891dbf8b1cc5c76a10dd6dd6017e03/tribal_fortress_env/coworld/docs/rules.md"
+      }
+     },
+     {
+      "id": "league_configuration.md",
+      "title": "League configuration",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-tribal-fortress/blob/f0e3202a2e891dbf8b1cc5c76a10dd6dd6017e03/tribal_fortress_env/coworld/docs/league_configuration.md"
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld-tribal-fortress/blob/f0e3202a2e891dbf8b1cc5c76a10dd6dd6017e03/README.md"
+    }
+   },
+   "name": "tribal_fortress",
+   "owner": "info@metta.ai",
+   "version": "0.1.3",
+   "runnable": {
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "tribal_fortress_env.coworld.launcher"
+    ],
+    "type": "game",
+    "image": "img_a8c123aa-7f2f-4463-a64d-7a5977b84a11",
+    "source_url": "https://github.com/Metta-AI/coworld-tribal-fortress/tree/f0e3202a2e891dbf8b1cc5c76a10dd6dd6017e03"
+   },
+   "protocols": {
+    "global": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld-tribal-fortress/blob/f0e3202a2e891dbf8b1cc5c76a10dd6dd6017e03/tribal_fortress_env/coworld/docs/global_protocol_spec.md"
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld-tribal-fortress/blob/f0e3202a2e891dbf8b1cc5c76a10dd6dd6017e03/tribal_fortress_env/coworld/docs/player_protocol_spec.md"
+    },
+    "engine_runtime": "nimgrid"
+   },
+   "description": "One shared Tribal world with strategy and adventure leagues that scale from two to eight entrants. Both modes run the same native Fortress simulation revision.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players",
+     "mode",
+     "num_agents",
+     "team_count",
+     "max_steps",
+     "seed",
+     "steps_per_second",
+     "player_connect_timeout_seconds"
+    ],
+    "properties": {
+     "mode": {
+      "enum": [
+       "fortress",
+       "quest"
+      ],
+      "type": "string",
+      "description": "Selects the town-controller or adventurer player surface over the same Fortress simulation."
+     },
+     "seed": {
+      "type": "integer",
+      "maximum": 2147483647,
+      "minimum": 0
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 8,
+      "minItems": 2,
+      "description": "Two to eight runner-injected tokens, one per active town or adventurer seat."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 8,
+      "minItems": 2,
+      "description": "Two to eight statically authored seats used by league topology inference."
+     },
+     "max_steps": {
+      "type": "integer",
+      "maximum": 10000,
+      "minimum": 1
+     },
+     "num_agents": {
+      "type": "integer",
+      "maximum": 8,
+      "minimum": 2,
+      "description": "Active league topology width, equal to the token and player counts."
+     },
+     "team_count": {
+      "type": "integer",
+      "maximum": 8,
+      "minimum": 2,
+      "description": "Two to eight one-seat entrant teams."
+     },
+     "steps_per_second": {
+      "type": "number",
+      "maximum": 60,
+      "minimum": 1,
+      "description": "Simulation target rate for either player surface."
+     },
+     "victory_condition": {
+      "type": "integer",
+      "maximum": 5,
+      "minimum": 0,
+      "description": "Fortress town victory condition. Quest ignores this field."
+     },
+     "player_connect_timeout_seconds": {
+      "type": "number",
+      "maximum": 300,
+      "minimum": 0,
+      "description": "Seconds to wait before starting with missing seats."
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "mode",
+     "scores",
+     "steps",
+     "truncation_reason"
+    ],
+    "properties": {
+     "mode": {
+      "enum": [
+       "fortress",
+       "quest"
+      ],
+      "type": "string"
+     },
+     "names": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 8,
+      "minItems": 2
+     },
+     "steps": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 8,
+      "minItems": 2,
+      "description": "One score for each active entrant seat."
+     },
+     "team_scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 8,
+      "minItems": 2
+     },
+     "winner_team": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "maximum": 7,
+      "minimum": 0
+     },
+     "explored_tiles": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 8,
+      "minItems": 2,
+      "description": "Quest-only count of unique tiles visited by each living adventurer."
+     },
+     "survival_ticks": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 8,
+      "minItems": 2
+     },
+     "truncation_reason": {
+      "enum": [
+       "max_steps",
+       "game_over"
+      ],
+      "type": "string"
+     },
+     "victory_condition": {
+      "type": "integer",
+      "maximum": 5,
+      "minimum": 0
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "strategy",
+   "team-based",
+   "adventure"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "tribal-player",
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "tribal_fortress_env.coworld.player"
+    ],
+    "name": "Universal Tribal Player",
+    "type": "player",
+    "image": "img_14c08494-f54d-4107-9d43-38aa3b7da13c",
+    "source_url": "https://github.com/Metta-AI/coworld-tribal-fortress/tree/f0e3202a2e891dbf8b1cc5c76a10dd6dd6017e03/player",
+    "description": "A certification player that detects the Fortress JSON or Quest binary protocol and takes deterministic legal actions."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "fortress-2-town",
+    "name": "Fortress: two towns",
+    "description": "Two distinct entrants each direct one civilization's town programs.",
+    "game_config": {
+     "mode": "fortress",
+     "seed": 0,
+     "players": [
+      {
+       "name": "Town 0"
+      },
+      {
+       "name": "Town 1"
+      }
+     ],
+     "max_steps": 3000,
+     "num_agents": 2,
+     "team_count": 2,
+     "steps_per_second": 20,
+     "victory_condition": 0,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "fortress-3-town",
+    "name": "Fortress: three towns",
+    "description": "Three distinct entrants each direct one civilization's town programs.",
+    "game_config": {
+     "mode": "fortress",
+     "seed": 0,
+     "players": [
+      {
+       "name": "Town 0"
+      },
+      {
+       "name": "Town 1"
+      },
+      {
+       "name": "Town 2"
+      }
+     ],
+     "max_steps": 3000,
+     "num_agents": 3,
+     "team_count": 3,
+     "steps_per_second": 20,
+     "victory_condition": 0,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "fortress-4-town",
+    "name": "Fortress: four towns",
+    "description": "Four distinct entrants each direct one civilization's town programs.",
+    "game_config": {
+     "mode": "fortress",
+     "seed": 0,
+     "players": [
+      {
+       "name": "Town 0"
+      },
+      {
+       "name": "Town 1"
+      },
+      {
+       "name": "Town 2"
+      },
+      {
+       "name": "Town 3"
+      }
+     ],
+     "max_steps": 3000,
+     "num_agents": 4,
+     "team_count": 4,
+     "steps_per_second": 20,
+     "victory_condition": 0,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "fortress-5-town",
+    "name": "Fortress: five towns",
+    "description": "Five distinct entrants each direct one civilization's town programs.",
+    "game_config": {
+     "mode": "fortress",
+     "seed": 0,
+     "players": [
+      {
+       "name": "Town 0"
+      },
+      {
+       "name": "Town 1"
+      },
+      {
+       "name": "Town 2"
+      },
+      {
+       "name": "Town 3"
+      },
+      {
+       "name": "Town 4"
+      }
+     ],
+     "max_steps": 3000,
+     "num_agents": 5,
+     "team_count": 5,
+     "steps_per_second": 20,
+     "victory_condition": 0,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "fortress-6-town",
+    "name": "Fortress: six towns",
+    "description": "Six distinct entrants each direct one civilization's town programs.",
+    "game_config": {
+     "mode": "fortress",
+     "seed": 0,
+     "players": [
+      {
+       "name": "Town 0"
+      },
+      {
+       "name": "Town 1"
+      },
+      {
+       "name": "Town 2"
+      },
+      {
+       "name": "Town 3"
+      },
+      {
+       "name": "Town 4"
+      },
+      {
+       "name": "Town 5"
+      }
+     ],
+     "max_steps": 3000,
+     "num_agents": 6,
+     "team_count": 6,
+     "steps_per_second": 20,
+     "victory_condition": 0,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "fortress-7-town",
+    "name": "Fortress: seven towns",
+    "description": "Seven distinct entrants each direct one civilization's town programs.",
+    "game_config": {
+     "mode": "fortress",
+     "seed": 0,
+     "players": [
+      {
+       "name": "Town 0"
+      },
+      {
+       "name": "Town 1"
+      },
+      {
+       "name": "Town 2"
+      },
+      {
+       "name": "Town 3"
+      },
+      {
+       "name": "Town 4"
+      },
+      {
+       "name": "Town 5"
+      },
+      {
+       "name": "Town 6"
+      }
+     ],
+     "max_steps": 3000,
+     "num_agents": 7,
+     "team_count": 7,
+     "steps_per_second": 20,
+     "victory_condition": 0,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "fortress-8-town",
+    "name": "Fortress: eight towns",
+    "description": "Eight distinct entrants each direct one civilization's town programs while the native citizens execute their compiled policies.",
+    "game_config": {
+     "mode": "fortress",
+     "seed": 0,
+     "players": [
+      {
+       "name": "Town 0"
+      },
+      {
+       "name": "Town 1"
+      },
+      {
+       "name": "Town 2"
+      },
+      {
+       "name": "Town 3"
+      },
+      {
+       "name": "Town 4"
+      },
+      {
+       "name": "Town 5"
+      },
+      {
+       "name": "Town 6"
+      },
+      {
+       "name": "Town 7"
+      }
+     ],
+     "max_steps": 3000,
+     "num_agents": 8,
+     "team_count": 8,
+     "steps_per_second": 20,
+     "victory_condition": 0,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "quest-2-adventurer",
+    "name": "Quest: two adventurers",
+    "description": "Two adventurers, one per active civilization, explore and survive in the shared world.",
+    "game_config": {
+     "mode": "quest",
+     "seed": 0,
+     "players": [
+      {
+       "name": "Adventurer 0"
+      },
+      {
+       "name": "Adventurer 1"
+      }
+     ],
+     "max_steps": 3000,
+     "num_agents": 2,
+     "team_count": 2,
+     "steps_per_second": 10,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "quest-3-adventurer",
+    "name": "Quest: three adventurers",
+    "description": "Three adventurers, one per active civilization, explore and survive in the shared world.",
+    "game_config": {
+     "mode": "quest",
+     "seed": 0,
+     "players": [
+      {
+       "name": "Adventurer 0"
+      },
+      {
+       "name": "Adventurer 1"
+      },
+      {
+       "name": "Adventurer 2"
+      }
+     ],
+     "max_steps": 3000,
+     "num_agents": 3,
+     "team_count": 3,
+     "steps_per_second": 10,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "quest-4-adventurer",
+    "name": "Quest: four adventurers",
+    "description": "Four adventurers, one per active civilization, explore and survive in the shared world.",
+    "game_config": {
+     "mode": "quest",
+     "seed": 0,
+     "players": [
+      {
+       "name": "Adventurer 0"
+      },
+      {
+       "name": "Adventurer 1"
+      },
+      {
+       "name": "Adventurer 2"
+      },
+      {
+       "name": "Adventurer 3"
+      }
+     ],
+     "max_steps": 3000,
+     "num_agents": 4,
+     "team_count": 4,
+     "steps_per_second": 10,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "quest-5-adventurer",
+    "name": "Quest: five adventurers",
+    "description": "Five adventurers, one per active civilization, explore and survive in the shared world.",
+    "game_config": {
+     "mode": "quest",
+     "seed": 0,
+     "players": [
+      {
+       "name": "Adventurer 0"
+      },
+      {
+       "name": "Adventurer 1"
+      },
+      {
+       "name": "Adventurer 2"
+      },
+      {
+       "name": "Adventurer 3"
+      },
+      {
+       "name": "Adventurer 4"
+      }
+     ],
+     "max_steps": 3000,
+     "num_agents": 5,
+     "team_count": 5,
+     "steps_per_second": 10,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "quest-6-adventurer",
+    "name": "Quest: six adventurers",
+    "description": "Six adventurers, one per active civilization, explore and survive in the shared world.",
+    "game_config": {
+     "mode": "quest",
+     "seed": 0,
+     "players": [
+      {
+       "name": "Adventurer 0"
+      },
+      {
+       "name": "Adventurer 1"
+      },
+      {
+       "name": "Adventurer 2"
+      },
+      {
+       "name": "Adventurer 3"
+      },
+      {
+       "name": "Adventurer 4"
+      },
+      {
+       "name": "Adventurer 5"
+      }
+     ],
+     "max_steps": 3000,
+     "num_agents": 6,
+     "team_count": 6,
+     "steps_per_second": 10,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "quest-7-adventurer",
+    "name": "Quest: seven adventurers",
+    "description": "Seven adventurers, one per active civilization, explore and survive in the shared world.",
+    "game_config": {
+     "mode": "quest",
+     "seed": 0,
+     "players": [
+      {
+       "name": "Adventurer 0"
+      },
+      {
+       "name": "Adventurer 1"
+      },
+      {
+       "name": "Adventurer 2"
+      },
+      {
+       "name": "Adventurer 3"
+      },
+      {
+       "name": "Adventurer 4"
+      },
+      {
+       "name": "Adventurer 5"
+      },
+      {
+       "name": "Adventurer 6"
+      }
+     ],
+     "max_steps": 3000,
+     "num_agents": 7,
+     "team_count": 7,
+     "steps_per_second": 10,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "quest-8-adventurer",
+    "name": "Quest: eight adventurers",
+    "description": "Eight adventurers, balanced one per civilization, explore and survive in the same native Fortress world.",
+    "game_config": {
+     "mode": "quest",
+     "seed": 0,
+     "players": [
+      {
+       "name": "Adventurer 0"
+      },
+      {
+       "name": "Adventurer 1"
+      },
+      {
+       "name": "Adventurer 2"
+      },
+      {
+       "name": "Adventurer 3"
+      },
+      {
+       "name": "Adventurer 4"
+      },
+      {
+       "name": "Adventurer 5"
+      },
+      {
+       "name": "Adventurer 6"
+      },
+      {
+       "name": "Adventurer 7"
+      }
+     ],
+     "max_steps": 3000,
+     "num_agents": 8,
+     "team_count": 8,
+     "steps_per_second": 10,
+     "player_connect_timeout_seconds": 180
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Tribal Range Commissioner",
+    "type": "commissioner",
+    "image": "img_1e8f9500-8d1e-40d7-a51f-d70f28f9fe1d",
+    "source_url": "https://github.com/Metta-AI/coworld-tribal-fortress/tree/f0e3202a2e891dbf8b1cc5c76a10dd6dd6017e03/commissioner",
+    "description": "Config-driven commissioner that derives the selected two-to-eight-seat topology and schedules a varied policy mix."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "tribal-player"
+    },
+    {
+     "player_id": "tribal-player"
+    }
+   ],
+   "game_config": {
+    "mode": "quest",
+    "seed": 12345,
+    "players": [
+     {
+      "name": "Adventurer 0"
+     },
+     {
+      "name": "Adventurer 1"
+     }
+    ],
+    "max_steps": 32,
+    "num_agents": 2,
+    "team_count": 2,
+    "steps_per_second": 20,
+    "player_connect_timeout_seconds": 30
+   }
+  },
+  "episode_timeout_minutes": 15
+ },
+ "manifest_hash": "sha256:77861d274be11014bbf58d255c7a6384c53860968c9a7171a03224dfd4af9863",
+ "size_bytes": 11837,
+ "created_at": "2026-08-10T19:02:51.469927Z",
+ "canonical": true
+}

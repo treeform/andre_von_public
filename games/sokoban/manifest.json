@@ -1,0 +1,669 @@
+{
+ "id": "cow_71631422-adaa-43fd-b234-5f1aa8a08b43",
+ "name": "sokoban",
+ "version": "0.1.0",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "Rules",
+      "content": {
+       "type": "text",
+       "value": "# Rules\n\nOne cog, alone, in a **10 \u00d7 10** walled room with **four crates** and **four\nmarked squares**. It can walk, and when it walks into a crate the crate slides\none square ahead of it.\n\n**It can never pull.** A crate shoved into a corner is there forever; a crate\nshoved against a wall in a row with no marked square on it is there forever;\nfour crates shoved into a 2 \u00d7 2 clump are there forever. The level is over the\ninstant the position becomes unwinnable \u2014 that is the whole game, and the\nreplay says so out loud with a **DEADLOCK CREATED** marker on the scrubber.\n\n## The board and its notation\n\nThe board is always 10 \u00d7 10, indexed `(x, y)` with `x` the column `0 \u2026 9`\n(west \u2192 east) and `y` the row `0 \u2026 9` (north \u2192 south). `(0, 0)` is the\nnorth-west corner. **The entire border ring is wall**, so the playable interior\nis 8 \u00d7 8 = 64 cells.\n\nBoards are written in canonical **XSB** notation \u2014 the format every published\nSokoban level and every Sokoban solver uses:\n\n| Glyph | Means |\n|---|---|\n| `#` | wall |\n| (space) | empty floor |\n| `.` | marked square, empty |\n| `$` | crate, not on a marked square |\n| `*` | crate, on a marked square |\n| `@` | the cog, on plain floor |\n| `+` | the cog, standing on a marked square |\n\nRows are always exactly 10 characters and there are always exactly 10 of them;\nleading and trailing spaces are significant and are never trimmed.\n\n## Directions and the four primitives\n\n`U` (y\u22121), `D` (y+1), `L` (x\u22121), `R` (x+1) \u2014 indices 0, 1, 2, 3, and the fixed\norder every tie-break in the game uses.\n\nThere are exactly four primitives, one per direction, plus `wait`. A primitive\nis one **tick** and one **move** against the step budget, whether or not it\nchanges anything.\n\n## Tiers\n\nThree tiers, distinguished only by the level's *exact* optimal push count\n`optPushes` \u2014 known exactly because of how levels are generated (see\n[LEVELS.md](LEVELS.md)):\n\n| Tier | `optPushes` | Weight |\n|---|---|---|\n| `unfiltered` | 6 \u2026 12 | 1 |\n| `medium` | 13 \u2026 22 | 2 |\n| `hard` | 23 \u2026 34 | 3 |\n\n`optPushes` is recorded per level, and it is **shown to the cog**: knowing\n\"this is solvable in 17 pushes\" is a legitimate part of a Sokoban statement.\n\n## The ladder and the clock\n\n- **Tick** = one primitive. **`turnMoves = 20`**: every command turn executes at\n  most twenty primitives.\n- **`levelTurnCap = 10`** turns per level \u21d2 **`stepBudget = 200`** moves per\n  level.\n- **`levelCount = 6`** levels per episode \u21d2 **`maxTurns = 60`**,\n  **`maxTicks = 1200`**.\n- Levels run strictly in the variant's declared tier order and are generated\n  lazily.\n- A level that finishes (solved, deadlocked, out of steps) ends its turn\n  immediately; the remaining primitives are discarded and the next level begins\n  on the next turn. Turns saved this way are **not** transferable.\n\n## Resolution order, per tick\n\n1. `tick += 1`; `levelMove += 1`.\n2. Pop the next primitive. An empty queue is a `wait` \u2014 a real cost.\n3. Apply it. With `A` the adjacent cell in `d` and `B` the cell beyond:\n   - `A` is wall \u2192 nothing happens, `blockedMoves += 1`;\n   - `A` holds a crate and `B` is wall or crate \u2192 nothing happens,\n     `blockedMoves += 1`. **This is the only place a push can fail, and crates\n     are never moved by anything else \u2014 there is no pull, no undo and no\n     restart;**\n   - `A` holds a crate and `B` is free floor \u2192 the crate moves `A \u2192 B`, the cog\n     moves into `A`, `pushes += 1`;\n   - otherwise the cog moves into `A`.\n4. `boxesOnTargets` is recomputed; `levelBoxesPlaced` is its running maximum.\n5. **Level termination**, only when a crate moved, in this order:\n   `boxesOnTargets == 4` \u2192 **solved**; else `isDeadlocked(state)` \u2192\n   **deadlocked**.\n6. `levelMove == stepBudget` \u2192 **out of steps** (checked every tick).\n7. The tick is mixed into `gameHash`.\n8. A finished level breaks the tick loop; the turn ends early.\n\n## Deadlock detection\n\nSound and deliberately incomplete: it never flags a position that is still\nwinnable, and some unwinnable positions are simply left to burn out on the step\nbudget. The disjunction of exactly three tests, in this order:\n\n1. **`dead_square`** \u2014 a crate that is not on a marked square stands on a cell\n   of the level's static dead-square set `D`. `D` is computed once per level\n   from **walls and marked squares only** (never from crate positions, which is\n   what makes it sound): mark every marked square alive; then to a fixpoint,\n   for every alive `c` and direction `d`, mark `c \u2212 d` alive if `c \u2212 d` is floor\n   and `c \u2212 2d` is floor. `D` is every floor cell not marked alive.\n2. **`frozen_block`** \u2014 a 2 \u00d7 2 block whose four cells are all wall-or-crate and\n   at least one is a crate not on a marked square.\n3. **`no_push`** \u2014 a crate is off its marked square and the legal-push set is\n   empty.\n\n## Scoring\n\n```\nweight(unfiltered) = 1,  weight(medium) = 2,  weight(hard) = 3\n\nsolvedWeight     = sum of weight(tier) over solved levels\nboxCredit        = sum of the per-level MAXIMUM crates on marked squares\nmovesSavedTotal  = sum of (200 - levelMoves) over solved levels\n\nscores[0]        = 1_000_000 * solvedWeight\n                 +    10_000 * boxCredit\n                 +         1 * movesSavedTotal\n```\n\nHigher is better and **every term only ever adds**: the minimum, 0, is the\nhonest score of a cog that solved nothing and never parked a crate. There is no\npenalty for deadlocking \u2014 creating one already costs the level.\n\nThe ordering is strictly lexicographic by construction: one more unit of tier\nweight is worth 1 000 000 and the largest possible total of the other two terms\nis 10 000 \u00d7 24 + 1 194 = 241 194.\n\n`results.win[0]` is `solvedWeight >= parWeight`, and `results.winner` is `0`\nwhen that is true and `null` otherwise \u2014 there is no opponent, so the only\nhonest winner is the seat itself or nobody.\n\n**Measured but never scored:** `pushesTotal`, `blockedMoves`, `deadlocks`,\n`outOfSteps`, `levelPushes`, `levelMoves`, `actionsDropped`,\n`macrosUnreachable`, `repliesRepaired`.\n\n## End conditions\n\n`results.reason` is a closed enum:\n\n- **`complete`** \u2014 the ladder ran out of levels, or the turn cap fired.\n  `results.endRule` says which: `ladderComplete` | `turnCap`.\n- **`deadline`** \u2014 the engine's `wallClockBudgetSeconds` (690 s) was reached.\n  The episode settles with the real levels solved so far and is still rankable.\n  `endRule = wallClock`.\n- **`fault`** \u2014 an unexpected exception; artifacts are still written.\n  `endRule = fault`.\n\n`results.levelOutcome[i]` is `solved | deadlocked | outofsteps | unreached`.\n"
+      }
+     },
+     {
+      "id": "actions.md",
+      "title": "Actions and the reply format",
+      "content": {
+       "type": "text",
+       "value": "# Actions and the reply format\n\nA policy is just a prompt. The **game server** composes the seat's board view\nplus that seat's `PLAYER_PROMPT` and asks Claude what the cog does for the next\ntwenty moves; the player container only registers. There is exactly **one**\nrequest per turn, plus at most **one** retry.\n\n## What the seat gets each turn\n\n```json\n{\n  \"you\": \"Alpha\",\n  \"level\": {\"index\": 3, \"of\": 6, \"tier\": \"medium\", \"opt_pushes\": 17,\n            \"moves_left\": 162, \"turns_left\": 8, \"pushes_made\": 5,\n            \"boxes_on_targets\": 1},\n  \"turn\": 23, \"tick\": 421,\n  \"world\": {\"size\": 10,\n            \"legend\": {\"#\": \"wall\", \" \": \"floor\", \".\": \"target\",\n                       \"$\": \"box\", \"*\": \"box on target\",\n                       \"@\": \"you\", \"+\": \"you on a target\"},\n            \"dirs\": [\"U\", \"D\", \"L\", \"R\"],\n            \"moves_per_turn\": 20, \"step_budget\": 200},\n  \"board\": [\"##########\", \"#        #\", \"\u2026\"],\n  \"player\": {\"x\": 4, \"y\": 4},\n  \"boxes\":   [{\"i\": 0, \"x\": 4, \"y\": 3, \"on_target\": false}, \u2026],\n  \"targets\": [{\"x\": 3, \"y\": 3, \"filled\": false}, \u2026],\n  \"dead_squares\": [[1,1],[8,1], \u2026],\n  \"pushes_available\": [{\"box\": 0, \"dir\": \"U\", \"to\": [4, 2]}, \u2026],\n  \"last_turn\": {\"executed\": \"RRUULLLDD\", \"pushes\": 2, \"blocked\": 3,\n                \"truncated\": false, \"dropped\": 0, \"unreachable\": 1},\n  \"levels_solved\": 1,\n  \"solved_weight\": 1,\n  \"history\": [{\"tier\": \"unfiltered\", \"outcome\": \"solved\"}, \u2026],\n  \"notes\": \"\u2026the seat's own note from last turn\u2026\"\n}\n```\n\nSokoban is **perfect information** and this game keeps it that way: the cog sees\nthe entire board. `board` and the structured lists say the same thing twice and\nmust always agree \u2014 a test re-parses `board` and asserts it reconstructs\n`player`, `boxes` and `targets` exactly.\n\n`dead_squares` and `pushes_available` are pure functions of the board that any\npolicy could compute itself. Handing them over deliberately moves the\nmeasurement off \"can the model write a corner-detection subroutine\" and onto\n**push ordering and freeze deadlocks**. `pushes_available` carries **no**\ndeadlock annotation: cross-referencing `to` against `dead_squares` is the\npolicy's job.\n\n**Hidden:** the episode seed, any level not yet started, the level's solution,\nthe agent's own score, and its own real policy name.\n\n## What the seat sends\n\n```json\n{\"actions\": [{\"do\": \"push\", \"box\": 1, \"dir\": \"R\", \"times\": 1},\n             {\"do\": \"goto\", \"x\": 5, \"y\": 3},\n             {\"do\": \"moves\", \"seq\": \"LLU\"},\n             {\"do\": \"wait\"}],\n \"say\": \"parking the two right-hand crates first\",\n \"notes\": \"order: box1, box3, box2, box0. never push box0 down.\"}\n```\n\n| Field | Cap / domain |\n|---|---|\n| `actions` | \u2264 **8** entries. Entries past the cap are dropped and counted. Absent or empty = the turn is twenty `wait` ticks, and the reply is still **usable** |\n| `actions[].do` | \u2264 6 runes; `moves` \\| `push` \\| `goto` \\| `wait`, lower-cased before matching |\n| `actions[].seq` | required for `moves`; \u2264 20 runes from `UDLRudlr` only. Any other character **drops the entry** |\n| `actions[].box` | required for `push`; **0 \u2026 3**, indexing the **turn-start** `boxes` order; out of range drops the entry |\n| `actions[].dir` | required for `push`; matched case-insensitively against `U`,`D`,`L`,`R`,`up`,`down`,`left`,`right` |\n| `actions[].times` | optional for `push`; clamped to 1 \u2026 8; absent = 1 |\n| `actions[].x`, `.y` | required for `goto`; clamped to 0 \u2026 9 |\n| `say` | \u2264 **140** runes \u2014 drawn in the spectator feed, never fed back to the seat |\n| `notes` | \u2264 **320** runes \u2014 private scratchpad, echoed to this seat only next turn |\n| whole reply | \u2264 4096 bytes read from the provider before parsing |\n| `PLAYER_PROMPT` | \u2264 4000 runes at registration |\n\n**Invalid actions are dropped, never rewritten.** In a game where one wrong push\nis fatal, repairing a malformed push into a different push would let the *game*\nlose the level on the policy's behalf. The entry is removed, counted, and\nreported back as `dropped`.\n\nEvery string that lands in the replay \u2014 `say`, `notes`, the policy label, the\nstop detail, recorded error text \u2014 is truncated on **rune** boundaries. Byte\ntruncation is what makes a replay that renders in a browser fail a strict UTF-8\nparser.\n\n## How a plan becomes moves\n\n`src/sokoban/driver.nim` is the only producer of primitives and contains no\nrandomness. Every macro is expanded against the **turn-start snapshot**;\nexecution is always the literal primitive sequence, and a primitive that turns\nout to be blocked at execution time is a no-op that still costs a move.\n\n| Action | Expands to |\n|---|---|\n| `moves seq` | the literal `seq`, one primitive per character |\n| `goto x y` | the walk BFS path; **zero** primitives if the square is not free floor or not reachable (`unreachable`) |\n| `push box dir times` | the walk to the approach square, then `times` primitives in `dir`; **zero** primitives if the approach or the landing square is blocked (`unreachable`) |\n| `wait` | itself |\n\nThe walk BFS runs against the turn-start board over 4-adjacency in the fixed\norder **U, D, L, R**, so the path is unique for a given board. Each macro yields\nat most 32 primitives; the whole turn's queue is then truncated to 20 and\n**nothing carries over to the next turn**.\n\n## Fielding your own policy\n\n```bash\ncoworld upload-policy coworld-sokoban --name my-sokoban \\\n  --run /bin/sokoban-player \\\n  --secret-env PLAYER_PROMPT=\"<your strategy>\"\n```\n\nOr run one of the two shipped scripted baselines from the same image:\n`PLAYER_SCRIPTED=pusher` (a bounded best-first search over push space) or\n`PLAYER_SCRIPTED=nudger` (one-ply, no lookahead).\n"
+      }
+     },
+     {
+      "id": "levels.md",
+      "title": "Where the levels come from",
+      "content": {
+       "type": "text",
+       "value": "# Where the levels come from\n\n**No dataset is downloaded, ever, at build time or at runtime.**\n\nBoxoban's 1.5 M levels are a ~1 GB text corpus in another repo, and a coworld\nthat fetched it would be neither hermetic nor \"held out\" \u2014 a published corpus is\nexactly what a language model may have memorised. Instead\n`src/sokoban/levelgen.nim` **generates every level by reverse play from the\nsolved position**, which is gym-sokoban's own generation method and which yields,\nas a free by-product, the **exact** optimal push count that the tiers are defined\nby.\n\n## The generator\n\n`generateLevel(seed, levelIndex, tier)`, with\n`h(k) = mix64(seed, levelIndex, attempt, k)` \u2014 splitmix64 over the mixed words, a\npure **hash**, never a consumed stream:\n\n1. For `attempt = 0 ..< genAttemptCap` (8):\n2. Build the room: 10 \u00d7 10, the border ring wall, the 8 \u00d7 8 interior all floor.\n   Draw `8 + (h(1) mod 5)` interior cells and set each to wall. Repeats simply\n   re-set the same cell, so the realised wall count may be lower \u2014\n   deterministic, no retry loop.\n3. **Reject** the attempt if the floor is not 4-connected or has fewer than 44\n   cells.\n4. Place the 4 marked squares by rejection sampling over the floor list.\n5. Compute the static dead-square set `D` (see [RULES.md](RULES.md)).\n6. **Backward BFS over push space.** The goal states are crates on the four\n   marked squares with the cog anywhere on free floor, normalised to the lowest\n   cell of its reachable region. The successor relation is the **pull**: for a\n   crate at `q` and direction `d`, the pull is legal iff `q \u2212 d` and `q \u2212 2d` are\n   free floor and `q \u2212 d` is in the cog's reachable region. Because a pull is\n   exactly a push run backwards, **BFS depth in this graph IS the minimum number\n   of pushes** needed to solve the resulting position.\n7. Draw `targetDepth` inside the tier's band. Run the BFS until that depth is\n   completed, the queue empties, or `genNodeCap` (200 000) states are dequeued.\n8. If `targetDepth` was reached, pick one of the states first discovered at\n   exactly that depth. `optPushes = targetDepth`, **exactly**.\n9. **Reject** a state with more than one crate already parked. A crate can never\n   start on a dead square: every BFS state is reachable from the solved\n   position, so every crate in it can reach a marked square by construction \u2014\n   an invariant asserted by a test, not assumed.\n10. The cog starts at a cell of its own reachable region.\n11. If no attempt hit the band, take the attempt whose reached depth is closest,\n    set `optPushes` to it and mark `levelTierRelaxed[i]`. The level is still\n    solvable and still played; the tier weight is still the declared one,\n    because the ladder's shape must not depend on the seed.\n12. If no attempt produced a state at depth \u2265 4 \u2014 a degenerate room, never\n    observed in the sweeps \u2014 the generator falls back to the tier's committed\n    hand-authored level, `data/levels/fallback_<tier>.xsb`.\n\nEvery level is therefore a **pure function of `(seed, levelIndex, tier)`**, needs\nno network, and is reproducible from a clone of this repo plus the seed.\n\n**Held out:** the seed is randomised by the runner, never disclosed to the seat,\nand spans 2\u2076\u00b3. Level *k*'s grid is identical no matter what happened in level\n*k \u2212 1*, which is what makes per-tier solve rates comparable across policies.\n\n## The committed fallbacks\n\nThree files, one per tier, at the bottom of each band. They are the only fixed\nlevels in the repo and are also the fixtures the unit tests use.\n\n    data/levels/fallback_unfiltered.xsb\n    data/levels/fallback_medium.xsb\n    data/levels/fallback_hard.xsb\n\n## Documented divergences from gym-sokoban and Boxoban\n\n1. **No gym-sokoban dependency, no Boxoban levels, and no bit-exactness with\n   either.** gym-sokoban is a Python gym package and Boxoban is a downloaded\n   corpus; embedding either means a simulator that cannot compile to wasm, so\n   the static replay viewer \u2014 a non-optional pin \u2014 would be impossible, and a\n   public corpus is the opposite of \"held out\". **No score from this coworld is\n   comparable to a published Boxoban number.** What is reproduced is the\n   *problem*: 10 \u00d7 10, four crates, push-only, tiered by difficulty.\n2. **Tiers are defined by exact optimal push count**, not by Boxoban's filtering\n   procedure (which came from which levels a trained agent could solve, and is\n   not reproducible here).\n3. **The level ends the instant a deadlock is detected**, rather than letting the\n   agent flail until the step cap. The detector is sound, so this never\n   truncates a winnable position.\n4. **Moves are batched under a driver**, not stepped one per call. One LLM call\n   per move would be up to 1 200 calls in a 720 s budget \u2014 impossible.\n5. **`dead_squares` and `pushes_available` are given to the policy.** Both are\n   pure functions of the board; handing them over moves the measurement onto\n   push ordering and freeze deadlocks.\n6. **Reward shape.** gym-sokoban's reward is a per-step penalty plus a per-crate\n   bonus plus a completion bonus. The league needs one rankable integer, so\n   tier-weighted solves dominate, crates parked is second and moves saved third.\n   All three underlying quantities are in `results`.\n7. **No undo, no restart, no pull-mode.** Irreversibility is the entire point.\n8. **`maxGames = 1`** \u2014 a ladder has no side to swap.\n"
+      }
+     }
+    ],
+    "readme": {
+     "type": "text",
+     "value": "# cogame-sokoban\n\n**SA Sokoban \u2014 push every crate onto a marked square; one wrong push and the\nlevel is dead.**\n\nOne cog, alone, in a 10 \u00d7 10 walled room with four crates and four marked\nsquares. It can walk, and when it walks into a crate the crate slides one square\nahead of it. **It can never pull.** A crate shoved into a corner is there\nforever; two crates shoved side by side against a wall are there forever; the\nlevel is over the instant the position becomes unwinnable \u2014 and the replay says\nso out loud with a **DEADLOCK CREATED** marker on the scrubber.\n\nAn episode is a ladder of **six levels**, each generated fresh from the\nepisode's secret seed by reverse play from the solved position, each labelled\nwith the tier it was built to (`unfiltered`, `medium`, `hard`) and its **exact**\noptimal push count, each with a hard budget of **200 moves**. The league reads\none number: the tier-weighted count of levels solved.\n\nSokoban is PSPACE-complete and has no useful local signal: there is no gradient\ntoward the goal, and the difference between a solved level and a dead one is\nusually a single push made in the wrong order. That is exactly what this coworld\nexists to measure.\n\n**A policy is just a prompt.** The game server composes the seat's board view\nplus that seat's `PLAYER_PROMPT` and asks Claude what the cog does for the next\ntwenty moves.\n\n- [docs/RULES.md](docs/RULES.md) \u2014 the board, the primitives, deadlock\n  detection, scoring, the end conditions.\n- [docs/ACTIONS.md](docs/ACTIONS.md) \u2014 the observation, the reply schema and its\n  caps, and how a plan becomes moves.\n- [docs/LEVELS.md](docs/LEVELS.md) \u2014 the reverse-play generator, and every\n  documented divergence from gym-sokoban and Boxoban.\n- [docs/PROTOCOL.md](docs/PROTOCOL.md) \u2014 the Coworld contract, the player\n  protocol and the replay format.\n- [docs/plans/](docs/plans/) \u2014 the accepted design note this repo implements.\n\n## Field your own policy\n\n```bash\ncoworld upload-policy coworld-sokoban --name my-sokoban \\\n  --run /bin/sokoban-player \\\n  --secret-env PLAYER_PROMPT=\"Simulate before you commit. Never push a crate\nyou have not first checked three ways. \u2026\"\n```\n\nThe same image also ships two scripted baselines, selected by env \u2014 no prompt,\nno LLM call:\n\n```bash\nPLAYER_SCRIPTED=pusher    # a bounded best-first search over push space\nPLAYER_SCRIPTED=nudger    # one ply, no lookahead: the floor\n```\n\n`tools/ci/policies.json` is the shipped set: two `PLAYER_PROMPT` champions\n(`sokoban-lookahead`, `sokoban-orderfirst`) and those two baselines as league\nfillers \u2014 one image, env-switched, so a champion and a filler are byte-identical\napart from their environment.\n\n## Layout\n\n| Path | What |\n|---|---|\n| `src/sokoban/` | the sim: `grid`, `deadlock`, `levelgen`, `search`, `driver`, `baselines`, `sim`, plus the server, the decision layer and the LLM client |\n| `src/sokoban.nim` | the game entrypoint (`/bin/sokoban`) |\n| `src/sokoban_player.nim` | the thin seat registrar (`/bin/sokoban-player`) |\n| `client/` | the broadcast chrome, inherited from `coworld-ctf` |\n| `replay-viewer/` | the wasm entry, the emscripten flags and the static shell |\n| `tools/` | the build hook, the baseline sweep, the forensics scripts |\n| `tests/` | the Nim suite CI runs in debug **and** release |\n| `scripts/art/` | the nano-banana source sheets and the split script |\n\n## Building and testing\n\nThe image builds two binaries from one tree:\n\n```bash\ndocker build -t coworld-sokoban:ci .\ntools/ci/docker_smoke.sh coworld-sokoban:ci      # one real episode in raw docker\ntools/build_replay_viewer.sh \"$PWD/dist/static-replay-viewer\"\n```\n\nTests run from the repo **root**:\n\n```bash\nnim r --path:src tests/test_sokoban_sim.nim\n```\n\nThere is also a local browser gate for the chrome, because the wasm module\nneeds emsdk and a page-level exception is invisible to `node --check`:\n\n```bash\nnpm install --no-save playwright@1.55.0\nnpx playwright@1.55.0 install chromium\nnim r --path:src tools/gen_wire_constants.nim > wire_constants.js\nnode tools/ci/page_smoke.mjs /path/to/frame.json shot.png\n```\n\nIt serves the shipped page with the wasm runtime stubbed, drives the page's own\n`onFrame` with one worst-case frame and fails on any thrown error. `ci.yml`'s\n`wasm-viewer` job is the real gate: it opens the built bundle against the replay\n`docker-smoke` produced, soaks it for ten seconds and runs\n`tools/ci/renderer_fixture.html` for the LLM-text path CI's own replay can never\ncontain.\n\n`ci.yml` runs every `tests/*.nim` twice, debug and release. The generator is a\nbounded backward BFS, so the sweeps are sized from `SweepSeeds` in\n`tests/helpers.nim`: eight seeds in a release run, two in a debug one.\n\n## The viewer\n\nThe replay is a **static wasm bundle, never a pod**. `tools/build_replay_viewer.sh`\ncompiles `replay-viewer/sokoban_replay.nim` \u2014 which imports the **same**\n`src/sokoban/sim.nim` the server runs \u2014 through the pinned\n`emscripten/emsdk:4.0.15` container, and the browser re-derives every frame from\nthe recorded boards and plans, checking `gameHash` at every tick.\n\nThe chrome is `coworld-ctf`'s, not a lookalike: `client/chrome_common.js` is\nbyte-for-byte the starter's (its sha256 is pinned as a literal in\n`tests/test_sokoban_viewer.nim`), and `client/replay_broadcast.html` is the\nstarter's page with this game's block appended under a banner comment.\n`scripts/build_broadcast_page.py` derives it from the starter, so the\nprovenance is mechanical and checkable \u2014 and the starter revision it was\nderived from is recorded in the script as `STARTER_SHA`\n(`a7484eb47b14bde20678ff106c684a633b4f294c`), so the claim can be re-run:\n\n    git -C <coworld-ctf> show a7484eb:client/replay_broadcast.html > /tmp/p.html\n    python3 scripts/build_broadcast_page.py /tmp/p.html /tmp/rebuilt.html \\\n        client/sokoban_block.html\n    diff /tmp/rebuilt.html client/replay_broadcast.html    # empty\n\n## Board art\n\nThe cog is a **nano-banana render of the Softmax cog** \u2014 one kit, because this\nis a solitaire puzzle \u2014 in its four board facings, plus the crate in its two\nstates and the marked square. The source sheets and the split script are\ncommitted under `scripts/art/`; CI never regenerates art.\n\n    python3 scripts/art/gen_sokoban_art.py     # needs GEMINI_API_KEY\n    python3 scripts/art/split_sheets.py\n\n## License\n\nMIT \u2014 see [LICENSE](LICENSE).\n"
+    }
+   },
+   "name": "sokoban",
+   "owner": "daveey@softmax.com",
+   "version": "0.1.0",
+   "runnable": {
+    "env": {
+     "ANTHROPIC_API_KEY_URI": "secret://coworld/sokoban/anthropic_api_key"
+    },
+    "run": [
+     "/bin/sokoban"
+    ],
+    "type": "game",
+    "image": "img_a5fe13e3-57b2-495d-930b-91e4367927c7",
+    "source_url": "https://github.com/Metta-AI/cogame-sokoban/tree/a72dbac2f84fce4c58ec9402ac299c3d42abc700"
+   },
+   "protocols": {
+    "global": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-sokoban/blob/main/docs/PROTOCOL.md"
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-sokoban/blob/main/docs/PROTOCOL.md"
+    }
+   },
+   "description": "SA Sokoban: one cog alone in a 10x10 walled room with four crates and four marked squares. It can walk, and when it walks into a crate the crate slides one square ahead of it. It can NEVER pull. A crate shoved into a corner is there forever; two crates shoved side by side against a wall are there forever; the level is over the instant the position becomes unwinnable, and the replay says so out loud with a DEADLOCK CREATED marker on the scrubber. An episode is a ladder of six levels, each generated fresh from the episode's secret seed by reverse play from the solved position, each labelled with the tier it was built to (unfiltered, medium, hard) and its EXACT optimal push count, each with a hard budget of 200 moves. Sokoban is PSPACE-complete and has no useful local signal: there is no gradient toward the goal, and the difference between a solved level and a dead one is usually a single push made in the wrong order. The league reads one number: the tier-weighted count of levels solved, with crates parked as the tie-break and moves saved as the tie-break after that.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "description": "Episode seed. Randomised by the runner and never shown to the seat; every level is a pure function of (seed, levelIndex, tier)."
+     },
+     "model": {
+      "type": "string"
+     },
+     "slots": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 1,
+      "minItems": 0,
+      "description": "Optional seat ordering supplied by the runner."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 1,
+      "minItems": 1,
+      "description": "Per-seat player tokens. RUNNER-INJECTED: never present in a variant's game_config."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "name": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 1,
+      "minItems": 1,
+      "description": "One entry per seat; `name` is the seat's in-game alias."
+     },
+     "retryMs": {
+      "type": "integer",
+      "maximum": 60000,
+      "minimum": 0
+     },
+     "boxCount": {
+      "type": "integer",
+      "maximum": 4,
+      "minimum": 4
+     },
+     "fastMode": {
+      "type": "boolean"
+     },
+     "gridSize": {
+      "type": "integer",
+      "maximum": 10,
+      "minimum": 10
+     },
+     "maxTicks": {
+      "type": "integer",
+      "maximum": 9600,
+      "minimum": 1
+     },
+     "maxTurns": {
+      "type": "integer",
+      "maximum": 480,
+      "minimum": 1
+     },
+     "parWeight": {
+      "type": "integer",
+      "maximum": 36,
+      "minimum": 0
+     },
+     "turnMoves": {
+      "type": "integer",
+      "maximum": 40,
+      "minimum": 1
+     },
+     "attempt1Ms": {
+      "type": "integer",
+      "maximum": 60000,
+      "minimum": 0
+     },
+     "genNodeCap": {
+      "type": "integer",
+      "maximum": 2000000,
+      "minimum": 1000
+     },
+     "levelCount": {
+      "type": "integer",
+      "maximum": 12,
+      "minimum": 1
+     },
+     "minPlayers": {
+      "type": "integer",
+      "maximum": 1,
+      "minimum": 1
+     },
+     "num_agents": {
+      "type": "integer",
+      "default": 1,
+      "maximum": 1,
+      "minimum": 1,
+      "description": "Seats. Sokoban is a solitaire puzzle: always exactly one."
+     },
+     "stepBudget": {
+      "type": "integer",
+      "maximum": 1600,
+      "minimum": 1
+     },
+     "tierLadder": {
+      "type": "array",
+      "items": {
+       "enum": [
+        "unfiltered",
+        "medium",
+        "hard"
+       ],
+       "type": "string"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "description": "The tier of each level, in play order."
+     },
+     "levelTurnCap": {
+      "type": "integer",
+      "maximum": 40,
+      "minimum": 1
+     },
+     "turnBudgetMs": {
+      "type": "integer",
+      "maximum": 120000,
+      "minimum": 0
+     },
+     "gameOverTicks": {
+      "type": "integer",
+      "maximum": 480,
+      "minimum": 0
+     },
+     "genAttemptCap": {
+      "type": "integer",
+      "maximum": 32,
+      "minimum": 1
+     },
+     "turnSpacingMs": {
+      "type": "integer",
+      "maximum": 60000,
+      "minimum": 0
+     },
+     "baselineNodeCap": {
+      "type": "integer",
+      "maximum": 200000,
+      "minimum": 1,
+      "description": "The pusher baseline's best-first expansion bound. The shipped value is the pick of tools/tune_baselines.mim's sweep, recorded in tools/ci/baseline_tuning.json: an unbounded search solves essentially every level, which would ship a superhuman filler."
+     },
+     "maxOutputTokens": {
+      "type": "integer",
+      "maximum": 8192,
+      "minimum": 1
+     },
+     "showPlayerLabels": {
+      "type": "boolean"
+     },
+     "macroPrimitiveCap": {
+      "type": "integer",
+      "maximum": 128,
+      "minimum": 1
+     },
+     "maxActionsPerTurn": {
+      "type": "integer",
+      "maximum": 16,
+      "minimum": 1
+     },
+     "lobbyJoinTimeoutTicks": {
+      "type": "integer",
+      "maximum": 4800,
+      "minimum": 1
+     },
+     "wallClockBudgetSeconds": {
+      "type": "integer",
+      "maximum": 690,
+      "minimum": 1
+     }
+    },
+    "additionalProperties": false
+   },
+   "replay_viewer": {
+    "bundle": "sha256:1a2eb7d7000d7bc8bd7cd4fef15209827a08c98094b8db55c18333c40bbe9733"
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "properties": {
+     "win": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 1,
+      "minItems": 1
+     },
+     "seed": {
+      "type": "integer"
+     },
+     "names": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 1,
+      "minItems": 1
+     },
+     "reason": {
+      "enum": [
+       "complete",
+       "deadline",
+       "fault"
+      ],
+      "type": "string"
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 1,
+      "minItems": 1
+     },
+     "winner": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "aliases": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 1,
+      "minItems": 1
+     },
+     "endRule": {
+      "enum": [
+       "ladderComplete",
+       "turnCap",
+       "wallClock",
+       "fault"
+      ],
+      "type": "string"
+     },
+     "variant": {
+      "type": "string"
+     },
+     "llmTurns": {
+      "type": "integer"
+     },
+     "boxCredit": {
+      "type": "integer"
+     },
+     "deadSeats": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 1,
+      "minItems": 1
+     },
+     "deadlocks": {
+      "type": "integer"
+     },
+     "finalTick": {
+      "type": "integer"
+     },
+     "levelTier": {
+      "type": "array",
+      "items": {
+       "enum": [
+        "unfiltered",
+        "medium",
+        "hard"
+       ],
+       "type": "string"
+      },
+      "maxItems": 12,
+      "minItems": 1
+     },
+     "maxWeight": {
+      "type": "integer"
+     },
+     "parWeight": {
+      "type": "integer"
+     },
+     "levelCount": {
+      "type": "integer"
+     },
+     "levelMoves": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 12,
+      "minItems": 1
+     },
+     "levelTurns": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 12,
+      "minItems": 1
+     },
+     "outOfSteps": {
+      "type": "integer"
+     },
+     "stepBudget": {
+      "type": "integer"
+     },
+     "stopDetail": {
+      "type": "string"
+     },
+     "levelPushes": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 12,
+      "minItems": 1
+     },
+     "policyKinds": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 1,
+      "minItems": 1
+     },
+     "pushesTotal": {
+      "type": "integer"
+     },
+     "turnsPlayed": {
+      "type": "integer"
+     },
+     "blockedMoves": {
+      "type": "integer"
+     },
+     "levelOutcome": {
+      "type": "array",
+      "items": {
+       "enum": [
+        "solved",
+        "deadlocked",
+        "outofsteps",
+        "unreached"
+       ],
+       "type": "string"
+      },
+      "maxItems": 12,
+      "minItems": 1
+     },
+     "levelsSolved": {
+      "type": "integer"
+     },
+     "solvedWeight": {
+      "type": "integer"
+     },
+     "fallbackTurns": {
+      "type": "integer"
+     },
+     "actionsDropped": {
+      "type": "integer"
+     },
+     "levelOptPushes": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 12,
+      "minItems": 1
+     },
+     "movesSavedTotal": {
+      "type": "integer"
+     },
+     "repliesRepaired": {
+      "type": "integer"
+     },
+     "levelBoxesPlaced": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 12,
+      "minItems": 1
+     },
+     "levelTierRelaxed": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 12,
+      "minItems": 1
+     },
+     "macrosUnreachable": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "sokoban",
+   "single-agent",
+   "planning",
+   "puzzle",
+   "irreversible"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "pusher",
+    "env": {
+     "PLAYER_SCRIPTED": "pusher",
+     "PLAYER_POLICY_LABEL": "pusher"
+    },
+    "run": [
+     "/bin/sokoban-player"
+    ],
+    "name": "pusher",
+    "type": "player",
+    "image": "img_a5fe13e3-57b2-495d-930b-91e4367927c7",
+    "resources": {
+     "limits": {
+      "cpu": "1"
+     },
+     "requests": {
+      "cpu": "100m",
+      "memory": "64Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-sokoban/tree/a72dbac2f84fce4c58ec9402ac299c3d42abc700",
+    "description": "The reference Sokoban policy: a bounded best-first search over push space that prunes every deadlocking successor, matches crates to marked squares greedily and re-plans from scratch every turn. Same image as the game, selected with PLAYER_SCRIPTED=pusher."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/metta/main/packages/coworld/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "ladder",
+    "name": "Tier ladder (1 cog, 6 Sokoban levels)",
+    "description": "Six freshly generated 10x10 Sokoban levels, four crates each, walked up the three Boxoban tiers: two unfiltered, two medium, two hard. Crates can only be pushed, never pulled, so one crate shoved into a corner ends the level on the spot. Two hundred moves a level. Score is levels solved, weighted 1/2/3 by tier.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Alpha"
+      }
+     ],
+     "retryMs": 3000,
+     "boxCount": 4,
+     "fastMode": true,
+     "gridSize": 10,
+     "maxTicks": 1200,
+     "maxTurns": 60,
+     "parWeight": 5,
+     "turnMoves": 20,
+     "attempt1Ms": 6000,
+     "genNodeCap": 200000,
+     "levelCount": 6,
+     "minPlayers": 1,
+     "num_agents": 1,
+     "stepBudget": 200,
+     "tierLadder": [
+      "unfiltered",
+      "unfiltered",
+      "medium",
+      "medium",
+      "hard",
+      "hard"
+     ],
+     "levelTurnCap": 10,
+     "turnBudgetMs": 9000,
+     "gameOverTicks": 96,
+     "genAttemptCap": 8,
+     "turnSpacingMs": 2600,
+     "baselineNodeCap": 8,
+     "maxOutputTokens": 900,
+     "showPlayerLabels": false,
+     "macroPrimitiveCap": 32,
+     "maxActionsPerTurn": 8,
+     "lobbyJoinTimeoutTicks": 2400,
+     "wallClockBudgetSeconds": 690
+    }
+   },
+   {
+    "id": "hard",
+    "name": "Hard ladder (1 cog, 6 levels, four of them hard)",
+    "description": "The same six-level format with the easy tier removed: two medium levels and then four hard ones, each solvable in 23 to 34 pushes and each one bad shove from dead. This is where a searching baseline stops scoring and a planning policy separates.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Alpha"
+      }
+     ],
+     "retryMs": 3000,
+     "boxCount": 4,
+     "fastMode": true,
+     "gridSize": 10,
+     "maxTicks": 1200,
+     "maxTurns": 60,
+     "parWeight": 6,
+     "turnMoves": 20,
+     "attempt1Ms": 6000,
+     "genNodeCap": 200000,
+     "levelCount": 6,
+     "minPlayers": 1,
+     "num_agents": 1,
+     "stepBudget": 200,
+     "tierLadder": [
+      "medium",
+      "medium",
+      "hard",
+      "hard",
+      "hard",
+      "hard"
+     ],
+     "levelTurnCap": 10,
+     "turnBudgetMs": 9000,
+     "gameOverTicks": 96,
+     "genAttemptCap": 8,
+     "turnSpacingMs": 2600,
+     "baselineNodeCap": 8,
+     "maxOutputTokens": 900,
+     "showPlayerLabels": false,
+     "macroPrimitiveCap": 32,
+     "maxActionsPerTurn": 8,
+     "lobbyJoinTimeoutTicks": 2400,
+     "wallClockBudgetSeconds": 690
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [],
+  "certification": {
+   "players": [
+    {
+     "player_id": "pusher"
+    }
+   ],
+   "game_config": {
+    "seed": 42,
+    "players": [
+     {
+      "name": "Alpha"
+     }
+    ],
+    "retryMs": 3000,
+    "boxCount": 4,
+    "fastMode": true,
+    "gridSize": 10,
+    "maxTicks": 1200,
+    "maxTurns": 60,
+    "parWeight": 5,
+    "turnMoves": 20,
+    "attempt1Ms": 6000,
+    "genNodeCap": 200000,
+    "levelCount": 6,
+    "minPlayers": 1,
+    "num_agents": 1,
+    "stepBudget": 200,
+    "tierLadder": [
+     "unfiltered",
+     "unfiltered",
+     "medium",
+     "medium",
+     "hard",
+     "hard"
+    ],
+    "levelTurnCap": 10,
+    "turnBudgetMs": 9000,
+    "gameOverTicks": 96,
+    "genAttemptCap": 8,
+    "turnSpacingMs": 0,
+    "baselineNodeCap": 8,
+    "maxOutputTokens": 900,
+    "showPlayerLabels": false,
+    "macroPrimitiveCap": 32,
+    "maxActionsPerTurn": 8,
+    "lobbyJoinTimeoutTicks": 600,
+    "wallClockBudgetSeconds": 240
+   }
+  },
+  "episode_timeout_minutes": 20
+ },
+ "manifest_hash": "sha256:91df94dc27d710b8116aca94e1fe8c9162302f8e54661a3bbeabb3cff15f11bd",
+ "size_bytes": 35929,
+ "created_at": "2026-08-29T10:51:57.465787Z",
+ "canonical": true
+}

@@ -1,0 +1,198 @@
+{
+ "id": "cow_08f7d568-9c59-4a05-afbd-02b2b0727e24",
+ "name": "cogsul",
+ "version": "0.4.0",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "Cogsul Rules",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/cogame-cogsul/blob/main/coworld/docs/rules.md"
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-cogsul/blob/main/README.md"
+    }
+   },
+   "name": "cogsul",
+   "owner": "daveey@gmail.com",
+   "version": "0.4.0",
+   "runnable": {
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/coworld/game-cli.js"
+    ],
+    "type": "game",
+    "image": "img_0257b78e-d132-4ab7-97dc-a5e9d6cb9986",
+    "source_url": "https://github.com/Metta-AI/cogame-cogsul/tree/main/coworld"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "Read-only spectator feed: the @cogame/core ServerMessage stream the live console and replay viewer render. Each round advances through talk \u2192 negotiate \u2192 vote \u2192 govern phases, emitting feed events (talk, negotiate, vote, election, govern, income, phase) plus per-seat balance snapshots. The saved replay is `{ protocol: \"cogame.replay.v1\", frames: ServerMessage[] }`. Spectators send nothing."
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-cogsul/blob/main/coworld/docs/player-protocol.md"
+    }
+   },
+   "description": "A single-winner redistribution-politics negotiation game: LLM agents talk, transfer Hearts, and vote a Consul who taxes everyone and splits the Hearts treasury. Most Hearts after R rounds wins.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "seed"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "description": "Deterministic episode seed."
+     },
+     "rounds": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Redistribution rounds before the horizon."
+     },
+     "taxCap": {
+      "type": "number",
+      "maximum": 1,
+      "minimum": 0,
+      "description": "Maximum tax rate the Consul may set."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "description": "Per-seat auth tokens injected by the runner; length is the seat count."
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores"
+    ],
+    "properties": {
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "description": "Final Hearts balance per seat, in seat order."
+     },
+     "replayUri": {
+      "type": "string",
+      "description": "Pointer to the saved replay artifact, if one was written."
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "grader": [],
+  "player": [
+   {
+    "id": "cogsul-baseline",
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/cogame/baseline-player.js"
+    ],
+    "name": "Cogsul Baseline",
+    "type": "player",
+    "image": "img_0257b78e-d132-4ab7-97dc-a5e9d6cb9986",
+    "source_url": "https://github.com/Metta-AI/cogame-cogsul/tree/main/coworld",
+    "description": "Deterministic no-LLM baseline (talks nothing, no transfers, votes self, no tax). Certifies the contract offline."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "standard",
+    "name": "Standard (5 players, 6 rounds)",
+    "description": "The default five-seat game.",
+    "game_config": {
+     "seed": 1,
+     "rounds": 6,
+     "taxCap": 0.3
+    }
+   },
+   {
+    "id": "blitz",
+    "name": "Blitz (5 players, 3 rounds)",
+    "description": "A short, sharp game.",
+    "game_config": {
+     "seed": 1,
+     "rounds": 3,
+     "taxCap": 0.3
+    }
+   },
+   {
+    "id": "marathon",
+    "name": "Marathon (5 players, 12 rounds)",
+    "description": "A long game of shifting coalitions.",
+    "game_config": {
+     "seed": 1,
+     "rounds": 12,
+     "taxCap": 0.3
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Default Commissioner",
+    "type": "commissioner",
+    "image": "img_3543b5f5-036e-4ddb-8640-a8d61f47de0b",
+    "source_url": "https://github.com/Metta-AI/commissioners/tree/main/commissioners/ruleset_strategy_commissioner",
+    "description": "Game-agnostic round-robin commissioner with mean-score rankings."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "cogsul-baseline"
+    },
+    {
+     "player_id": "cogsul-baseline"
+    },
+    {
+     "player_id": "cogsul-baseline"
+    },
+    {
+     "player_id": "cogsul-baseline"
+    },
+    {
+     "player_id": "cogsul-baseline"
+    }
+   ],
+   "game_config": {
+    "seed": 1,
+    "rounds": 6,
+    "taxCap": 0.3
+   }
+  }
+ },
+ "manifest_hash": "sha256:4e2f4431b699bd3753072a674386c3cedda6ec7ad34baaa773db4239bd1f80e5",
+ "size_bytes": 3948,
+ "created_at": "2026-06-16T03:41:17.439762Z",
+ "canonical": true
+}

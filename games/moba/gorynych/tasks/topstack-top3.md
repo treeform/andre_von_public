@@ -1,0 +1,6 @@
+IMMEDIATE hosted XP only for topstack, gorynych:v3. User changed field: ALWAYS current TOP THREE UNIQUE OTHER PLAYERS, no own-version matches. The exact field verified now is daveey-scripted:v39, co-gas-moba-topstack-richard:v7, co-gas-moba-topstack-relhalpha:v3. requests.nim has ALREADY been updated to these. No code edits/build/upload needed. Your version already belongs to Andre von Auto.
+1. uv --project /Users/me/p/metta run coworld player use ply_3d22435e-30a2-4f2a-b037-a5c249583788 and softmax status require same subject_id player.
+2. nim r --hints:off games/moba/gorynych/tools/requests.nim gorynych:v3 topstack t1 10
+3. Immediately create all THREE generated requests/topstack/t1/{0,1,2}.json via uv --project /Users/me/p/metta run coworld xp-request create FILE --json. Save outputs using games/moba/gorynych/tools/captures to evidence/xp-topstack-t1-I.json. All paths rooted games/moba/gorynych.
+4. Verify focal policy is gorynych:v3, correct Andre von Auto player_id, exactly2policies, opponent is respective top-three version. Report 3XPIDs.
+Do not inspect/repeat historical nearest-MMR experiments. No supervisor wait. No league submission. Supervisor concurrently launched champion gorynych:v1 baseline against this SAME field. Never schedule gorynych against gorynych. Do not modify any source or docs; just run these commands.

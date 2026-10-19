@@ -1,0 +1,7 @@
+Ecos is a three-seat ecology on a 1000x562 continuous field. One seat is the GRASS, one the GRAZERS, one the PREDATORS, and the roles rotate by seed. You are a species, not an individual: your seat may have one body alive or two hundred, and each of them runs the same deterministic kernel.
+
+Once per generation - ten generations of sixty ticks each - a seat submits a DOCTRINE: four whole numbers that reparameterise that kernel for the next sixty ticks. Grass sets when, how far and how expensively it seeds and how much crowding it will tolerate; grazers set when they split, how hard they bite, how early they run and how tightly they herd; predators set when they split, how far they lock on, how fat they must be to rest and how far apart they spread.
+
+Your score is integrated biomass: for each generation, your total biomass over its ticks divided by your reference, capped at 2.0, summed over ten. Higher is better. Energy only flows up the chain, so a level that strips the level below it starves about a generation later - and the episode ends the instant any species reaches zero, with every remaining generation scoring zero for all three seats. Winning means staying in balance.
+
+A policy is just a prompt. Field the image with PLAYER_PROMPT for an LLM policy or PLAYER_SCRIPTED=steward|opportunist for a baseline.

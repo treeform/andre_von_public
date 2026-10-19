@@ -1,0 +1,252 @@
+{
+ "id": "cow_73b56196-81e9-4b1d-8f0e-f5393ba203c4",
+ "name": "jumper",
+ "version": "0.1.2",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "rules.md",
+      "content": {
+       "type": "text",
+       "value": "# Jumper Rules\n\nPlayers move through a side-scrolling platform level, cross pits, stack on each other when needed, and try to reach the flag. Reaching the flag scores one point and respawns the player at the start. Falling below the level respawns the player. The player with the most flag captures when time runs out wins."
+      }
+     },
+     {
+      "id": "play_jumper.md",
+      "title": "play_jumper.md",
+      "content": {
+       "type": "text",
+       "value": "# Play Jumper\n\nConnect with the sprite protocol player websocket, move right through the level, jump over gaps and walls, and cooperate with other players to cross larger hazards. The bundled dalli player is a deterministic flag-seeking baseline bot."
+      }
+     }
+    ],
+    "readme": {
+     "type": "text",
+     "value": "# Jumper\n\nCooperative Coworld platformer where players cross pits, stack on each other, and reach the flag."
+    }
+   },
+   "name": "jumper",
+   "owner": "treeform@softmax.com",
+   "version": "0.1.2",
+   "runnable": {
+    "env": {},
+    "run": [
+     "/bin/jumper"
+    ],
+    "type": "game",
+    "image": "img_32c80539-433c-4cfa-b993-14556453d412"
+   },
+   "protocols": {
+    "global": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/bitworld/blob/master/docs/sprite_v1.md"
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/bitworld/blob/master/docs/sprite_v1.md"
+    }
+   },
+   "description": "A cooperative BitWorld platformer where players cross pits, stack on each other, and reach the flag.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "default": 727920,
+      "minimum": 0,
+      "description": "Random seed."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 0
+      },
+      "default": [
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       ""
+      ],
+      "maxItems": 8,
+      "minItems": 8,
+      "description": "One connection token per player slot, indexed by slot."
+     },
+     "maxGames": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "description": "Maximum fresh games before shutdown, where 0 means no game limit."
+     },
+     "maxTicks": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "description": "Maximum simulation ticks before starting a fresh game, where 0 means no tick limit."
+     },
+     "num_agents": {
+      "type": "integer",
+      "default": 8,
+      "maximum": 8,
+      "minimum": 1,
+      "description": "Player seat count used by hosted league seating."
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "names",
+     "scores"
+    ],
+    "properties": {
+     "names": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 8,
+      "minItems": 8,
+      "description": "Player display names in seat slot order."
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 8,
+      "minItems": 8,
+      "description": "Flag captures per seat slot at the end of the game."
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "grader": [
+   {
+    "id": "bitworld-score-grader",
+    "env": {},
+    "run": [],
+    "name": "BitWorld Score Grader",
+    "type": "grader",
+    "image": "img_70f45b71-7723-405e-9e9b-1324de60ecc9",
+    "source_url": "https://github.com/Metta-AI/coworld-jumper/tree/27f2bb46f37a247cc06e168ee636c4248593ff05/grader/graders/bitworld_score/bitworld_score_grader",
+    "description": "Generic BitWorld grader that scores episode interest from score spread and game-specific activity signals."
+   }
+  ],
+  "player": [
+   {
+    "id": "dalli",
+    "env": {},
+    "run": [
+     "/bin/dalli"
+    ],
+    "name": "dalli",
+    "type": "player",
+    "image": "img_eb899de1-e796-46cb-a436-c1cc91c00431",
+    "description": "Deterministic flag-seeking baseline Jumper bot."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/metta/main/packages/coworld/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "league",
+    "name": "League",
+    "description": "One bounded three-minute Jumper game used for hosted league rounds.",
+    "game_config": {
+     "seed": 727920,
+     "maxGames": 1,
+     "maxTicks": 4320,
+     "num_agents": 8
+    }
+   },
+   {
+    "id": "freeplay",
+    "name": "Freeplay",
+    "description": "Open-ended Jumper configuration for local player testing.",
+    "game_config": {
+     "seed": 727920,
+     "maxGames": 0,
+     "maxTicks": 0
+    }
+   },
+   {
+    "id": "smoke",
+    "name": "Smoke",
+    "description": "Short deterministic Jumper configuration used for manifest checks.",
+    "game_config": {
+     "seed": 727920,
+     "maxGames": 1,
+     "maxTicks": 300
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Default Commissioner",
+    "type": "commissioner",
+    "image": "img_8559b8c6-72dc-4743-8451-2f5a196a068f",
+    "source_url": "https://github.com/Metta-AI/commissioners/tree/fa8ac7cb2bc6fd54c5675c7993919afabebcf4ba/commissioners/ruleset_strategy_commissioner",
+    "description": "Game-agnostic round-robin commissioner with mean-score rankings, configured for hourly Jumper rounds."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "dalli"
+    },
+    {
+     "player_id": "dalli"
+    },
+    {
+     "player_id": "dalli"
+    },
+    {
+     "player_id": "dalli"
+    },
+    {
+     "player_id": "dalli"
+    },
+    {
+     "player_id": "dalli"
+    },
+    {
+     "player_id": "dalli"
+    },
+    {
+     "player_id": "dalli"
+    }
+   ],
+   "game_config": {
+    "seed": 727920,
+    "maxGames": 1,
+    "maxTicks": 300
+   }
+  },
+  "players_per_user": 8
+ },
+ "manifest_hash": "sha256:d31186c0b085f374c6cb601416000048da0c3c7826ea33344ea00173610574a1",
+ "size_bytes": 5015,
+ "created_at": "2026-07-04T17:45:02.061429Z",
+ "canonical": true
+}

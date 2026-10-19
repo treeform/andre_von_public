@@ -1,0 +1,12 @@
+===== container: coworld-init-config =====
+b''
+
+===== container: bedrock-sidecar =====
+b'2026-09-12 14:50:36,942 INFO __main__ bedrock_sidecar_started {"listen_port":9100,"region":"us-east-1","has_role_arn":true,"schema_version":"1","source":"coworld_episode","metadata_origin":"bedrock_sidecar","episode_request_id":"6f3e4245-d0be-4029-9b06-177cce410145","job_request_id":"a94d9853-579d-45e5-98bc-88af067960d8","role":"game","slot":"game","image_digest":"sha256:513048214ec5d2142e1b8ce5ca1bf6802ee6c28bd28f4a57ab0445e56ea19547"}\n[2026-09-12 14:50:37 +0000] [10] [INFO] Running on http://127.0.0.1:9100 (CTRL + C to quit)\n2026-09-12 14:50:37,249 INFO hypercorn.error Running on http://127.0.0.1:9100 (CTRL + C to quit)\n2026-09-12 14:52:45,689 WARNING datadog.dogstatsd Error submitting packet: [Errno 111] Connection refused, dropping the packet and closing the socket\n'
+
+===== container: game =====
+b'cogame-nmmo serving on 0.0.0.0:8080 (8 seats x 1 heroes)\nseat 1 (daveey) connected at tick 0 [obs=clean]\nseat 2 (daveey (2)) connected at tick 0 [obs=clean]\nseat 4 (Andre von Auto (2)) connected at tick 0 [obs=clean]\nseat 3 (Andre von Auto) connected at tick 0\nseat 5 (relh) connected at tick 0\nseat 0 (daveey-1) connected at tick 0 [obs=clean]\nseat 7 (daveey-1 (2)) connected at tick 0 [obs=clean]\nseat 6 (relh (2)) connected at tick 0\nprogress: tick 1263/5000, elapsed 30s, noops=[0, 0, 0, 0, 0, 0, 0, 0], strikes=[0, 0, 0, 0, 0, 0, 0, 0]\nprogress: tick 2511/5000, elapsed 60s, noops=[0, 0, 0, 0, 0, 0, 0, 0], strikes=[0, 0, 0, 0, 0, 0, 0, 0]\nprogress: tick 3808/5000, elapsed 90s, noops=[0, 0, 0, 0, 0, 0, 0, 0], strikes=[0, 0, 0, 0, 0, 0, 0, 0]\nseat 0 (daveey-1) disconnected at tick 4999\nseat 1 (daveey) disconnected at tick 4999\nseat 2 (daveey (2)) disconnected at tick 4999\nseat 3 (Andre von Auto) disconnected at tick 4999\nseat 4 (Andre von Auto (2)) disconnected at tick 4999\nseat 5 (relh) disconnected at tick 4999\nseat 6 (relh (2)) disconnected at tick 4999\nseat 7 (daveey-1 (2)) disconnected at tick 4999\nepisode over: end_reason=tick_cap tick=5000 top_score=8.25 scores=[6.25, 3.3333333333333335, 6.0, 1.3035714285714286, 1.4878048780487805, 5.5, 8.25, 4.666666666666667]\n'
+
+===== container: worker =====
+b''
+

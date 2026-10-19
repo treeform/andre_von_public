@@ -1,0 +1,3 @@
+# nomic-fable spectator protocol
+
+JSON over the platform WebSocket at `/global`. On connect the server immediately sends `hello` {started, done, seats_connected, seats_total}, then replays the public event log, then streams live events: `game_start`, `turn_start`, `proposal_made`, `debate_made`, `vote_reveal`, `judge_ruling` (with full rulebook and state after each ruling), `game_over`, `final`. Everything in this game is public — there is no hidden state.

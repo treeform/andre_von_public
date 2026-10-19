@@ -1,0 +1,511 @@
+{
+ "id": "cow_796e0e49-fb08-4681-98e2-6e7854b28f41",
+ "name": "ecos",
+ "version": "0.1.1",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "Rules",
+      "content": {
+       "type": "text",
+       "value": "# Ecos rules\n\n## The field and the clock\n\n- Continuous field, 1000 x 562 world units, no walls and no obstacles. Bodies are\n  clamped to the rectangle; there is no wrap-around.\n- One episode = 10 generations x 60 ticks = 600 ticks. Playback is 24 fps, so a\n  full replay is 25 seconds of video.\n- Every sim quantity is an integer. Headings are brads (0..255) resolved through\n  a 256-entry integer sine table, and the RNG is a seeded integer stream, so one\n  seed reproduces one replay bit-exactly on any host.\n\n## Seats and roles\n\n| slot | alias   | role when roleOffset = 0 | colour |\n|------|---------|--------------------------|--------|\n| 0    | Sedge   | grass (producer)         | green  |\n| 1    | Bramble | grazers (herbivore)      | yellow |\n| 2    | Quill   | predators (carnivore)    | red    |\n\nrole(slot) = (slot + roleOffset) mod 3, with roleOffset = seed mod 3 unless the\nconfig pins it. Roles rotate; aliases do not. Seats see ONLY the three aliases -\nno policy name, player name or account ever reaches a seat.\n\n## The doctrine\n\n| role      | field           | range   | default |\n|-----------|-----------------|---------|---------|\n| grass     | seed_threshold  | 60..200 | 100     |\n| grass     | seed_range      | 24..240 | 90      |\n| grass     | seed_cost       | 20..80  | 40      |\n| grass     | crowd_limit     | 0..6    | 3       |\n| grazers   | birth_threshold | 80..240 | 90      |\n| grazers   | bite            | 2..14   | 10      |\n| grazers   | flee_range      | 0..300  | 40      |\n| grazers   | herd            | 0..100  | 20      |\n| predators | birth_threshold | 150..400| 400     |\n| predators | hunt_range      | 40..400 | 140     |\n| predators | rest_energy     | 0..400  | 200     |\n| predators | spread          | 0..100  | 40      |\n\nA doctrine holds until the next generation. Out-of-range values are clamped and\nthe decision is recorded as clamped; a missing or non-numeric field is an\ninvalid reply, retried once and then replaced by the steward doctrine.\n\n## Tick resolution order\n\n1. Grass photosynthesis: gain = clamp(grassGain - neighbours within 55, 0,\n   grassGain), then minus 1 metabolism, capped at 200.\n2. Grazer sense: crowding within 60, stress = min(2, crowd / 6), distance to the\n   nearest predator, whether a tuft is within 16.\n3. Grazing: bite min(doctrine.bite, tuft energy) from the nearest tuft; the\n   grazer keeps 80% of it.\n4. Grazer movement and metabolism: grazing bodies hold still; fleeing bodies run\n   at 9 (11 with four or more neighbours) for 2; the rest walk at 6 for 1,\n   blending food and herd directions by `herd`.\n5. Predator sense: crowding within 60, stress = min(2, crowd / 2), cooldown down\n   one.\n6. Predator act: above rest_energy it idles for 1; otherwise it locks the nearest\n   grazer within hunt_range, kills within 16 once every 12 ticks for\n   min(180, 90 + the grazer's energy), chases at 12 for 3, or roams at 7 for 2.\n7. Positions are clamped to the field.\n8. Deaths: grazers marked eaten (predation), then any body at 0 energy or less\n   (starve). Dead bodies are removed before births.\n9. Births, grass then grazers then predators, each stopping at its cap. Grass\n   seeds seed_range away for seed_cost + 10, or pays 10 and fails when the target\n   is already crowded. Grazers and predators split at birth_threshold, both\n   halves keeping (energy - 20) / 2.\n10. Record the tick's state frame, its events and the population/biomass row.\n\n## Scoring\n\n- Instantaneous biomass B(t) is the total energy of your living bodies.\n- References: grass 20000, grazers 4000, predators 3000.\n- G(g) = (sum of B(t) over generation g) / (60 x your reference).\n- Score = sum over the ten generations of min(G(g), 2.0). Higher is better;\n  a balanced ecosystem scores roughly 4..13 per seat.\n- The episode ends the instant any species reaches 0. Every remaining generation\n  scores 0 for all three seats, so a crash costs its author more than restraint\n  would have.\n"
+      }
+     },
+     {
+      "id": "policies.md",
+      "title": "Fielding a policy",
+      "content": {
+       "type": "text",
+       "value": "# Fielding a policy in Ecos\n\nA policy is a prompt. `/bin/ecos-player` connects, sends\n`{\"type\":\"prompt\",\"prompt\":\"...\",\"scripted\":\"...\"}` once, and then only listens:\nevery decision is made inside the game container, which composes the seat's\nobservation plus your prompt and asks the model. That is what lets all three\nseats be decided as ONE parallel batch per generation.\n\n## An LLM policy\n\n    coworld upload-policy coworld-ecos:latest \\\n      --name my-ecos \\\n      --run /bin/ecos-player \\\n      --secret-env PLAYER_PROMPT=\"<your strategy, at most 4000 characters>\"\n\nYour prompt is rendered into the user turn under a \"GUIDANCE FROM YOUR OPERATOR\"\nheading and is weighted heavily, but never above the rules.\n\n## A scripted baseline\n\n    coworld upload-policy coworld-ecos:latest \\\n      --name my-ecos-baseline \\\n      --run /bin/ecos-player \\\n      --secret-env PLAYER_SCRIPTED=steward\n\n`steward` plays the verified default doctrine plus two closed-loop corrections\n(recruit when thin; back off when your food is thin). `opportunist` plays the\nsame corrections over a greedier constant doctrine: it scores higher when the\nother two seats are cautious and wrecks the field when they are not.\n\n## What the model sees\n\nAll three species' populations, biomass, births, starvations and predation\ncounts for every generation played; a 10x6 density grid per species; its own\ndoctrine, mean body energy, mean crowding and its own constants; the alias of\neach role. It never sees another seat's doctrine, notes or say text, the RNG\nseed, individual body positions, or anything about accounts or the league.\n\n## What the model returns\n\n    {\"doctrine\": {\"birth_threshold\": 110, \"bite\": 8, \"flee_range\": 90,\n                  \"herd\": 55},\n     \"say\": \"backing off the north pasture\",\n     \"notes\": \"grass fell 18% last gen; predators at 11 and rising\"}\n\n`say` is at most 64 characters and is spectator-only - it is drawn in the replay\nfeed and never shown to another seat. `notes` is at most 400 characters and is\nhanded back to you next generation. Both are truncated on rune boundaries.\n"
+      }
+     }
+    ],
+    "readme": {
+     "type": "text",
+     "value": "Ecos is a three-seat ecology on a 1000x562 continuous field. One seat is the GRASS, one the GRAZERS, one the PREDATORS, and the roles rotate by seed. You are a species, not an individual: your seat may have one body alive or two hundred, and each of them runs the same deterministic kernel.\n\nOnce per generation - ten generations of sixty ticks each - a seat submits a DOCTRINE: four whole numbers that reparameterise that kernel for the next sixty ticks. Grass sets when, how far and how expensively it seeds and how much crowding it will tolerate; grazers set when they split, how hard they bite, how early they run and how tightly they herd; predators set when they split, how far they lock on, how fat they must be to rest and how far apart they spread.\n\nYour score is integrated biomass: for each generation, your total biomass over its ticks divided by your reference, capped at 2.0, summed over ten. Higher is better. Energy only flows up the chain, so a level that strips the level below it starves about a generation later - and the episode ends the instant any species reaches zero, with every remaining generation scoring zero for all three seats. Winning means staying in balance.\n\nA policy is just a prompt. Field the image with PLAYER_PROMPT for an LLM policy or PLAYER_SCRIPTED=steward|opportunist for a baseline."
+    }
+   },
+   "name": "ecos",
+   "owner": "daveey@gmail.com",
+   "version": "0.1.1",
+   "runnable": {
+    "env": {
+     "ANTHROPIC_API_KEY_URI": "secret://coworld/ecos/anthropic_api_key"
+    },
+    "run": [
+     "/bin/ecos"
+    ],
+    "type": "game",
+    "image": "img_b78a311a-6569-44ec-94eb-a1b45a4b8e7b",
+    "source_url": "https://github.com/Metta-AI/cogame-ecos/tree/fc34252c8c43d3f5601c7dae35d619c3388f89de"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "Global spectators connect a websocket to /global and receive the bitworld sprite protocol as binary frames: a layer + viewport message, the sprite definitions (soil tiles, four grass stages, the grazer and predator poses, the sparkle/splash/fade effects and the silent-spring wash), then one object message per living body per frame with stale ids deleted. The broadcast chrome - scorebug, GEN n / 10 clock, doctrine feed, transport, population strip and end-card - rides as the LABEL of the reserved 1x1 sprite id 4090 and is routed straight to the page's onText handler; it is a JSON object with t/mt/ph/pl/sp/mx/st/teams/roster/events, plus lead (the whole-episode population strip, shipped once) and over (the end-card).\n\nGET /client/global serves that page live. Recorded episodes are NOT served by a pod: the replay is one strict-UTF-8 JSON document (protocol ecos.replay.v1) of per-tick state frames, and the static wasm bundle plays it at index.html?replay=<url>. GET /healthz and GET /client/player?slot=N&token=T complete the contract."
+    },
+    "player": {
+     "type": "text",
+     "value": "ecos.player.v1 - JSON text frames over the websocket named by COWORLD_PLAYER_WS_URL (/player?slot=N&token=T).\n\ngame -> player, on connect:\n  {\"type\":\"welcome\",\"protocol\":\"ecos.player.v1\",\"slot\":1,\"name\":\"Bramble\",\"role\":\"grazers\",\"generations\":10,\"ticksPerGeneration\":60}\n\ngame -> player, at every generation boundary and at episode end:\n  {\"type\":\"state\",\"protocol\":\"ecos.player.v1\",\"slot\":1,\"name\":\"Bramble\",\"role\":\"grazers\",\"generation\":4,\"generations\":10,\"ticksPerGeneration\":60,\"tick\":180,\"field\":{\"w\":1000,\"h\":562},\"you\":{\"population\":72,\"biomass\":3016,\"reference\":4000,\"scoreSoFar\":2.71,\"doctrine\":{...4 role fields...},\"meanEnergy\":41,\"meanCrowd\":3,\"cap\":140},\"species\":[{\"role\",\"alias\",\"population\",\"biomass\",\"reference\",\"cap\"} x3],\"history\":[{\"g\",\"pop\"[3],\"bio\"[3],\"births\"[3],\"starved\"[3],\"eaten\",\"score\"[3]}],\"density\":{\"cols\":10,\"rows\":6,\"grass\":[60 ints],\"grazers\":[60],\"predators\":[60]},\"notes\":\"...\",\"rules\":{...}}\n\ngame -> player, terminal:\n  {\"type\":\"final\",\"done\":true,\"slot\":N,\"scores\":[...],\"roles\":[...],\"names\":[aliases],\"generations\":G,\"reason\":...,\"ending\":...}. The player exits 0 after this frame.\n\nplayer -> game, immediately on connect and again after the welcome (the re-send guards the slot-registration race):\n  {\"type\":\"prompt\",\"prompt\":\"<= 4000 chars\",\"scripted\":\"steward|opportunist|\"}\nAny other frame is ignored with a log line.\n\nThe doctrine the game asks the model for, per role, with the caps it enforces: grass {seed_threshold 60..200, seed_range 24..240, seed_cost 20..80, crowd_limit 0..6}; grazers {birth_threshold 80..240, bite 2..14, flee_range 0..300, herd 0..100}; predators {birth_threshold 150..400, hunt_range 40..400, rest_energy 0..400, spread 0..100}. `say` is capped at 64 runes, `notes` at 400; both are truncated on rune boundaries. Out-of-range doctrine values are clamped, a missing one is an invalid reply."
+    }
+   },
+   "description": "Ecos: grass, grazers and predators on a continuous field, one seat per trophic role. Each seat is a whole species and sets a four-integer doctrine once per generation; the score is integrated biomass, and any role that crashes the others crashes itself a generation later.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "description": "Episode seed; unpinned it is randomised at start."
+     },
+     "model": {
+      "type": "string",
+      "default": "claude-haiku-4-5",
+      "maxLength": 128,
+      "description": "Anthropic model id when not on Bedrock."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 128,
+       "minLength": 1
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "description": "One per-seat websocket token, in slot order."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "maxLength": 128,
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "description": "Policy names, in slot order. Seats never see them."
+     },
+     "variant": {
+      "enum": [
+       "standard",
+       "harsh-spring"
+      ],
+      "type": "string",
+      "default": "standard",
+      "description": "Which variant's opening this episode ran. Recorded into the replay's config block so a harsh-spring replay is distinguishable from a standard one."
+     },
+     "capGrass": {
+      "type": "integer",
+      "default": 220,
+      "maximum": 400,
+      "minimum": 1,
+      "description": "Hard grass population cap."
+     },
+     "grassGain": {
+      "type": "integer",
+      "default": 5,
+      "maximum": 12,
+      "minimum": 1,
+      "description": "Unshaded photosynthesis gain per tuft per tick."
+     },
+     "initGrass": {
+      "type": "integer",
+      "default": 160,
+      "maximum": 220,
+      "minimum": 1,
+      "description": "Opening grass tufts."
+     },
+     "capGrazers": {
+      "type": "integer",
+      "default": 140,
+      "maximum": 400,
+      "minimum": 1,
+      "description": "Hard grazer population cap."
+     },
+     "num_agents": {
+      "type": "integer",
+      "default": 3,
+      "maximum": 3,
+      "minimum": 3,
+      "description": "Seats. Ecos is a three-seat game."
+     },
+     "roleOffset": {
+      "type": "integer",
+      "default": -1,
+      "maximum": 2,
+      "minimum": -1,
+      "description": "role(slot) = (slot + roleOffset) mod 3. -1 derives it from the seed."
+     },
+     "generations": {
+      "type": "integer",
+      "default": 10,
+      "maximum": 12,
+      "minimum": 1,
+      "description": "Generations in the episode."
+     },
+     "initGrazers": {
+      "type": "integer",
+      "default": 40,
+      "maximum": 140,
+      "minimum": 1,
+      "description": "Opening grazers."
+     },
+     "capPredators": {
+      "type": "integer",
+      "default": 30,
+      "maximum": 200,
+      "minimum": 1,
+      "description": "Hard predator population cap."
+     },
+     "initPredators": {
+      "type": "integer",
+      "default": 10,
+      "maximum": 30,
+      "minimum": 1,
+      "description": "Opening predators."
+     },
+     "minTurnSeconds": {
+      "type": "integer",
+      "default": 6,
+      "maximum": 60,
+      "minimum": 0,
+      "description": "Floor on the wall-clock spacing between batch starts, so the episode stays under the sidecar's 30 requests per minute."
+     },
+     "maxOutputTokens": {
+      "type": "integer",
+      "default": 900,
+      "maximum": 4096,
+      "minimum": 64,
+      "description": "Model output cap; 400 truncates mid-JSON."
+     },
+     "llmTimeoutSeconds": {
+      "type": "integer",
+      "default": 25,
+      "maximum": 120,
+      "minimum": 1,
+      "description": "Timeout for one batch of seat requests."
+     },
+     "ticksPerGeneration": {
+      "type": "integer",
+      "default": 60,
+      "maximum": 90,
+      "minimum": 10,
+      "description": "Ticks per generation."
+     },
+     "shutdownGraceSeconds": {
+      "type": "integer",
+      "default": 20,
+      "maximum": 120,
+      "minimum": 0,
+      "description": "How long /healthz and /global keep answering after the artifacts are written, so hosted certification's post-pod ping lands."
+     },
+     "episodeTimeoutSeconds": {
+      "type": "integer",
+      "default": 1200,
+      "minimum": 60,
+      "description": "Assumed platform kill time; play stops at 60% of it."
+     },
+     "playerConnectTimeoutSeconds": {
+      "type": "integer",
+      "default": 180,
+      "minimum": 1,
+      "description": "How long to wait for the three seats before starting anyway."
+     }
+    },
+    "additionalProperties": false
+   },
+   "replay_viewer": {
+    "bundle": "sha256:44eea5494b81b73c6c6131629ca5a725d2a48db647ea09f42a657fcda96ce1fe"
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "names",
+     "scores",
+     "win",
+     "roles",
+     "generations",
+     "reason",
+     "ending"
+    ],
+    "properties": {
+     "win": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      }
+     },
+     "names": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "description": "Policy names by slot."
+     },
+     "roles": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "births": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      }
+     },
+     "ending": {
+      "type": "string",
+      "description": "ten_generations | collapse_grass | collapse_grazers | collapse_predators | deadline | forfeit"
+     },
+     "reason": {
+      "enum": [
+       "complete",
+       "deadline",
+       "forfeit"
+      ],
+      "type": "string"
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "description": "Capped integrated biomass by slot; higher is better."
+     },
+     "biomass": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "description": "Mean biomass over the ticks played, by slot."
+     },
+     "starved": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      }
+     },
+     "predation": {
+      "type": "integer",
+      "description": "Total grazers eaten."
+     },
+     "population": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "description": "Population on the last played tick, by slot."
+     },
+     "generations": {
+      "type": "integer",
+      "description": "Generations scored. A generation cut short by a collapse is closed, scored against the full denominator and counted here."
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "ecology",
+   "population-dynamics",
+   "llm-driven",
+   "non-zero-sum",
+   "three-player",
+   "real-time"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "ecos-player",
+    "env": {},
+    "run": [
+     "/bin/ecos-player"
+    ],
+    "name": "Ecos Prompt Player",
+    "type": "player",
+    "image": "img_b78a311a-6569-44ec-94eb-a1b45a4b8e7b",
+    "resources": {
+     "limits": {
+      "cpu": "1"
+     },
+     "requests": {
+      "cpu": "100m",
+      "memory": "64Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-ecos/tree/fc34252c8c43d3f5601c7dae35d619c3388f89de",
+    "description": "The reference Ecos policy: delivers its PLAYER_PROMPT (or a default steward strategy in words) to the game and spectates until the final frame. Field your own policy by uploading this same image with a different PLAYER_PROMPT."
+   },
+   {
+    "id": "ecos-steward",
+    "env": {
+     "PLAYER_SCRIPTED": "steward"
+    },
+    "run": [
+     "/bin/ecos-player"
+    ],
+    "name": "Ecos Steward Baseline",
+    "type": "player",
+    "image": "img_b78a311a-6569-44ec-94eb-a1b45a4b8e7b",
+    "resources": {
+     "limits": {
+      "cpu": "1"
+     },
+     "requests": {
+      "cpu": "100m",
+      "memory": "64Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-ecos/tree/fc34252c8c43d3f5601c7dae35d619c3388f89de",
+    "description": "The scripted steward: the verified default doctrine plus two closed-loop corrections - recruit when thin, back off when your food is thin. Legal by construction and able to sustain ten generations on every seeded opening."
+   },
+   {
+    "id": "ecos-opportunist",
+    "env": {
+     "PLAYER_SCRIPTED": "opportunist"
+    },
+    "run": [
+     "/bin/ecos-player"
+    ],
+    "name": "Ecos Opportunist Baseline",
+    "type": "player",
+    "image": "img_b78a311a-6569-44ec-94eb-a1b45a4b8e7b",
+    "resources": {
+     "limits": {
+      "cpu": "1"
+     },
+     "requests": {
+      "cpu": "100m",
+      "memory": "64Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-ecos/tree/fc34252c8c43d3f5601c7dae35d619c3388f89de",
+    "description": "The scripted opportunist: the same corrections over a greedier constant doctrine. It scores higher when the other two seats are cautious and wrecks the field when they are not - an honestly weaker filler."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest.schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "standard",
+    "name": "Standard meadow",
+    "description": "Three cogs, ten generations of sixty ticks on a rich opening: 160 tufts, 40 grazers, 10 predators.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Sedge"
+      },
+      {
+       "name": "Bramble"
+      },
+      {
+       "name": "Quill"
+      }
+     ],
+     "capGrass": 220,
+     "grassGain": 5,
+     "initGrass": 160,
+     "capGrazers": 140,
+     "num_agents": 3,
+     "roleOffset": -1,
+     "generations": 10,
+     "initGrazers": 40,
+     "capPredators": 30,
+     "initPredators": 10,
+     "ticksPerGeneration": 60,
+     "playerConnectTimeoutSeconds": 180
+    }
+   },
+   {
+    "id": "harsh-spring",
+    "name": "Harsh spring",
+    "description": "A leaner opening where restraint matters sooner: fewer grazers and fewer predators start the year, so a role that pushes early has less slack to absorb it.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Sedge"
+      },
+      {
+       "name": "Bramble"
+      },
+      {
+       "name": "Quill"
+      }
+     ],
+     "variant": "harsh-spring",
+     "capGrass": 220,
+     "grassGain": 5,
+     "initGrass": 160,
+     "capGrazers": 140,
+     "num_agents": 3,
+     "roleOffset": -1,
+     "generations": 10,
+     "initGrazers": 32,
+     "capPredators": 30,
+     "initPredators": 8,
+     "ticksPerGeneration": 60,
+     "playerConnectTimeoutSeconds": 180
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [],
+  "certification": {
+   "players": [
+    {
+     "player_id": "ecos-player"
+    },
+    {
+     "player_id": "ecos-steward"
+    },
+    {
+     "player_id": "ecos-opportunist"
+    }
+   ],
+   "game_config": {
+    "seed": 7,
+    "players": [
+     {
+      "name": "Sedge"
+     },
+     {
+      "name": "Bramble"
+     },
+     {
+      "name": "Quill"
+     }
+    ],
+    "num_agents": 3,
+    "generations": 6,
+    "minTurnSeconds": 0,
+    "ticksPerGeneration": 60,
+    "playerConnectTimeoutSeconds": 180
+   }
+  },
+  "episode_timeout_minutes": 20
+ },
+ "manifest_hash": "sha256:b99ab990db2ff6b9adc084ac691c8be38ddec82645be5459520574354157604f",
+ "size_bytes": 19753,
+ "created_at": "2026-08-23T16:49:59.894863Z",
+ "canonical": true
+}

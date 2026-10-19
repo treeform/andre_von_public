@@ -1,0 +1,30 @@
+[2m2026-09-12T14:48:48.841683Z[0m [33m WARN[0m tools allowlist had unmappable entries; keeping full grok toolset [3magent[0m[2m=[0mgrok-build-plan [3munresolved[0m[2m=[0m["run_terminal_command"] [3mallowed[0m[2m=[0m["read_file", "run_terminal_command"]
+[2m2026-09-12T14:48:48.884091Z[0m [33m WARN[0m hooks: skipped unrecognized event names (check for typos) [3mfile[0m[2m=[0m/Users/me/.claude/settings.json [3mskipped[0m[2m=[0m["PermissionRequest"]
+[2m2026-09-12T14:48:48.884131Z[0m [33m WARN[0m hook loading from settings file: failed to parse hook file /Users/me/.cursor/hooks.json: invalid matcher groups for event 'postToolUseFailure': missing field `hooks`
+[2m2026-09-12T14:48:48.884142Z[0m [33m WARN[0m hook loading error [3merror[0m[2m=[0mParseFile { path: "/Users/me/.cursor/hooks.json", detail: "invalid matcher groups for event 'postToolUseFailure': missing field `hooks`" }
+[2m2026-09-12T14:48:49.056048Z[0m [31mERROR[0m Failed to spawn MCP server 'metta-pr-similarity': No such file or directory (os error 2)
+[2m2026-09-12T14:48:49.056323Z[0m [33m WARN[0m Failed to spawn MCP server: Failed to spawn MCP server 'metta-pr-similarity': No such file or directory (os error 2)
+[2m2026-09-12T14:48:49.065145Z[0m [33m WARN[0m MCP server spawn failed, removing from initializing set [3mserver[0m[2m=[0m"metta-pr-similarity"
+[2m2026-09-12T14:48:49.171867Z[0m [31mERROR[0m worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer resource_metadata=\"https://mcp.figma.com/.well-known/oauth-protected-resource\",scope=\"mcp:connect\",authorization_uri=\"https://api.figma.com/.well-known/oauth-authorization-server\"" })
+[2m2026-09-12T14:48:49.218586Z[0m [31mERROR[0m worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer resource_metadata=\"https://mcp.figma.com/.well-known/oauth-protected-resource\",scope=\"mcp:connect\",authorization_uri=\"https://api.figma.com/.well-known/oauth-authorization-server\"" })
+[2m2026-09-12T14:48:49.218666Z[0m [33m WARN[0m both handshake phases failed (surfacing the legacy error) [3mserver[0m[2m=[0mfigma [3mprobe_error[0m[2m=[0mSend message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send discover request [3mlegacy_error[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request
+[2m2026-09-12T14:48:49.219760Z[0m [33m WARN[0m MCP server init failed [3mserver[0m[2m=[0mfigma [3merror[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request
+[2m2026-09-12T14:48:49.219802Z[0m [33m WARN[0m MCP server failed to initialize [3mserver[0m[2m=[0m"figma" [3melapsed_ms[0m[2m=[0m150 [3mtimeout_sec[0m[2m=[0m30 [3merror[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request [3mneeds_auth[0m[2m=[0mtrue
+I'll run the authorized upload command first, then read the version file and continue the remaining CLI steps without waiting.Upload returned `buyan:v4`. Next I'll generate both hunt request files with that label, then create the xp-requests.Upload completed as **`buyan:v4`**. Both hunt xp-requests are pending.
+
+**Verified candidate**
+- Label: `buyan:v4` (version `4`; not guessed)
+- Policy UUID: `c7f7a95d-ff7f-4716-8667-93591a0e22c2`
+- Policy version UUID: `67cb619d-f8df-42b9-a2d2-b6c45cd15801`
+- Owner: **Andre von Auto**
+- Player: `ply_3d22435e-30a2-4f2a-b037-a5c249583788`
+
+Baseline remains `buyan:v1` in the same episodes.
+
+**Request IDs**
+| Variant | Request ID | Status | Episodes |
+|---|---|---|---|
+| version_a | `xreq_d3a9cdba-decf-4e16-9721-d89b904b3319` | pending | 15 |
+| version_b | `xreq_4e91bf6f-743b-4960-9fdb-ba3d55d67ebb` | pending | 15 |
+
+Requester: `starplant@gmail.com` (`s25q6tn121cx1j3z7ql3ga5d`). Coworld `nmmo` `cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc` `0.1.5`. No league submission.

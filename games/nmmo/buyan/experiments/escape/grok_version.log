@@ -1,0 +1,23 @@
+[2m2026-09-12T14:48:48.767956Z[0m [33m WARN[0m tools allowlist had unmappable entries; keeping full grok toolset [3magent[0m[2m=[0mgrok-build-plan [3munresolved[0m[2m=[0m["run_terminal_command"] [3mallowed[0m[2m=[0m["read_file", "run_terminal_command"]
+[2m2026-09-12T14:48:48.805804Z[0m [33m WARN[0m hooks: skipped unrecognized event names (check for typos) [3mfile[0m[2m=[0m/Users/me/.claude/settings.json [3mskipped[0m[2m=[0m["PermissionRequest"]
+[2m2026-09-12T14:48:48.805843Z[0m [33m WARN[0m hook loading from settings file: failed to parse hook file /Users/me/.cursor/hooks.json: invalid matcher groups for event 'postToolUse': missing field `hooks`
+[2m2026-09-12T14:48:48.805864Z[0m [33m WARN[0m hook loading error [3merror[0m[2m=[0mParseFile { path: "/Users/me/.cursor/hooks.json", detail: "invalid matcher groups for event 'postToolUse': missing field `hooks`" }
+[2m2026-09-12T14:48:48.915629Z[0m [31mERROR[0m Failed to spawn MCP server 'metta-pr-similarity': No such file or directory (os error 2)
+[2m2026-09-12T14:48:48.916095Z[0m [33m WARN[0m Failed to spawn MCP server: Failed to spawn MCP server 'metta-pr-similarity': No such file or directory (os error 2)
+[2m2026-09-12T14:48:48.918534Z[0m [33m WARN[0m MCP server spawn failed, removing from initializing set [3mserver[0m[2m=[0m"metta-pr-similarity"
+[2m2026-09-12T14:48:49.011427Z[0m [31mERROR[0m worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer resource_metadata=\"https://mcp.figma.com/.well-known/oauth-protected-resource\",scope=\"mcp:connect\",authorization_uri=\"https://api.figma.com/.well-known/oauth-authorization-server\"" })
+[2m2026-09-12T14:48:49.055145Z[0m [31mERROR[0m worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer resource_metadata=\"https://mcp.figma.com/.well-known/oauth-protected-resource\",scope=\"mcp:connect\",authorization_uri=\"https://api.figma.com/.well-known/oauth-authorization-server\"" })
+[2m2026-09-12T14:48:49.055767Z[0m [33m WARN[0m both handshake phases failed (surfacing the legacy error) [3mserver[0m[2m=[0mfigma [3mprobe_error[0m[2m=[0mSend message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send discover request [3mlegacy_error[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request
+[2m2026-09-12T14:48:49.055830Z[0m [33m WARN[0m MCP server init failed [3mserver[0m[2m=[0mfigma [3merror[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request
+[2m2026-09-12T14:48:49.055869Z[0m [33m WARN[0m MCP server failed to initialize [3mserver[0m[2m=[0m"figma" [3melapsed_ms[0m[2m=[0m127 [3mtimeout_sec[0m[2m=[0m30 [3merror[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request [3mneeds_auth[0m[2m=[0mtrue
+Running the authorized upload now, then I’ll read the returned version and create both xp-requests.Upload returned `buyan:v2`. Creating both request files and submitting them.Upload and both xp-requests completed. Candidate checks match.
+
+**Label:** `buyan:v2`  
+**UUID:** policy `c7f7a95d-ff7f-4716-8667-93591a0e22c2`, version `8d6716b8-b998-40f5-8b67-3123880c7a59`  
+**Owner:** Andre von Auto (`ply_3d22435e-30a2-4f2a-b037-a5c249583788`)
+
+**Request IDs:**
+- version_a: `xreq_5059ba7a-ac70-4a25-8cd6-8c5a0d64e795`
+- version_b: `xreq_b95cd704-fda7-4df6-bd0c-a06c7167a4e5`
+
+**Verified:** candidate `player_id` is `ply_3d22435e-30a2-4f2a-b037-a5c249583788`; requested candidate is exactly `buyan:v2` (version 2). Baseline in the receipts is `buyan:v1`. Both requests are `pending`, 15 episodes each, coworld `nmmo` `0.1.5`. No league submission.

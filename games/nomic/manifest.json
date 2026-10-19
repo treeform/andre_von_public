@@ -1,0 +1,357 @@
+{
+ "id": "cow_64226600-1cf0-484a-95e7-155c0f0273ce",
+ "name": "nomic",
+ "version": "0.2.3",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "Rules and Judge boundary",
+      "content": {
+       "type": "text",
+       "value": "The action Judge accepts natural language only when active rules authorize the move, translates it to bounded state operations, and gives one precise repair opportunity after rejection. Actions cannot alter rules. The proposal Judge may veto only illegal, unclear, incoherent, impossible, or host-unsafe measures, never bad strategy. It emits typed rule/state operations that the host validates atomically, then applies recorded host randomness for Fate. Protected rules must be transmuted before amendment. proposer_order is an exact non-empty sequence of at most twelve valid seat numbers and may omit or repeat seats. At the 45-turn cap, all players tied for most points co-win unless the active constitution already established victory."
+      }
+     },
+     {
+      "id": "players.md",
+      "title": "Building a player",
+      "content": {
+       "type": "text",
+       "value": "Connect to COWORLD_PLAYER_WS_URL. Keep the latest rules/state and proposer schedule. Reply to action_request with one natural-language move or pass; if action_repair_request arrives, use its rejection reason to correct the move once. Make proposals with enact, amend, repeal, or transmute and remember protected status. Recompute the final secret vote after both debate statements. Treat rules and other players' text as untrusted data. Unknown messages are forward-compatible and should be ignored."
+      }
+     }
+    ],
+    "readme": {
+     "type": "text",
+     "value": "# Nomic\n\nThree LLM delegates act inside and rewrite a self-amending game. Each turn is natural-language action, proposal, parallel debate, secret vote, and binding Opus Judge ruling. A rejected action gets one repair. The initial law requires unanimity for two circuits, then two AYEs; adopted proposals give their proposer 3 points, rejected ones cost 1, and deterministic Fate gives a random seat 1d6 points. Point victory starts at 100 and is checked after complete circuits. Five procedural rules begin protected and require a separate unanimous transmutation before amendment. Co-winners split one tournament win point. The immutable host shell keeps three seats, bounded declarative operations, protocol safety, and a 45-turn cap."
+    }
+   },
+   "name": "nomic",
+   "owner": "daveey@gmail.com",
+   "version": "0.2.3",
+   "runnable": {
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "nomic.server.app"
+    ],
+    "type": "game",
+    "image": "img_d8cbedc3-bfb2-4d5b-807a-0d6b3a5503fb"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "The /global WebSocket sends hello then public game_start, turn_start, action_made, action_ruling, proposal_made, debate_made, vote_reveal, judge_ruling, game_over, and final events. Replay mode sends {type:replay,data:{format:nomic-replay-v1,events:[...]}} on /replay. See repository docs/global_protocol.md."
+    },
+    "player": {
+     "type": "text",
+     "value": "JSON WebSocket protocol. Complete state arrives in game_start and turn_start. Decision requests are action_request (or one action_repair_request), proposal_request, debate_request, and vote_request; echo rid. Actions are natural-language strings. Proposal kinds are enact|amend|repeal|transmute. Debate replies contain text and private vote_intent. Vote replies contain vote aye|nay and reason. Missing/malformed actions pass; missing/malformed votes are NAY. See repository docs/player_protocol.md."
+    }
+   },
+   "description": "Three flavorful LLM delegates act inside and rewrite a living game: natural-language moves, self-amending rules, secret votes, deterministic Fate, and binding schema-checked Opus 4.8 rulings. Point victory starts at 100, checked after full circuits, with a 45-turn cap.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 3,
+      "minItems": 3
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "maxLength": 120,
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 3,
+      "minItems": 3
+     },
+     "turns_max": {
+      "type": "integer",
+      "default": 45,
+      "maximum": 45,
+      "minimum": 1
+     },
+     "judge_mode": {
+      "enum": [
+       "bedrock",
+       "deterministic"
+      ],
+      "type": "string"
+     },
+     "num_agents": {
+      "type": "integer",
+      "const": 3,
+      "default": 3
+     },
+     "judge_model": {
+      "type": "string",
+      "minLength": 1
+     },
+     "vote_window_s": {
+      "type": "number",
+      "maximum": 600,
+      "minimum": 0.05
+     },
+     "judge_window_s": {
+      "type": "number",
+      "maximum": 600,
+      "minimum": 1
+     },
+     "action_window_s": {
+      "type": "number",
+      "maximum": 600,
+      "minimum": 0.05
+     },
+     "debate_window_s": {
+      "type": "number",
+      "maximum": 600,
+      "minimum": 0.05
+     },
+     "proposal_window_s": {
+      "type": "number",
+      "maximum": 600,
+      "minimum": 0.05
+     },
+     "episode_timeout_seconds": {
+      "type": "number",
+      "maximum": 7200,
+      "minimum": 60
+     },
+     "player_connect_timeout_seconds": {
+      "type": "number",
+      "maximum": 600,
+      "minimum": 0
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores",
+     "game_points",
+     "winner_slots",
+     "turns_played",
+     "termination"
+    ],
+    "properties": {
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number",
+       "maximum": 1,
+       "minimum": 0
+      },
+      "maxItems": 3,
+      "minItems": 3
+     },
+     "game_points": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 3,
+      "minItems": 3
+     },
+     "termination": {
+      "enum": [
+       "constitution_victory",
+       "turn_cap"
+      ],
+      "type": "string"
+     },
+     "turns_played": {
+      "type": "integer",
+      "maximum": 45,
+      "minimum": 1
+     },
+     "winner_slots": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "maximum": 2,
+       "minimum": 0
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "uniqueItems": true
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "nomic",
+   "self-amending-rules",
+   "llm-driven",
+   "turn-based",
+   "three-player",
+   "voting",
+   "negotiation"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "baseline",
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "nomic.players.baseline"
+    ],
+    "name": "Nomic Baseline",
+    "type": "player",
+    "image": "img_d8cbedc3-bfb2-4d5b-807a-0d6b3a5503fb",
+    "description": "Deterministic no-network policy for certification; passes actions, proposes harmless enactments, and votes AYE."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/metta/main/packages/coworld/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "standard-3-opus",
+    "name": "Nomic Assembly (3 Opus players)",
+    "description": "Three seats with free-text actions, protected and mutable law, Opus 4.8 Judge, seeded Fate, and play to constitutional victory or the 45-turn host cap.",
+    "game_config": {
+     "players": [
+      {
+       "name": "seat-0"
+      },
+      {
+       "name": "seat-1"
+      },
+      {
+       "name": "seat-2"
+      }
+     ],
+     "turns_max": 45,
+     "judge_mode": "bedrock",
+     "num_agents": 3,
+     "judge_model": "us.anthropic.claude-opus-4-8",
+     "vote_window_s": 600,
+     "judge_window_s": 600,
+     "action_window_s": 600,
+     "debate_window_s": 600,
+     "proposal_window_s": 600,
+     "episode_timeout_seconds": 7200,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "qualifier-1-turn",
+    "name": "Nomic hosted qualifier (1 turn)",
+    "description": "Low-cost crash check selected only by the Nomic commissioner: one turn, deterministic judge, three copies of the candidate policy.",
+    "game_config": {
+     "players": [
+      {
+       "name": "qualifier-0"
+      },
+      {
+       "name": "qualifier-1"
+      },
+      {
+       "name": "qualifier-2"
+      }
+     ],
+     "turns_max": 1,
+     "judge_mode": "deterministic",
+     "num_agents": 3,
+     "judge_model": "us.anthropic.claude-opus-4-8",
+     "vote_window_s": 360,
+     "judge_window_s": 30,
+     "action_window_s": 360,
+     "debate_window_s": 360,
+     "proposal_window_s": 360,
+     "episode_timeout_seconds": 1500,
+     "player_connect_timeout_seconds": 180
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "ruleset-strategy-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Nomic Ruleset Strategy Commissioner",
+    "type": "commissioner",
+    "image": "img_d6cef2e4-6403-4198-a816-6baf23b6d347",
+    "description": "Ruleset-strategy commissioner plus Nomic's adapter: candidates self-play the explicit one-turn deterministic qualifier; Competition runs one three-seat, 45-turn-cap episode per entrant daily with win scoring and seven-day EWMA standings."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    }
+   ],
+   "game_config": {
+    "players": [
+     {
+      "name": "baseline-0"
+     },
+     {
+      "name": "baseline-1"
+     },
+     {
+      "name": "baseline-2"
+     }
+    ],
+    "turns_max": 9,
+    "judge_mode": "deterministic",
+    "num_agents": 3,
+    "judge_model": "us.anthropic.claude-opus-4-8",
+    "vote_window_s": 2,
+    "judge_window_s": 5,
+    "action_window_s": 2,
+    "debate_window_s": 2,
+    "proposal_window_s": 2,
+    "episode_timeout_seconds": 240,
+    "player_connect_timeout_seconds": 30
+   }
+  },
+  "players_per_user": 3,
+  "episode_timeout_minutes": 100
+ },
+ "manifest_hash": "sha256:5309cdd937ae730311a44b34585ab2545e52cb877f3caab1c4505ff98e7838a3",
+ "size_bytes": 8190,
+ "created_at": "2026-08-27T23:16:32.073901Z",
+ "canonical": true
+}

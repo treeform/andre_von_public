@@ -1,0 +1,1 @@
+The /global WebSocket sends hello then public game_start, turn_start, action_made, action_ruling, proposal_made, debate_made, vote_reveal, judge_ruling, game_over, and final events. Replay mode sends {type:replay,data:{format:nomic-replay-v1,events:[...]}} on /replay. See repository docs/global_protocol.md.

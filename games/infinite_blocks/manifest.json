@@ -1,0 +1,253 @@
+{
+ "id": "cow_dfab101b-4c05-461f-8f44-663f2cf2a525",
+ "name": "infinite_blocks",
+ "version": "0.1.6",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "rules.md",
+      "content": {
+       "type": "text",
+       "value": "# Infinite Blocks Rules\n\nInfinite Blocks is a shared falling-blocks game. Each player controls one active piece on the same board. Pieces fall over time, can move left or right, can rotate, and can be dropped faster. When a piece settles, it becomes part of the shared stack.\n\nA run of eight filled cells in a row clears after a short flash. Cleared rows can disconnect blocks above them. Unsupported blocks fall, and those falls can create additional clearing cascades. Scores are awarded to the player whose placement caused the clear chain.\n\nThe objective is to place blocks cleanly, create flat low stacks, avoid trapped gaps, and score by causing line clears."
+      }
+     },
+     {
+      "id": "play_infinite_blocks.md",
+      "title": "play_infinite_blocks.md",
+      "content": {
+       "type": "text",
+       "value": "# Playing Infinite Blocks\n\nConnect to the player websocket documented by the sprite protocol. The player view shows your active falling piece, nearby players, the next piece preview, and the score panel. Send input masks to move left, move right, rotate, soft drop, or lock the piece.\n\nGood players search for low, flat landing spots. A strong placement leaves few or no new empty cells under the piece, supports future blocks, and avoids building tall pillars. If a placement triggers a clear, your next piece waits until the clear animation and any avalanche clears caused by it finish."
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld-infinite-blocks/blob/master/README.md"
+    }
+   },
+   "name": "infinite_blocks",
+   "owner": "treeform@softmax.com",
+   "version": "0.1.6",
+   "runnable": {
+    "env": {},
+    "run": [
+     "/bin/infinite_blocks"
+    ],
+    "type": "game",
+    "image": "img_b998a79d-f090-46d3-ade5-1996cda72870"
+   },
+   "protocols": {
+    "global": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/bitworld/blob/master/docs/sprite_v1.md"
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/bitworld/blob/master/docs/sprite_v1.md"
+    }
+   },
+   "description": "A multiplayer BitWorld falling-blocks game where players stack pieces, clear lines, and compete for score on one shared board.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "default": 32619276,
+      "minimum": 0,
+      "description": "Random seed."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 0
+      },
+      "default": [
+       "",
+       "",
+       "",
+       "",
+       "",
+       ""
+      ],
+      "maxItems": 24,
+      "minItems": 1,
+      "description": "One connection token per player slot, indexed by slot. Seat count sets the board width."
+     },
+     "maxGames": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "description": "Maximum games before shutdown, where 0 means no limit."
+     },
+     "maxTicks": {
+      "type": "integer",
+      "default": 18000,
+      "minimum": 0,
+      "description": "Maximum simulation ticks per game, where 0 means no automatic reset."
+     },
+     "num_agents": {
+      "type": "integer",
+      "default": 6,
+      "maximum": 24,
+      "minimum": 1,
+      "description": "Player seat count. Each seat widens the board by 8 columns, with a floor at the base width."
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "names",
+     "scores",
+     "alive"
+    ],
+    "properties": {
+     "alive": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 24,
+      "minItems": 1,
+      "description": "One flag per player slot indicating whether the player can still spawn pieces."
+     },
+     "names": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 24,
+      "minItems": 1,
+      "description": "One player name or address per player slot."
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 24,
+      "minItems": 1,
+      "description": "One line-clear score per player slot."
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "grader": [
+   {
+    "id": "bitworld-score-grader",
+    "env": {},
+    "run": [],
+    "name": "BitWorld Score Grader",
+    "type": "grader",
+    "image": "img_fc79d5ca-3026-442e-a9a9-7aae898421bd",
+    "source_url": "https://github.com/Metta-AI/coworld-infinite-blocks/tree/2cfb704b931219684a81480405ad5dcea93a9c56/grader/graders/bitworld_score/bitworld_score_grader",
+    "description": "Generic BitWorld grader that scores episode interest from score spread and game-specific activity signals."
+   }
+  ],
+  "player": [
+   {
+    "id": "stacker",
+    "env": {},
+    "run": [
+     "/bin/stacker"
+    ],
+    "name": "Stacker",
+    "type": "player",
+    "image": "img_50db2248-59d6-41fa-80c0-876997b03aa9",
+    "description": "Sprite-protocol Infinite Blocks bot that searches for low, flat landing spots and scores by causing line clears."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/metta/main/packages/coworld/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "league",
+    "name": "League",
+    "description": "One bounded five-minute Infinite Blocks game used for hosted league rounds.",
+    "game_config": {
+     "seed": 32619276,
+     "maxGames": 1,
+     "maxTicks": 9000,
+     "num_agents": 6
+    }
+   },
+   {
+    "id": "freeplay",
+    "name": "Freeplay",
+    "description": "Open-ended Infinite Blocks configuration for local player testing.",
+    "game_config": {
+     "seed": 32619276,
+     "maxGames": 0,
+     "maxTicks": 0
+    }
+   },
+   {
+    "id": "smoke",
+    "name": "Smoke",
+    "description": "Short deterministic infinite_blocks configuration used for manifest checks.",
+    "game_config": {
+     "seed": 32619276,
+     "maxGames": 1,
+     "maxTicks": 300
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Default Commissioner",
+    "type": "commissioner",
+    "image": "img_17af666c-4da0-4948-a77a-4a38e0109542",
+    "source_url": "https://github.com/Metta-AI/commissioners/tree/fa8ac7cb2bc6fd54c5675c7993919afabebcf4ba/commissioners/ruleset_strategy_commissioner",
+    "description": "Game-agnostic round-robin commissioner with mean-score rankings."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "stacker"
+    },
+    {
+     "player_id": "stacker"
+    },
+    {
+     "player_id": "stacker"
+    },
+    {
+     "player_id": "stacker"
+    },
+    {
+     "player_id": "stacker"
+    },
+    {
+     "player_id": "stacker"
+    }
+   ],
+   "game_config": {
+    "seed": 32619276,
+    "maxGames": 1,
+    "maxTicks": 1200
+   }
+  }
+ },
+ "manifest_hash": "sha256:42a52115e192aa78ecdce9a56a6135e7e7f535f6f65759d3fb0def348906f213",
+ "size_bytes": 5765,
+ "created_at": "2026-08-04T23:27:32.441161Z",
+ "canonical": true
+}

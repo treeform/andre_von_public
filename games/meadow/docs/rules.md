@@ -1,0 +1,3 @@
+# Meadow Rules
+
+N players share one stock that regrows logistically each round unless it ever drops below the collapse threshold — then it is dead forever. Each round every player simultaneously harvests 0..max_harvest; over-demand splits the remainder pro-rata. Your score is everything you harvest, minus sanction costs you pay and burns you receive. The sustainable aggregate is about regrowth_rate * capacity / 4 per round — under defaults, roughly one unit per player. Institutional dials (public ledger, sanctions, posted norm text, chat) vary by league variant.

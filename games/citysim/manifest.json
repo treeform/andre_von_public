@@ -1,0 +1,252 @@
+{
+ "id": "cow_91bad6a3-031d-4094-b58b-2a5da7dd6988",
+ "name": "citysim",
+ "version": "0.4.0",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "simulation.md",
+      "title": "simulation.md",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/davidfromkansas/six-blocks/blob/main/docs/simulation.md"
+      }
+     },
+     {
+      "id": "scoring.md",
+      "title": "scoring.md",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/davidfromkansas/six-blocks/blob/main/docs/scoring.md"
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/davidfromkansas/six-blocks/blob/main/README.md"
+    }
+   },
+   "name": "citysim",
+   "owner": "david.lietjauw@gmail.com",
+   "version": "0.4.0",
+   "runnable": {
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "citysim.game.server"
+    ],
+    "type": "game",
+    "image": "img_5663ac66-a664-4bf2-b3bf-fb589764ccdb",
+    "source_url": "https://github.com/davidfromkansas/six-blocks/tree/b3a23369c9c23f21d83537782214dc00b3bb6b48/citysim/game"
+   },
+   "protocols": {
+    "global": {
+     "type": "uri",
+     "value": "https://github.com/davidfromkansas/six-blocks/blob/main/docs/global_protocol.md"
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/davidfromkansas/six-blocks/blob/main/docs/player_protocol.md"
+    }
+   },
+   "description": "30 days. Six blocks. One neighborhood to keep alive. A deterministic city-management benchmark: allocate a limited budget across trash pickup, transit, parks, housing relief, and small-business support while seeded events (heat waves, floods, rent spikes) stress ~100 simulated residents.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "budget": {
+      "type": "number",
+      "default": 500000,
+      "maximum": 2000000,
+      "minimum": 50000
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 1,
+      "minItems": 1
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 1,
+      "minItems": 1
+     },
+     "total_days": {
+      "type": "integer",
+      "default": 30,
+      "maximum": 60,
+      "minimum": 5
+     },
+     "actions_per_day": {
+      "type": "integer",
+      "default": 3,
+      "maximum": 6,
+      "minimum": 1
+     },
+     "day_timeout_seconds": {
+      "type": "number",
+      "default": 120,
+      "exclusiveMinimum": 0
+     },
+     "player_connect_timeout_seconds": {
+      "type": "number",
+      "default": 180,
+      "minimum": 0
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "game",
+     "seed",
+     "score",
+     "scores",
+     "components",
+     "days_simulated",
+     "total_days"
+    ],
+    "properties": {
+     "game": {
+      "const": "citysim"
+     },
+     "seed": {
+      "type": "integer"
+     },
+     "score": {
+      "type": "number",
+      "maximum": 100,
+      "minimum": 0
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number",
+       "maximum": 100,
+       "minimum": 0
+      },
+      "maxItems": 1,
+      "minItems": 1
+     },
+     "components": {
+      "type": "object",
+      "additionalProperties": {
+       "type": "number",
+       "maximum": 100,
+       "minimum": 0
+      }
+     },
+     "total_days": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "days_simulated": {
+      "type": "integer",
+      "minimum": 0
+     }
+    },
+    "additionalProperties": true
+   }
+  },
+  "tags": [
+   "strategy",
+   "management",
+   "simulation",
+   "single-player"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "balanced-baseline",
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "citysim.player.player"
+    ],
+    "name": "Balanced Baseline",
+    "type": "player",
+    "image": "img_5663ac66-a664-4bf2-b3bf-fb589764ccdb",
+    "source_url": "https://github.com/davidfromkansas/six-blocks/tree/b3a23369c9c23f21d83537782214dc00b3bb6b48/citysim/player",
+    "description": "Scripted manager: triages emergencies (heat, trash, transit, rent, business health) then funds the worst remaining block-level need while protecting future upkeep budget."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "default",
+    "name": "Default 30-day season",
+    "description": "The standard benchmark: 30 days, $500k, up to 3 interventions per day, seeded events.",
+    "game_config": {
+     "budget": 500000,
+     "players": [
+      {
+       "name": "Neighborhood Manager"
+      }
+     ],
+     "total_days": 30,
+     "actions_per_day": 3,
+     "day_timeout_seconds": 120,
+     "player_connect_timeout_seconds": 180
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [],
+  "certification": {
+   "players": [
+    {
+     "player_id": "balanced-baseline"
+    }
+   ],
+   "game_config": {
+    "seed": 7,
+    "budget": 500000,
+    "players": [
+     {
+      "name": "Balanced Baseline"
+     }
+    ],
+    "total_days": 30,
+    "actions_per_day": 3,
+    "day_timeout_seconds": 120,
+    "player_connect_timeout_seconds": 180
+   }
+  }
+ },
+ "manifest_hash": "sha256:8f42a7c576e538b6773aa09feac0b5450a3c5656610aa6f020519b40f974d088",
+ "size_bytes": 4099,
+ "created_at": "2026-08-27T18:14:54.779907Z",
+ "canonical": true
+}

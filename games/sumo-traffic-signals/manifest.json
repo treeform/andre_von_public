@@ -1,0 +1,772 @@
+{
+ "id": "cow_cb7e4236-ebda-400b-bba8-7c673b91dd15",
+ "name": "sumo-traffic-signals",
+ "version": "0.1.1",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "Rules",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/cogame-sumo-traffic-signals/blob/main/docs/RULES.md"
+      }
+     },
+     {
+      "id": "signals.md",
+      "title": "Controlling the signals",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/cogame-sumo-traffic-signals/blob/main/docs/SIGNALS.md"
+      }
+     },
+     {
+      "id": "porting.md",
+      "title": "What this is and is not a port of",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/cogame-sumo-traffic-signals/blob/main/docs/PORTING-SUMO-RL.md"
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-sumo-traffic-signals/blob/main/README.md"
+    }
+   },
+   "name": "sumo-traffic-signals",
+   "owner": "daveey@softmax.com",
+   "version": "0.1.1",
+   "runnable": {
+    "env": {
+     "ANTHROPIC_API_KEY_URI": "secret://coworld/sumo-traffic-signals/anthropic_api_key"
+    },
+    "run": [
+     "/bin/sumo-traffic-signals"
+    ],
+    "type": "game",
+    "image": "img_6d7dd43f-518a-42c8-a3d4-1fe317d490dc"
+   },
+   "protocols": {
+    "global": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-sumo-traffic-signals/blob/main/docs/PROTOCOL.md"
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-sumo-traffic-signals/blob/main/docs/PROTOCOL.md"
+    }
+   },
+   "description": "Sixteen signalised intersections on a 4x4 city grid. Four controllers own a quadrant each and decide, every eight simulated seconds, what their four signals do next: hold, switch, switch after a delay (which is how you build a green wave), or hand the intersection to a greedy actuator. Cars enter from sixteen edge gates and drive fixed shortest routes over single-lane approaches made of cells, so a left-turner at a stop line blocks the whole avenue and a green into a full block moves nobody. The only number the league reads is how many cars got all the way out of the city: your green is your neighbour's queue.",
+   "config_schema": {
+    "type": "object",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "model": {
+      "type": "string"
+     },
+     "slots": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "maximum": 3,
+       "minimum": 0
+      },
+      "maxItems": 4,
+      "minItems": 0,
+      "description": "Optional explicit slot assignment."
+     },
+     "speed": {
+      "type": "integer",
+      "maximum": 16,
+      "minimum": 1
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "Runner-injected per-seat auth tokens. Never present in a game_config here: the runner injects them."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "name": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "The four controllers, in slot order. Names are in-game aliases only."
+     },
+     "retryMs": {
+      "type": "integer",
+      "maximum": 120000,
+      "minimum": 1000
+     },
+     "variant": {
+      "enum": [
+       "grid4x4",
+       "rushhour"
+      ],
+      "type": "string",
+      "default": "grid4x4"
+     },
+     "fastMode": {
+      "type": "boolean"
+     },
+     "greenCap": {
+      "type": "integer",
+      "maximum": 64,
+      "minimum": 1
+     },
+     "maxTicks": {
+      "type": "integer",
+      "maximum": 4096,
+      "minimum": 8
+     },
+     "ringTicks": {
+      "type": "integer",
+      "maximum": 512,
+      "minimum": 1
+     },
+     "turnTicks": {
+      "type": "integer",
+      "maximum": 64,
+      "minimum": 2
+     },
+     "attempt1Ms": {
+      "type": "integer",
+      "maximum": 120000,
+      "minimum": 1000
+     },
+     "clearTicks": {
+      "type": "integer",
+      "maximum": 16,
+      "minimum": 0
+     },
+     "minPlayers": {
+      "type": "integer",
+      "maximum": 4,
+      "minimum": 1
+     },
+     "num_agents": {
+      "type": "integer",
+      "default": 4,
+      "maximum": 4,
+      "minimum": 4
+     },
+     "waveWindow": {
+      "type": "integer",
+      "maximum": 256,
+      "minimum": 2
+     },
+     "ewGateCells": {
+      "type": "integer",
+      "maximum": 16,
+      "minimum": 1
+     },
+     "ewLinkCells": {
+      "type": "integer",
+      "maximum": 16,
+      "minimum": 2
+     },
+     "maxRedTicks": {
+      "type": "integer",
+      "maximum": 512,
+      "minimum": 1
+     },
+     "nsGateCells": {
+      "type": "integer",
+      "maximum": 16,
+      "minimum": 1
+     },
+     "nsLinkCells": {
+      "type": "integer",
+      "maximum": 16,
+      "minimum": 2
+     },
+     "gateQueueCap": {
+      "type": "integer",
+      "maximum": 64,
+      "minimum": 1
+     },
+     "switchMargin": {
+      "type": "integer",
+      "maximum": 32,
+      "minimum": 0
+     },
+     "turnBudgetMs": {
+      "type": "integer",
+      "maximum": 240000,
+      "minimum": 1000
+     },
+     "waveVehicles": {
+      "type": "integer",
+      "maximum": 64,
+      "minimum": 2
+     },
+     "demandEndTick": {
+      "type": "integer",
+      "maximum": 4096,
+      "minimum": 0
+     },
+     "demandPeakEnd": {
+      "type": "integer",
+      "maximum": 4096,
+      "minimum": 0
+     },
+     "gameOverTicks": {
+      "type": "integer",
+      "maximum": 1000,
+      "minimum": 0
+     },
+     "minGreenTicks": {
+      "type": "integer",
+      "maximum": 32,
+      "minimum": 1
+     },
+     "parThroughput": {
+      "type": "integer",
+      "maximum": 100000,
+      "minimum": 0
+     },
+     "turnSpacingMs": {
+      "type": "integer",
+      "maximum": 240000,
+      "minimum": 0
+     },
+     "waveCrossings": {
+      "type": "integer",
+      "maximum": 16,
+      "minimum": 2
+     },
+     "demandPeakStart": {
+      "type": "integer",
+      "maximum": 4096,
+      "minimum": 0
+     },
+     "maxOutputTokens": {
+      "type": "integer",
+      "maximum": 8192,
+      "minimum": 64
+     },
+     "showPlayerLabels": {
+      "type": "boolean"
+     },
+     "demandPeakPermille": {
+      "type": "integer",
+      "maximum": 1000,
+      "minimum": 0
+     },
+     "demandWarmPermille": {
+      "type": "integer",
+      "maximum": 1000,
+      "minimum": 0
+     },
+     "gridlockStallTicks": {
+      "type": "integer",
+      "maximum": 512,
+      "minimum": 4
+     },
+     "demandDeclinePermille": {
+      "type": "integer",
+      "maximum": 1000,
+      "minimum": 0
+     },
+     "lobbyJoinTimeoutTicks": {
+      "type": "integer",
+      "maximum": 100000,
+      "minimum": 1
+     },
+     "throughRunnerPermille": {
+      "type": "integer",
+      "maximum": 1000,
+      "minimum": 0
+     },
+     "wallClockBudgetSeconds": {
+      "type": "integer",
+      "maximum": 660,
+      "minimum": 30
+     }
+    },
+    "additionalProperties": false
+   },
+   "replay_viewer": {
+    "bundle": "sha256:c906906d8b939e4174e14f27ef22fb9d9a09ff850fb416664dee88c1af46f797"
+   },
+   "results_schema": {
+    "type": "object",
+    "properties": {
+     "win": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "seed": {
+      "type": "integer"
+     },
+     "names": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "reason": {
+      "enum": [
+       "complete",
+       "deadline",
+       "fault"
+      ],
+      "type": "string"
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "served": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "winner": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "aliases": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "endRule": {
+      "enum": [
+       "cleared",
+       "gridlock",
+       "fullPeriod",
+       "wallClock",
+       "fault"
+      ],
+      "type": "string"
+     },
+     "variant": {
+      "type": "string"
+     },
+     "llmTurns": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "netWaitK": {
+      "type": "integer"
+     },
+     "rejected": {
+      "type": "integer"
+     },
+     "crossPlay": {
+      "type": "boolean"
+     },
+     "deadSeats": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "finalTick": {
+      "type": "integer"
+     },
+     "gridlocks": {
+      "type": "integer"
+     },
+     "quadrants": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "seatWaitK": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "greenWaves": {
+      "type": "integer"
+     },
+     "spillbacks": {
+      "type": "integer"
+     },
+     "stopDetail": {
+      "type": "string"
+     },
+     "stopsTotal": {
+      "type": "integer"
+     },
+     "throughput": {
+      "type": "integer"
+     },
+     "policyKinds": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "starvations": {
+      "type": "integer"
+     },
+     "turnsPlayed": {
+      "type": "integer"
+     },
+     "phaseChanges": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "fallbackTurns": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "gridlockTicks": {
+      "type": "integer"
+     },
+     "parThroughput": {
+      "type": "integer"
+     },
+     "seatWaitTicks": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "ordersRejected": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "spillbackTicks": {
+      "type": "integer"
+     },
+     "demandGenerated": {
+      "type": "integer"
+     },
+     "deferredSwitches": {
+      "type": "integer"
+     },
+     "networkWaitTicks": {
+      "type": "integer"
+     },
+     "travelTicksTotal": {
+      "type": "integer"
+     },
+     "longestGridlockTicks": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "traffic",
+   "signals",
+   "cooperative",
+   "city",
+   "coordination"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "greedy",
+    "env": {
+     "PLAYER_SCRIPTED": "greedy",
+     "PLAYER_POLICY_LABEL": "greedy"
+    },
+    "run": [
+     "/bin/sumo-traffic-signals-player"
+    ],
+    "name": "Greedy actuator",
+    "type": "player",
+    "image": "img_6d7dd43f-518a-42c8-a3d4-1fe317d490dc",
+    "resources": {
+     "limits": {
+      "cpu": "1"
+     },
+     "requests": {
+      "cpu": "100m",
+      "memory": "64Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-sumo-traffic-signals",
+    "description": "The standard longest-queue actuated controller: every turn it serves whichever phase has the longest movable queue, and it never looks at whether the block it is discharging into has room. Local greed, shipped as the thing to beat."
+   },
+   {
+    "id": "fixedcycle",
+    "env": {
+     "PLAYER_SCRIPTED": "fixedcycle",
+     "PLAYER_POLICY_LABEL": "fixedcycle"
+    },
+    "run": [
+     "/bin/sumo-traffic-signals-player"
+    ],
+    "name": "Fixed-time plan",
+    "type": "player",
+    "image": "img_6d7dd43f-518a-42c8-a3d4-1fe317d490dc",
+    "resources": {
+     "limits": {
+      "cpu": "1"
+     },
+     "requests": {
+      "cpu": "100m",
+      "memory": "64Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-sumo-traffic-signals",
+    "description": "The classic fixed-time plan: one phase per turn from NSG, EWG, NSL, EWL, identical at all four of its intersections and therefore with zero offset between them. No sensing, no coordination \u2014 what a city looks like before anybody tunes it."
+   }
+  ],
+  "$schema": "https://softmax.com/schemas/coworld-manifest.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "grid4x4",
+    "name": "4x4 grid (4 controllers, 16 signals)",
+    "description": "Sixteen signalised intersections on a 4x4 city grid, four controllers with a quadrant each. Cars enter from sixteen edge gates over a 208-second peak and drive fixed shortest routes; approaches are single-lane and blocks hold four to six cars, so a green into a full block moves nobody. Everyone is scored on the same number: how many cars got out of the city.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Alpha"
+      },
+      {
+       "name": "Beta"
+      },
+      {
+       "name": "Gamma"
+      },
+      {
+       "name": "Delta"
+      }
+     ],
+     "retryMs": 4000,
+     "variant": "grid4x4",
+     "fastMode": true,
+     "greenCap": 6,
+     "maxTicks": 256,
+     "ringTicks": 20,
+     "turnTicks": 8,
+     "attempt1Ms": 9000,
+     "clearTicks": 2,
+     "minPlayers": 4,
+     "num_agents": 4,
+     "waveWindow": 16,
+     "ewGateCells": 4,
+     "ewLinkCells": 6,
+     "maxRedTicks": 60,
+     "nsGateCells": 3,
+     "nsLinkCells": 4,
+     "gateQueueCap": 12,
+     "switchMargin": 2,
+     "turnBudgetMs": 14000,
+     "waveVehicles": 4,
+     "demandEndTick": 208,
+     "demandPeakEnd": 144,
+     "minGreenTicks": 4,
+     "parThroughput": 260,
+     "turnSpacingMs": 12000,
+     "waveCrossings": 3,
+     "demandPeakStart": 32,
+     "showPlayerLabels": false,
+     "demandPeakPermille": 180,
+     "demandWarmPermille": 60,
+     "gridlockStallTicks": 40,
+     "demandDeclinePermille": 80,
+     "lobbyJoinTimeoutTicks": 2400,
+     "throughRunnerPermille": 450,
+     "wallClockBudgetSeconds": 660
+    }
+   },
+   {
+    "id": "rushhour",
+    "name": "Rush hour (4x4, 4 controllers, heavy arterial demand)",
+    "description": "The same city under a demand peak a third higher and two thirds of it running the full length of an avenue. Gate queues overflow, blocks fill in seconds and one badly timed green closes a ring: the hard version, where holding a green you cannot use is the difference between four hundred cars through and a frozen city.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Alpha"
+      },
+      {
+       "name": "Beta"
+      },
+      {
+       "name": "Gamma"
+      },
+      {
+       "name": "Delta"
+      }
+     ],
+     "retryMs": 4000,
+     "variant": "rushhour",
+     "fastMode": true,
+     "greenCap": 6,
+     "maxTicks": 256,
+     "ringTicks": 20,
+     "turnTicks": 8,
+     "attempt1Ms": 9000,
+     "clearTicks": 2,
+     "minPlayers": 4,
+     "num_agents": 4,
+     "waveWindow": 16,
+     "ewGateCells": 4,
+     "ewLinkCells": 6,
+     "maxRedTicks": 60,
+     "nsGateCells": 3,
+     "nsLinkCells": 4,
+     "gateQueueCap": 12,
+     "switchMargin": 2,
+     "turnBudgetMs": 14000,
+     "waveVehicles": 4,
+     "demandEndTick": 208,
+     "demandPeakEnd": 160,
+     "minGreenTicks": 4,
+     "parThroughput": 380,
+     "turnSpacingMs": 12000,
+     "waveCrossings": 3,
+     "demandPeakStart": 24,
+     "showPlayerLabels": false,
+     "demandPeakPermille": 240,
+     "demandWarmPermille": 80,
+     "gridlockStallTicks": 40,
+     "demandDeclinePermille": 120,
+     "lobbyJoinTimeoutTicks": 2400,
+     "throughRunnerPermille": 650,
+     "wallClockBudgetSeconds": 660
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [],
+  "certification": {
+   "players": [
+    {
+     "player_id": "greedy"
+    },
+    {
+     "player_id": "fixedcycle"
+    },
+    {
+     "player_id": "greedy"
+    },
+    {
+     "player_id": "fixedcycle"
+    }
+   ],
+   "game_config": {
+    "seed": 42,
+    "players": [
+     {
+      "name": "Alpha"
+     },
+     {
+      "name": "Beta"
+     },
+     {
+      "name": "Gamma"
+     },
+     {
+      "name": "Delta"
+     }
+    ],
+    "variant": "grid4x4",
+    "fastMode": true,
+    "greenCap": 6,
+    "maxTicks": 256,
+    "ringTicks": 20,
+    "turnTicks": 8,
+    "clearTicks": 2,
+    "minPlayers": 4,
+    "num_agents": 4,
+    "waveWindow": 16,
+    "ewGateCells": 4,
+    "ewLinkCells": 6,
+    "maxRedTicks": 60,
+    "nsGateCells": 3,
+    "nsLinkCells": 4,
+    "gateQueueCap": 12,
+    "switchMargin": 2,
+    "waveVehicles": 4,
+    "demandEndTick": 208,
+    "demandPeakEnd": 144,
+    "minGreenTicks": 4,
+    "parThroughput": 260,
+    "waveCrossings": 3,
+    "demandPeakStart": 32,
+    "showPlayerLabels": false,
+    "demandPeakPermille": 180,
+    "demandWarmPermille": 60,
+    "gridlockStallTicks": 40,
+    "demandDeclinePermille": 80,
+    "lobbyJoinTimeoutTicks": 600,
+    "throughRunnerPermille": 450,
+    "wallClockBudgetSeconds": 240
+   }
+  },
+  "episode_timeout_minutes": 20
+ },
+ "manifest_hash": "sha256:ef2c26620b03a1601ac7678302c0fa40b52c3ebaf4158a7f552d5e70736fd9e6",
+ "size_bytes": 11963,
+ "created_at": "2026-08-29T08:09:40.019242Z",
+ "canonical": true
+}

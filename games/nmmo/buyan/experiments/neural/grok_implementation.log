@@ -1,0 +1,36 @@
+[2m2026-09-12T15:13:24.179278Z[0m [33m WARN[0m tools allowlist had unmappable entries; keeping full grok toolset [3magent[0m[2m=[0mgrok-build-plan [3munresolved[0m[2m=[0m["run_terminal_command"] [3mallowed[0m[2m=[0m["read_file", "search_replace", "run_terminal_command"]
+[2m2026-09-12T15:13:24.184305Z[0m [33m WARN[0m hooks: skipped unrecognized event names (check for typos) [3mfile[0m[2m=[0m/Users/me/.claude/settings.json [3mskipped[0m[2m=[0m["PermissionRequest"]
+[2m2026-09-12T15:13:24.184395Z[0m [33m WARN[0m hook loading from settings file: failed to parse hook file /Users/me/.cursor/hooks.json: invalid matcher groups for event 'afterAgentResponse': missing field `hooks`
+[2m2026-09-12T15:13:24.184410Z[0m [33m WARN[0m hook loading error [3merror[0m[2m=[0mParseFile { path: "/Users/me/.cursor/hooks.json", detail: "invalid matcher groups for event 'afterAgentResponse': missing field `hooks`" }
+[2m2026-09-12T15:13:24.230335Z[0m [31mERROR[0m Failed to spawn MCP server 'metta-pr-similarity': No such file or directory (os error 2)
+[2m2026-09-12T15:13:24.230550Z[0m [33m WARN[0m Failed to spawn MCP server: Failed to spawn MCP server 'metta-pr-similarity': No such file or directory (os error 2)
+[2m2026-09-12T15:13:24.230578Z[0m [33m WARN[0m MCP server spawn failed, removing from initializing set [3mserver[0m[2m=[0m"metta-pr-similarity"
+[2m2026-09-12T15:13:24.306548Z[0m [31mERROR[0m worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer resource_metadata=\"https://mcp.figma.com/.well-known/oauth-protected-resource\",scope=\"mcp:connect\",authorization_uri=\"https://api.figma.com/.well-known/oauth-authorization-server\"" })
+[2m2026-09-12T15:13:24.361204Z[0m [31mERROR[0m worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer resource_metadata=\"https://mcp.figma.com/.well-known/oauth-protected-resource\",scope=\"mcp:connect\",authorization_uri=\"https://api.figma.com/.well-known/oauth-authorization-server\"" })
+[2m2026-09-12T15:13:24.361238Z[0m [33m WARN[0m both handshake phases failed (surfacing the legacy error) [3mserver[0m[2m=[0mfigma [3mprobe_error[0m[2m=[0mSend message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send discover request [3mlegacy_error[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request
+[2m2026-09-12T15:13:24.361259Z[0m [33m WARN[0m MCP server init failed [3mserver[0m[2m=[0mfigma [3merror[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request
+[2m2026-09-12T15:13:24.361267Z[0m [33m WARN[0m MCP server failed to initialize [3mserver[0m[2m=[0m"figma" [3melapsed_ms[0m[2m=[0m126 [3mtimeout_sec[0m[2m=[0m30 [3merror[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request [3mneeds_auth[0m[2m=[0mtrue
+I'll start from the published MMONet architecture, `candidate.nim`, and the experiment Dockerfile so the Nim port can match weights, wire protocol, and reset behavior exactly.[2m2026-09-12T15:14:13.518121Z[0m [31mERROR[0m tool_error: tool_output_error [3msession_id[0m[2m=[0m01a0962e-2e93-7aa0-bc2b-f7f20bdf6b8b [3mtool_name[0m[2m=[0m"read_file" [3meffective_tool_name[0m[2m=[0m"read_file" [3mmodel_id[0m[2m=[0m"grok-4.6" [3merror_kind[0m[2m=[0m"tool_output_error"
+I have the weight layout and puffernet forward order. Next I’ll add `networks.nim`, wire it into `candidate.nim` without changing the FSM, then add tests and the Docker image.[2m2026-09-12T15:16:32.862095Z[0m [31mERROR[0m tool_error: tool_output_error [3msession_id[0m[2m=[0m01a0962e-2e93-7aa0-bc2b-f7f20bdf6b8b [3mtool_name[0m[2m=[0m"search_replace" [3meffective_tool_name[0m[2m=[0m"search_replace" [3mmodel_id[0m[2m=[0m"grok-4.6" [3merror_kind[0m[2m=[0m"tool_output_error"
+The Nim MMONet port is in `games/nmmo/buyan/experiments/neural/` and is ready for your reference-observation check. No commit, upload, or XP.
+
+**What landed**
+- `networks.nim`: shared float32 weights (4,430,976), per-hero MinGRU state, reset-before-forward, decoder logits, `std/random` softmax sample on the first 26 of 27 outputs.
+- `candidate.nim`: same buyan:v1 wire, reset flags, and error handling. Every wire action is the neural sample. A separate FSM `Mind` only fills `baselineAction`.
+- Telemetry only when actions differ: `experiment=neural`, `event=strategy_action`, `tick`, `agent`, `action`, `baselineAction`, `generation`, plus `inferenceNs` and `resetCount`.
+- Legacy observations only (no clean-obs flag).
+
+**Checks (all exit 0)**
+- `nim check -d:buyanTest tests.nim`
+- `nim r -d:buyanTest tests.nim` → `ok neural inference checks`
+- `nim check candidate.nim` and `nim check networks.nim`
+
+**Weights:** 17,723,904 bytes, SHA-256 `2bb4a521d2f744e23525baa16a074eb4bc88f1b26b5ad54d7fd571df89887da5`, offsets end at 4,430,976.
+
+**Latency (debug only, macosx/arm64, Nim 2.2.6):** mean `forwardLogits` ≈ 495 ms over 8 calls. Release was not timed. No speed claims.
+
+**Docker:** `buyan-neural:latest` (`sha256:e2be15aa…c1cf`) with `/bin/policy_player` and `/bin/weights.bin`. No simulator in the image.
+
+**Limitation:** no recorded-observation comparison, so no pretrained logit/action parity. Sampler is Nim RNG, not libc `rand()`.
+
+Details and hashes are in `games/nmmo/buyan/experiments/neural/report.md`.

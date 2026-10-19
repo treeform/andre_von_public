@@ -1,0 +1,259 @@
+{
+ "id": "cow_089d621a-6d14-4b79-bee3-7e15b3da306e",
+ "name": "cogtan",
+ "version": "0.3.1",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "cogtan Rules",
+      "content": {
+       "type": "text",
+       "value": "cogtan \u2014 CATAN (Klaus Teuber, base game), a 4-player resource-race benchmark.\n\n- The island: 19 hexes (4 forest, 4 pasture, 4 fields, 3 hills, 3 mountains, 1 desert), number tokens 2-12,\n  9 harbors. Settlements on intersections collect 1 resource (cities 2) when their hex's number is rolled.\n- Costs: road = brick+lumber; settlement = brick+lumber+grain+wool (distance rule + must connect to your road);\n  city = 3 ore + 2 grain; development card = ore+grain+wool.\n- A rolled 7: hands over 7 discard half; the roller moves the robber (blocks a hex) and steals a random card.\n- Development cards (25): 14 knights (move the robber; 3+ = Largest Army +2 VP), 2 Road Building, 2 Year of\n  Plenty, 2 Monopoly, 5 hidden Victory Points. One per turn, never the turn it was bought.\n- Longest Road (5+ segments) +2 VP, transfers only when strictly beaten; a settlement can break a road.\n- Trade with the bank at 4:1 (3:1 / 2:1 with harbors) or offer directed trades to opponents.\n- Resource inventories are OPEN (every seat sees every hand); held development cards are the hidden information.\n- First to 10 victory points ON THEIR OWN TURN wins. Score = final VP."
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/metta/tree/main/packages/cogweb/games/cogtan"
+    }
+   },
+   "name": "cogtan",
+   "owner": "daveey@gmail.com",
+   "version": "0.3.1",
+   "runnable": {
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/coworld/game-cli.js"
+    ],
+    "type": "game",
+    "image": "img_7c343d69-87a9-43cf-9d2b-46cd2a0e467e",
+    "source_url": "https://github.com/Metta-AI/metta/tree/main/packages/cogweb/games/cogtan"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "Read-only spectator feed: the @cogweb/core ServerMessage stream the live console and\nreplay viewer render (snapshot / event / status / lobby / reset frames). Players\nsettle a 19-hex island: roll for resource production, build roads/settlements/\ncities, buy development cards, trade, and race to 10 victory points. The\nsaved replay is { protocol:\"cogweb.replay.v1\", frames: ServerMessage[] }.\nSpectators send nothing."
+    },
+    "player": {
+     "type": "text",
+     "value": "cogtan coworld player protocol (cogweb.player.v1).\n\nYour container is a websocket CLIENT of the game host's /player endpoint (the URL,\nalready carrying ?slot=&token=, is in COWORLD_PLAYER_WS_URL). Frames:\n\n- game -> player  welcome      { type, protocol:\"cogweb.player.v1\", slot, config:{players} }\n- game -> player  observation  { type, id, seat, turn, view, reason }\n- player -> game  reply        { type:\"reply\", id, decision }\n- game -> player  final        { type:\"final\", scores:[number x4] }\n\n`view` is your seat's REDACTED view of the CATAN game: the island (hexes/tokens/\nrobber/harbors), every building and road, all standings, and EVERY seat's resource\nhand (inventories are open information in cogtan) plus your OWN development cards\n(other seats' dev cards and the deck are masked to counts). On each observation,\ndecide and reply with the SAME id. The decision matches `view.phase`:\n\n- setup:   { kind:\"setup\", vertex:<0-53>, edge:<0-71 adjoining> }\n- preroll: { kind:\"roll\" }  (or playKnight / playRoadBuilding{edges} / playYearOfPlenty{take} / playMonopoly{resource})\n- discard: { kind:\"discard\", give:{brick,lumber,ore,grain,wool} }  (exactly half, rounded down)\n- robber:  { kind:\"robber\", hex:<0-18 != current>, victim:<seat|null> }\n- main:    { kind:\"buildRoad\"|\"buildSettlement\"|\"buildCity\"|\"buyDev\"|\"playKnight\"|\n             \"playRoadBuilding\"|\"playYearOfPlenty\"|\"playMonopoly\"|\"bankTrade\"|\n             \"offerTrade\"|\"endTurn\", ... }\n- trade:   { kind:\"respondTrade\", accept:<bool> }\n\nThe host validates legality and re-requests (reason set) on a rejected move; an\nabsent/slow player falls back to the always-legal baseline, and a policy whose\ntime budget (chess clock) is spent degrades to random legal play. The standard\nbaseline + LLM players are bundled \u2014 see the source tree."
+    }
+   },
+   "description": "A four-player CATAN (Settlers of Catan) benchmark: agents draft starting settlements, manage stochastic resource production, negotiate trades, time the robber, and race to 10 victory points.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "description": "Optional deterministic episode seed. Omit it for a fresh random board per episode (the secure league default: the board, dev-card deck, and every die roll are pure functions of the seed, so a pinned seed published here would let a player read the deck and every future roll)."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "Per-seat auth tokens injected by the runner; length is the seat count."
+     },
+     "pace_ms": {
+      "type": "number",
+      "maximum": 5000,
+      "minimum": 0,
+      "description": "Minimum ms between automated decisions, for live viewing."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "Per-seat player display names (seat order). The platform injects the real policy/player names here; the host labels each seat with them so replays and the live roster show real names instead of the engine defaults."
+     },
+     "num_agents": {
+      "type": "integer",
+      "description": "Seat count for the episode. The league commissioner reads this from the variant game_config to size a Competition round; absent, it mis-sizes the episode to the entrant count and never dispatches. Always the fixed seat count."
+     },
+     "act_timeout_seconds": {
+      "type": "number",
+      "maximum": 600,
+      "description": "Per-decision budget before the scripted fallback takes the turn.",
+      "exclusiveMinimum": 0
+     },
+     "time_initial_seconds": {
+      "type": "number",
+      "maximum": 600,
+      "description": "Fischer clock: each player's initial thinking bank in seconds (default 5). See time_per_turn_seconds.",
+      "exclusiveMinimum": 0
+     },
+     "time_per_turn_seconds": {
+      "type": "number",
+      "maximum": 600,
+      "description": "Fischer clock: seconds CREDITED to a player's bank at the start of each of its turns (its setup/preroll decision; default 5). Unused time banks for future turns. An empty bank degrades the seat to random legal moves until the next turn's credit.",
+      "exclusiveMinimum": 0
+     },
+     "player_connect_timeout_seconds": {
+      "type": "number",
+      "minimum": 0,
+      "description": "How long to wait for all players to connect before starting anyway."
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores",
+     "winner"
+    ],
+    "properties": {
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "Each seat's final victory points (hidden VP cards revealed), in seat order."
+     },
+     "winner": {
+      "type": "integer",
+      "maximum": 3,
+      "minimum": 0,
+      "description": "The seat with the most victory points."
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "grader": [],
+  "player": [
+   {
+    "id": "cogtan-scripted",
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/coworld/baseline-player.js"
+    ],
+    "name": "cogtan Scripted Baseline",
+    "type": "player",
+    "image": "img_7c343d69-87a9-43cf-9d2b-46cd2a0e467e",
+    "source_url": "https://github.com/Metta-AI/metta/tree/main/packages/cogweb/games/cogtan",
+    "description": "Deterministic no-LLM baseline (best-pip setup spots, city > settlement > road builds, greedy discards, a leader-seeking robber). Certifies the contract offline."
+   },
+   {
+    "id": "cogtan-llm",
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/coworld/llm-player.js"
+    ],
+    "name": "cogtan LLM Baseline",
+    "type": "player",
+    "image": "img_7c343d69-87a9-43cf-9d2b-46cd2a0e467e",
+    "source_url": "https://github.com/Metta-AI/metta/tree/main/packages/cogweb/games/cogtan",
+    "description": "A Bedrock-driven policy that plays the seat through the game's autopilot (system prompt + per-turn tool)."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "standard",
+    "name": "Standard (4 players)",
+    "description": "A fresh random four-player island each episode (no fixed seed).",
+    "game_config": {
+     "players": [
+      {
+       "name": "Settler A"
+      },
+      {
+       "name": "Settler B"
+      },
+      {
+       "name": "Settler C"
+      },
+      {
+       "name": "Settler D"
+      }
+     ],
+     "num_agents": 4
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "cogtan Commissioner",
+    "type": "commissioner",
+    "image": "img_41130128-4a7f-4f6a-a7d7-326c4d2aacf6",
+    "source_url": "https://github.com/Metta-AI/metta/tree/main/packages/cogweb/games/cogtan/coworld/commissioner",
+    "description": "The stock ruleset_strategy commissioner with cogtan's config baked in: Competition schedules from a single champion, filling empty seats by duplicating the baseline, so a sparsely-entered league still plays. See coworld/commissioner/ in the source tree."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "cogtan-scripted"
+    },
+    {
+     "player_id": "cogtan-scripted"
+    },
+    {
+     "player_id": "cogtan-scripted"
+    },
+    {
+     "player_id": "cogtan-llm"
+    }
+   ],
+   "game_config": {
+    "seed": 7,
+    "players": [
+     {
+      "name": "Settler A"
+     },
+     {
+      "name": "Settler B"
+     },
+     {
+      "name": "Settler C"
+     },
+     {
+      "name": "Settler D"
+     }
+    ],
+    "num_agents": 4
+   }
+  }
+ },
+ "manifest_hash": "sha256:b4584f1a626bff5c10b7e3726760c08e5eb812c1c8b75a3df14f6c5893cabd74",
+ "size_bytes": 9143,
+ "created_at": "2026-07-15T20:30:35.392703Z",
+ "canonical": true
+}

@@ -1,0 +1,2271 @@
+{
+ "id": "cow_0304eb71-612e-4299-8008-6ee80759ae3a",
+ "name": "persistent-wow",
+ "version": "0.1.242",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "nim-player-client",
+      "title": "Nim Player Client",
+      "content": {
+       "type": "text",
+       "value": "Open /client/player for the account and canonical authenticated /tcp/realmd and /tcp/world bridge details. The rendered Nim client retains WS /player and applies those WebSocket URLs directly to its login and world transports."
+      }
+     },
+     {
+      "id": "isolated-rfc-episodes",
+      "title": "Persistent Realm And Isolated RFC Episodes",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-vanilla-wow/blob/main/docs/participation/dungeon.md"
+      }
+     },
+     {
+      "id": "cwreplay",
+      "title": "CWREPLAY Binary Format",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-vanilla-wow/blob/main/docs/protocol/cwreplay.md"
+      }
+     },
+     {
+      "id": "rfc-roles",
+      "title": "RFC Coworld Roles",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-vanilla-wow/blob/main/docs/coworld-rfc-roles.md"
+      }
+     },
+     {
+      "id": "arena-two-v-two",
+      "title": "Arena 2v2 Variant",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-vanilla-wow/blob/main/docs/participation/arena.md"
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld-vanilla-wow/blob/main/docs/participation/persistent-leveling.md"
+    }
+   },
+   "name": "persistent-wow",
+   "owner": "metta-ai",
+   "version": "0.1.242",
+   "runnable": {
+    "env": {
+     "COGAME_REPLAY_VIEWER_CONFIG": "{\"viewer_url\":\"https://d1v7pcbfg1b1hg.cloudfront.net/app/sha256-bfcb9fb6627455f003752420ef590c8e6dcbd0965a09cbe7bca5b5979c7971bb/global_viewer.html\",\"asset_base_url\":\"https://d1v7pcbfg1b1hg.cloudfront.net/assets/sha256-4778c61c331a4dbc0f577a293dc938b4056a4afdf5f97adc25a8a9849e2cdec5\",\"asset_grant_resource\":\"https://d1v7pcbfg1b1hg.cloudfront.net/assets/*\",\"cloudfront_key_pair_id\":\"KZ8LOP4LV5MOS\",\"signing_key_uri\":\"secret://coworld/persistent-wow/replay_asset_signing_key\"}"
+    },
+    "run": [],
+    "type": "game",
+    "image": "img_92e812ac-4973-4769-a6ab-e202e6b6f8d9",
+    "resources": {
+     "requests": {
+      "cpu": "1",
+      "memory": "1Gi",
+      "ephemeral-storage": "1Gi"
+     }
+    }
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "The v1 Vanilla WoW Coworld does not stream gameplay over /global. During a running episode, /client/global and WS /global expose one read-only vanilla_wow.episode_watch.v1 progress projection from the player metrics already forwarded over authenticated sessions; add format=json to the HTTP route for structured tooling."
+    },
+    "player": {
+     "type": "text",
+     "value": "Players connect to the exact runner-provided COWORLD_PLAYER_WS_URL at WS /player?slot=<slot>&token=<token>. WebSocket subprotocol vanilla-wow-policy selects binary vanilla_wow.control_wire Observation/Action traffic without rewriting the URL. Omitting the subprotocol selects the native/rendered session handoff used by RealPlayerBot, with account credentials, authenticated realmd and mangosd bridges, navigation, and immutable world-asset paths. During migration the game emits vanilla_wow.session.v1; current players accept both that literal and vanilla_wow.session and reply with the received literal so .v1 can be removed after active player images roll forward. Current players send typed status, route, or local_graph navigation requests on that retained authenticated session; already-published players may negotiate the legacy navigation extension and POST the same typed requests to /player/navigation. Players fetch only referenced DBFilesClient, Maps, VMaps, or MMaps files beneath /player/assets using the same slot token. Navigation responses are read-only evidence; policies still move through ordinary Action client input and server-validated movement. Human native and browser/WASM Nim players use the authenticated /client/player handoff; no separate mutable browser bot console exists."
+    }
+   },
+   "description": "Ongoing Vanilla WoW leveling on a durable external realm, using a thin connector game runtime and commissioner-recorded ten-minute windows.",
+   "config_schema": {
+    "type": "object",
+    "$defs": {
+     "PlayerSpec": {
+      "type": "object",
+      "title": "PlayerSpec",
+      "required": [
+       "name"
+      ],
+      "properties": {
+       "name": {
+        "type": "string",
+        "title": "Name",
+        "minLength": 1
+       },
+       "team": {
+        "anyOf": [
+         {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "maxLength": 64,
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Team",
+        "default": null
+       },
+       "driver": {
+        "enum": [
+         "bot",
+         "human",
+         "unknown"
+        ],
+        "type": "string",
+        "title": "Driver",
+        "default": "unknown"
+       },
+       "character": {
+        "anyOf": [
+         {
+          "$ref": "#/$defs/CharacterSeedSpec"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null
+       },
+       "account_id": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "minimum": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Account Id",
+        "default": null
+       },
+       "party_role": {
+        "anyOf": [
+         {
+          "enum": [
+           "tank",
+           "healer",
+           "dps"
+          ],
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Party Role",
+        "default": null
+       },
+       "character_name": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Character Name",
+        "default": null
+       },
+       "rfc_profile_id": {
+        "anyOf": [
+         {
+          "type": "string",
+          "maxLength": 32,
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Rfc Profile Id",
+        "default": null
+       },
+       "account_password": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Account Password",
+        "default": null
+       },
+       "account_username": {
+        "anyOf": [
+         {
+          "type": "string",
+          "maxLength": 16,
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Account Username",
+        "default": null
+       },
+       "character_creation": {
+        "anyOf": [
+         {
+          "$ref": "#/$defs/CharacterCreationSpec"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null
+       }
+      },
+      "additionalProperties": false
+     },
+     "ArenaConfig": {
+      "type": "object",
+      "title": "ArenaConfig",
+      "properties": {
+       "map_id": {
+        "type": "integer",
+        "const": 0,
+        "title": "Map Id",
+        "default": 0
+       },
+       "enabled": {
+        "type": "boolean",
+        "title": "Enabled",
+        "default": false
+       },
+       "team_size": {
+        "type": "integer",
+        "const": 2,
+        "title": "Team Size",
+        "default": 2
+       },
+       "eliminations_to_win": {
+        "type": "integer",
+        "const": 2,
+        "title": "Eliminations To Win",
+        "default": 2
+       }
+      },
+      "description": "One stock-Vanilla-compatible mirrored two-versus-two duel.",
+      "additionalProperties": false
+     },
+     "BagItemSpec": {
+      "type": "object",
+      "title": "BagItemSpec",
+      "required": [
+       "item_id"
+      ],
+      "properties": {
+       "count": {
+        "type": "integer",
+        "title": "Count",
+        "default": 1,
+        "maximum": 255,
+        "minimum": 1
+       },
+       "item_id": {
+        "type": "integer",
+        "title": "Item Id",
+        "minimum": 1
+       }
+      },
+      "description": "One stack to place in the seeded character's backpack.\n\nFixture variants (mail/auction/trade provisioning) use these so client-path\nservice commands have items to attach, list, and trade.",
+      "additionalProperties": false
+     },
+     "TowerConfig": {
+      "type": "object",
+      "title": "TowerConfig",
+      "properties": {
+       "seed": {
+        "type": "string",
+        "title": "Seed",
+        "default": "torghast-climb",
+        "minLength": 1
+       },
+       "enabled": {
+        "type": "boolean",
+        "title": "Enabled",
+        "default": false
+       },
+       "floor_count": {
+        "type": "integer",
+        "title": "Floor Count",
+        "default": 6,
+        "maximum": 50,
+        "minimum": 1
+       },
+       "start_level": {
+        "type": "integer",
+        "title": "Start Level",
+        "default": 30,
+        "maximum": 60,
+        "minimum": 1
+       },
+       "reward_policy": {
+        "type": "string",
+        "const": "run_score",
+        "title": "Reward Policy",
+        "default": "run_score"
+       },
+       "players_per_run": {
+        "type": "integer",
+        "title": "Players Per Run",
+        "default": 1,
+        "maximum": 5,
+        "minimum": 1
+       },
+       "completion_radius": {
+        "type": "number",
+        "title": "Completion Radius",
+        "default": 20.0,
+        "exclusiveMinimum": 0
+       }
+      },
+      "description": "Configuration for the generated dungeon-climb mode.",
+      "additionalProperties": false
+     },
+     "StartPosition": {
+      "type": "object",
+      "title": "StartPosition",
+      "required": [
+       "map_id",
+       "zone",
+       "x",
+       "y",
+       "z"
+      ],
+      "properties": {
+       "x": {
+        "type": "number",
+        "title": "X"
+       },
+       "y": {
+        "type": "number",
+        "title": "Y"
+       },
+       "z": {
+        "type": "number",
+        "title": "Z"
+       },
+       "zone": {
+        "type": "integer",
+        "title": "Zone",
+        "minimum": 0
+       },
+       "map_id": {
+        "type": "integer",
+        "title": "Map Id",
+        "minimum": 0
+       },
+       "orientation": {
+        "type": "number",
+        "title": "Orientation",
+        "default": 0.0
+       }
+      },
+      "description": "World location a seeded character is placed at on first login.",
+      "additionalProperties": false
+     },
+     "PetFixtureSpec": {
+      "type": "object",
+      "title": "PetFixtureSpec",
+      "required": [
+       "entry",
+       "slot"
+      ],
+      "properties": {
+       "name": {
+        "type": "string",
+        "title": "Name",
+        "default": "Proofpet",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       "slot": {
+        "type": "integer",
+        "title": "Slot",
+        "maximum": 4,
+        "minimum": 0
+       },
+       "entry": {
+        "type": "integer",
+        "title": "Entry",
+        "minimum": 1
+       },
+       "level": {
+        "type": "integer",
+        "title": "Level",
+        "default": 10,
+        "maximum": 60,
+        "minimum": 1
+       },
+       "spells": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/PetSpellFixtureSpec"
+        },
+        "title": "Spells",
+        "default": []
+       },
+       "loyalty": {
+        "type": "integer",
+        "title": "Loyalty",
+        "default": 6,
+        "maximum": 6,
+        "minimum": 1
+       },
+       "pet_type": {
+        "type": "integer",
+        "title": "Pet Type",
+        "default": 1,
+        "minimum": 0
+       },
+       "display_id": {
+        "type": "integer",
+        "title": "Display Id",
+        "default": 0,
+        "minimum": 0
+       },
+       "react_state": {
+        "type": "integer",
+        "title": "React State",
+        "default": 0,
+        "maximum": 2,
+        "minimum": 0
+       },
+       "current_mana": {
+        "type": "integer",
+        "title": "Current Mana",
+        "default": 0,
+        "minimum": 0
+       },
+       "current_health": {
+        "type": "integer",
+        "title": "Current Health",
+        "default": 100,
+        "minimum": 1
+       },
+       "loyalty_points": {
+        "type": "integer",
+        "title": "Loyalty Points",
+        "default": 17500,
+        "minimum": 0
+       },
+       "action_bar_data": {
+        "type": "string",
+        "title": "Action Bar Data",
+        "default": ""
+       },
+       "created_by_spell": {
+        "type": "integer",
+        "title": "Created By Spell",
+        "default": 0,
+        "minimum": 0
+       },
+       "teach_spell_data": {
+        "type": "string",
+        "title": "Teach Spell Data",
+        "default": ""
+       },
+       "current_happiness": {
+        "type": "integer",
+        "title": "Current Happiness",
+        "default": 1000000,
+        "minimum": 0
+       }
+      },
+      "description": "Minimal persisted hunter pet row for stable fixture readiness.",
+      "additionalProperties": false
+     },
+     "RfcRoundConfig": {
+      "type": "object",
+      "title": "RfcRoundConfig",
+      "required": [
+       "loadout_version"
+      ],
+      "properties": {
+       "leader_slot": {
+        "type": "integer",
+        "title": "Leader Slot",
+        "default": 0,
+        "maximum": 4,
+        "minimum": 0
+       },
+       "max_attempts": {
+        "type": "integer",
+        "title": "Max Attempts",
+        "default": 4,
+        "maximum": 100,
+        "minimum": 1
+       },
+       "loadout_version": {
+        "type": "string",
+        "title": "Loadout Version",
+        "maxLength": 64,
+        "minLength": 1
+       }
+      },
+      "description": "One normalized, disposable Dungeon Wow RFC launch.",
+      "additionalProperties": false
+     },
+     "SpellLabConfig": {
+      "type": "object",
+      "title": "SpellLabConfig",
+      "properties": {
+       "enabled": {
+        "type": "boolean",
+        "title": "Enabled",
+        "default": false
+       },
+       "bindings": {
+        "type": "object",
+        "title": "Bindings",
+        "additionalProperties": {
+         "type": "array",
+         "items": {
+          "$ref": "#/$defs/SpellLabBinding"
+         }
+        }
+       },
+       "spell_id": {
+        "type": "integer",
+        "title": "Spell Id",
+        "default": 15208,
+        "minimum": 1
+       },
+       "friend_guid": {
+        "type": "integer",
+        "title": "Friend Guid",
+        "default": 890404,
+        "minimum": 1
+       },
+       "friend_name": {
+        "type": "string",
+        "title": "Friend Name",
+        "default": "Friendly orc",
+        "maxLength": 64,
+        "minLength": 1
+       },
+       "target_guid": {
+        "type": "integer",
+        "title": "Target Guid",
+        "default": 890403,
+        "minimum": 1
+       },
+       "target_name": {
+        "type": "string",
+        "title": "Target Name",
+        "default": "Hostile boar",
+        "maxLength": 64,
+        "minLength": 1
+       },
+       "friend_entry": {
+        "type": "integer",
+        "title": "Friend Entry",
+        "default": 920404,
+        "minimum": 1
+       },
+       "neutral_guid": {
+        "type": "integer",
+        "title": "Neutral Guid",
+        "default": 890405,
+        "minimum": 1
+       },
+       "neutral_name": {
+        "type": "string",
+        "title": "Neutral Name",
+        "default": "Neutral ogre",
+        "maxLength": 64,
+        "minLength": 1
+       },
+       "target_entry": {
+        "type": "integer",
+        "title": "Target Entry",
+        "default": 920403,
+        "minimum": 1
+       },
+       "target_level": {
+        "type": "integer",
+        "title": "Target Level",
+        "default": 60,
+        "maximum": 63,
+        "minimum": 1
+       },
+       "action_button": {
+        "type": "integer",
+        "title": "Action Button",
+        "default": 1,
+        "maximum": 119,
+        "minimum": 0
+       },
+       "neutral_entry": {
+        "type": "integer",
+        "title": "Neutral Entry",
+        "default": 920405,
+        "minimum": 1
+       },
+       "friend_enabled": {
+        "type": "boolean",
+        "title": "Friend Enabled",
+        "default": true
+       },
+       "friend_position": {
+        "$ref": "#/$defs/StartPosition"
+       },
+       "neutral_enabled": {
+        "type": "boolean",
+        "title": "Neutral Enabled",
+        "default": true
+       },
+       "target_position": {
+        "$ref": "#/$defs/StartPosition"
+       },
+       "neutral_position": {
+        "$ref": "#/$defs/StartPosition"
+       },
+       "locked_object_guid": {
+        "type": "integer",
+        "title": "Locked Object Guid",
+        "default": 890406,
+        "minimum": 1
+       },
+       "target_resistances": {
+        "type": "object",
+        "title": "Target Resistances",
+        "additionalProperties": {
+         "type": "integer"
+        }
+       },
+       "teach_bound_spells": {
+        "type": "boolean",
+        "title": "Teach Bound Spells",
+        "default": false
+       },
+       "locked_object_enabled": {
+        "type": "boolean",
+        "title": "Locked Object Enabled",
+        "default": false
+       },
+       "source_creature_entry": {
+        "type": "integer",
+        "title": "Source Creature Entry",
+        "default": 3098,
+        "minimum": 1
+       },
+       "locked_object_position": {
+        "$ref": "#/$defs/StartPosition"
+       },
+       "target_respawn_seconds": {
+        "type": "integer",
+        "title": "Target Respawn Seconds",
+        "default": 10,
+        "minimum": 1
+       },
+       "target_armor_multiplier": {
+        "type": "number",
+        "title": "Target Armor Multiplier",
+        "default": 1.0,
+        "minimum": 0
+       },
+       "target_damage_multiplier": {
+        "type": "number",
+        "title": "Target Damage Multiplier",
+        "default": 0.001,
+        "minimum": 0
+       },
+       "target_health_multiplier": {
+        "type": "number",
+        "title": "Target Health Multiplier",
+        "default": 200.0,
+        "exclusiveMinimum": 0
+       },
+       "locked_object_source_entry": {
+        "type": "integer",
+        "title": "Locked Object Source Entry",
+        "default": 179486,
+        "minimum": 1
+       },
+       "friend_source_creature_entry": {
+        "type": "integer",
+        "title": "Friend Source Creature Entry",
+        "default": 3296,
+        "minimum": 1
+       },
+       "locked_object_respawn_seconds": {
+        "type": "integer",
+        "title": "Locked Object Respawn Seconds",
+        "default": 10,
+        "minimum": 1
+       },
+       "neutral_source_creature_entry": {
+        "type": "integer",
+        "title": "Neutral Source Creature Entry",
+        "default": 211,
+        "minimum": 1
+       }
+      },
+      "description": "Optional deterministic spell-effect lab staging.\n\nThe lab writes world rows before VMaNGOS starts so live testing still casts\nthrough the normal realmd/world client path. ``bindings`` maps an account\nusername to that character's staged action buttons; when absent, the legacy\nsingle ``spell_id``/``action_button`` pair applies to every lab character.",
+      "additionalProperties": false
+     },
+     "ClassDeckConfig": {
+      "type": "object",
+      "title": "ClassDeckConfig",
+      "properties": {
+       "enabled": {
+        "type": "boolean",
+        "title": "Enabled",
+        "default": false
+       },
+       "test_seed": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "maximum": 4294967295,
+          "minimum": 0
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Test Seed",
+        "default": null
+       },
+       "interrupt_after_select_once": {
+        "type": "boolean",
+        "title": "Interrupt After Select Once",
+        "default": false
+       }
+      },
+      "description": "Optional server-authoritative class spell draft progression.",
+      "additionalProperties": false
+     },
+     "QuestStatusSpec": {
+      "type": "object",
+      "title": "QuestStatusSpec",
+      "required": [
+       "quest_id"
+      ],
+      "properties": {
+       "timer": {
+        "type": "integer",
+        "title": "Timer",
+        "default": 0,
+        "minimum": 0
+       },
+       "status": {
+        "type": "integer",
+        "title": "Status",
+        "default": 1,
+        "minimum": 0
+       },
+       "explored": {
+        "type": "integer",
+        "title": "Explored",
+        "default": 0,
+        "maximum": 1,
+        "minimum": 0
+       },
+       "quest_id": {
+        "type": "integer",
+        "title": "Quest Id",
+        "minimum": 1
+       },
+       "rewarded": {
+        "type": "integer",
+        "title": "Rewarded",
+        "default": 0,
+        "maximum": 1,
+        "minimum": 0
+       },
+       "mob_count1": {
+        "type": "integer",
+        "title": "Mob Count1",
+        "default": 0,
+        "minimum": 0
+       },
+       "mob_count2": {
+        "type": "integer",
+        "title": "Mob Count2",
+        "default": 0,
+        "minimum": 0
+       },
+       "mob_count3": {
+        "type": "integer",
+        "title": "Mob Count3",
+        "default": 0,
+        "minimum": 0
+       },
+       "mob_count4": {
+        "type": "integer",
+        "title": "Mob Count4",
+        "default": 0,
+        "minimum": 0
+       },
+       "item_count1": {
+        "type": "integer",
+        "title": "Item Count1",
+        "default": 0,
+        "minimum": 0
+       },
+       "item_count2": {
+        "type": "integer",
+        "title": "Item Count2",
+        "default": 0,
+        "minimum": 0
+       },
+       "item_count3": {
+        "type": "integer",
+        "title": "Item Count3",
+        "default": 0,
+        "minimum": 0
+       },
+       "item_count4": {
+        "type": "integer",
+        "title": "Item Count4",
+        "default": 0,
+        "minimum": 0
+       },
+       "reward_choice": {
+        "type": "integer",
+        "title": "Reward Choice",
+        "default": 0,
+        "minimum": 0
+       }
+      },
+      "description": "One durable quest-log row for proof-realm fixture readiness.",
+      "additionalProperties": false
+     },
+     "SpellLabBinding": {
+      "type": "object",
+      "title": "SpellLabBinding",
+      "required": [
+       "spell_id",
+       "action_button"
+      ],
+      "properties": {
+       "spell_id": {
+        "type": "integer",
+        "title": "Spell Id",
+        "minimum": 1
+       },
+       "action_button": {
+        "type": "integer",
+        "title": "Action Button",
+        "maximum": 119,
+        "minimum": 0
+       }
+      },
+      "description": "One staged action-button assignment for a lab character.",
+      "additionalProperties": false
+     },
+     "CoworldStateSpec": {
+      "type": "object",
+      "title": "CoworldStateSpec",
+      "required": [
+       "mode"
+      ],
+      "properties": {
+       "mode": {
+        "enum": [
+         "head",
+         "snapshot"
+        ],
+        "type": "string",
+        "title": "Mode"
+       },
+       "scope": {
+        "enum": [
+         "player",
+         "world"
+        ],
+        "type": "string",
+        "title": "Scope",
+        "default": "player"
+       },
+       "participants": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/CoworldStateParticipant"
+        },
+        "title": "Participants"
+       }
+      },
+      "description": "Game-agnostic state intent attached to a Coworld episode.",
+      "additionalProperties": false
+     },
+     "DungeonLabConfig": {
+      "type": "object",
+      "title": "DungeonLabConfig",
+      "properties": {
+       "definition_path": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Definition Path",
+        "default": null
+       },
+       "difficulty_override": {
+        "anyOf": [
+         {
+          "$ref": "#/$defs/DungeonLabDifficultyOverride"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null
+       },
+       "maximum_player_level": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "maximum": 60,
+          "minimum": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Maximum Player Level",
+        "default": null
+       }
+      },
+      "description": "Optional Dungeon Lab scenario staging.\n\n``definition_path`` names a ``coworld.dungeon`` document (the manifest\nconvention is a repo-relative ``content/dungeons/<name>.dungeon.json``). The\nruntime compiles it to a world overlay before VMaNGOS starts and stages\nthe seeded party at the definition's entrance.",
+      "additionalProperties": false
+     },
+     "SkillFixtureSpec": {
+      "type": "object",
+      "title": "SkillFixtureSpec",
+      "required": [
+       "skill_id",
+       "value",
+       "max_value"
+      ],
+      "properties": {
+       "value": {
+        "type": "integer",
+        "title": "Value",
+        "minimum": 1
+       },
+       "skill_id": {
+        "type": "integer",
+        "title": "Skill Id",
+        "minimum": 1
+       },
+       "max_value": {
+        "type": "integer",
+        "title": "Max Value",
+        "minimum": 1
+       }
+      },
+      "description": "A skill row intentionally left below cap for live skill-up proofs.",
+      "additionalProperties": false
+     },
+     "ActionBarSlotSpec": {
+      "type": "object",
+      "title": "ActionBarSlotSpec",
+      "required": [
+       "button",
+       "action"
+      ],
+      "properties": {
+       "action": {
+        "type": "integer",
+        "title": "Action",
+        "minimum": 1
+       },
+       "button": {
+        "type": "integer",
+        "title": "Button",
+        "maximum": 119,
+        "minimum": 0
+       },
+       "action_type": {
+        "type": "integer",
+        "title": "Action Type",
+        "default": 0,
+        "maximum": 255,
+        "minimum": 0
+       }
+      },
+      "description": "One deterministic action-bar binding for a seeded character.",
+      "additionalProperties": false
+     },
+     "CharacterSeedSpec": {
+      "type": "object",
+      "title": "CharacterSeedSpec",
+      "required": [
+       "character_class"
+      ],
+      "properties": {
+       "mana": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "minimum": 0
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Mana",
+        "default": null
+       },
+       "name": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Name",
+        "default": null
+       },
+       "race": {
+        "type": "string",
+        "title": "Race",
+        "default": "troll"
+       },
+       "level": {
+        "type": "integer",
+        "title": "Level",
+        "default": 30,
+        "maximum": 60,
+        "minimum": 1
+       },
+       "start": {
+        "anyOf": [
+         {
+          "$ref": "#/$defs/StartPosition"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null
+       },
+       "gender": {
+        "enum": [
+         "male",
+         "female"
+        ],
+        "type": "string",
+        "title": "Gender",
+        "default": "male"
+       },
+       "health": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "minimum": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Health",
+        "default": null
+       },
+       "ammo_id": {
+        "type": "integer",
+        "title": "Ammo Id",
+        "default": 0,
+        "minimum": 0
+       },
+       "bag_items": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/BagItemSpec"
+        },
+        "title": "Bag Items",
+        "default": []
+       },
+       "equipment": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/EquippedItemSeedSpec"
+        },
+        "title": "Equipment",
+        "default": []
+       },
+       "spell_ids": {
+        "type": "array",
+        "items": {
+         "type": "integer"
+        },
+        "title": "Spell Ids",
+        "default": []
+       },
+       "action_bar": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/ActionBarSlotSpec"
+        },
+        "title": "Action Bar",
+        "default": []
+       },
+       "money_gold": {
+        "type": "integer",
+        "title": "Money Gold",
+        "default": 0,
+        "minimum": 0
+       },
+       "rest_bonus": {
+        "type": "number",
+        "title": "Rest Bonus",
+        "default": 0.0,
+        "minimum": 0
+       },
+       "pet_fixtures": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/PetFixtureSpec"
+        },
+        "title": "Pet Fixtures",
+        "default": []
+       },
+       "seed_profile": {
+        "enum": [
+         "premade",
+         "playercreateinfo"
+        ],
+        "type": "string",
+        "title": "Seed Profile",
+        "default": "premade"
+       },
+       "stable_slots": {
+        "type": "integer",
+        "title": "Stable Slots",
+        "default": 0,
+        "maximum": 5,
+        "minimum": 0
+       },
+       "gear_template": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Gear Template",
+        "default": null
+       },
+       "allow_alliance": {
+        "type": "boolean",
+        "title": "Allow Alliance",
+        "default": false
+       },
+       "corpse_fixture": {
+        "anyOf": [
+         {
+          "$ref": "#/$defs/CorpseFixtureSpec"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null
+       },
+       "quest_statuses": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/QuestStatusSpec"
+        },
+        "title": "Quest Statuses",
+        "default": []
+       },
+       "skill_fixtures": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/SkillFixtureSpec"
+        },
+        "title": "Skill Fixtures",
+        "default": []
+       },
+       "spell_template": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Spell Template",
+        "default": null
+       },
+       "template_level": {
+        "type": "integer",
+        "title": "Template Level",
+        "default": 29,
+        "maximum": 60,
+        "minimum": 1
+       },
+       "character_class": {
+        "type": "string",
+        "title": "Character Class",
+        "minLength": 1
+       },
+       "known_taxi_mask": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Known Taxi Mask",
+        "default": null
+       },
+       "maxed_extra_skills": {
+        "type": "array",
+        "items": {
+         "type": "integer"
+        },
+        "title": "Maxed Extra Skills",
+        "default": []
+       }
+      },
+      "description": "Per-player character to write into the VMaNGOS DB before the session.\n\nWhen a player carries this block the runtime seeds a level-set, geared\ncharacter on that player's provisioned account so the player logs straight\ninto a ready character instead of the character-creation screen. The\ndefault profile uses VMaNGOS premade templates; ``playercreateinfo`` uses\nstock starter gear, spells, actions, and spawn rows for low-level fixtures.",
+      "additionalProperties": false
+     },
+     "CorpseFixtureSpec": {
+      "type": "object",
+      "title": "CorpseFixtureSpec",
+      "required": [
+       "map_id",
+       "x",
+       "y",
+       "z"
+      ],
+      "properties": {
+       "x": {
+        "type": "number",
+        "title": "X"
+       },
+       "y": {
+        "type": "number",
+        "title": "Y"
+       },
+       "z": {
+        "type": "number",
+        "title": "Z"
+       },
+       "map_id": {
+        "type": "integer",
+        "title": "Map Id",
+        "minimum": 0
+       },
+       "corpse_type": {
+        "type": "integer",
+        "title": "Corpse Type",
+        "default": 1,
+        "minimum": 0
+       },
+       "orientation": {
+        "type": "number",
+        "title": "Orientation",
+        "default": 0.0
+       }
+      },
+      "description": "A corpse row paired with a character for corpse-run fixture readiness.",
+      "additionalProperties": false
+     },
+     "SovereigntyConfig": {
+      "type": "object",
+      "title": "SovereigntyConfig",
+      "required": [
+       "catalog_path"
+      ],
+      "properties": {
+       "catalog_path": {
+        "type": "string",
+        "title": "Catalog Path",
+        "minLength": 1
+       }
+      },
+      "description": "Default-off stock-world guild sovereignty staging.",
+      "additionalProperties": false
+     },
+     "WorldSnapshotSpec": {
+      "type": "object",
+      "title": "WorldSnapshotSpec",
+      "required": [
+       "uri",
+       "sha256"
+      ],
+      "properties": {
+       "uri": {
+        "type": "string",
+        "title": "Uri",
+        "minLength": 1
+       },
+       "sha256": {
+        "type": "string",
+        "title": "Sha256",
+        "pattern": "^[0-9a-fA-F]{64}$"
+       },
+       "hmac_key_env": {
+        "type": "string",
+        "const": "VANILLA_WOW_ROSTER_SNAPSHOT_HMAC_KEY",
+        "title": "Hmac Key Env",
+        "default": "VANILLA_WOW_ROSTER_SNAPSHOT_HMAC_KEY"
+       }
+      },
+      "description": "Private signed full-world artifact restored before an isolated realm starts.",
+      "additionalProperties": false
+     },
+     "RosterSnapshotSpec": {
+      "type": "object",
+      "title": "RosterSnapshotSpec",
+      "required": [
+       "uri",
+       "sha256",
+       "expected_player_count"
+      ],
+      "properties": {
+       "uri": {
+        "type": "string",
+        "title": "Uri",
+        "minLength": 1
+       },
+       "sha256": {
+        "type": "string",
+        "title": "Sha256",
+        "pattern": "^[0-9a-fA-F]{64}$"
+       },
+       "hmac_key_env": {
+        "type": "string",
+        "const": "VANILLA_WOW_ROSTER_SNAPSHOT_HMAC_KEY",
+        "title": "Hmac Key Env",
+        "default": "VANILLA_WOW_ROSTER_SNAPSHOT_HMAC_KEY"
+       },
+       "expected_player_count": {
+        "type": "integer",
+        "title": "Expected Player Count",
+        "maximum": 5,
+        "minimum": 1
+       }
+      },
+      "description": "Private signed character-copy artifact imported into an isolated realm.",
+      "additionalProperties": false
+     },
+     "PetSpellFixtureSpec": {
+      "type": "object",
+      "title": "PetSpellFixtureSpec",
+      "required": [
+       "spell_id"
+      ],
+      "properties": {
+       "active": {
+        "enum": [
+         1,
+         129,
+         193
+        ],
+        "type": "integer",
+        "title": "Active",
+        "default": 193
+       },
+       "spell_id": {
+        "type": "integer",
+        "title": "Spell Id",
+        "minimum": 1
+       }
+      },
+      "description": "One persisted pet spell using stock VMaNGOS pet-action state values.",
+      "additionalProperties": false
+     },
+     "EquippedItemSeedSpec": {
+      "type": "object",
+      "title": "EquippedItemSeedSpec",
+      "required": [
+       "item_id"
+      ],
+      "properties": {
+       "enchant": {
+        "type": "integer",
+        "title": "Enchant",
+        "default": 0,
+        "minimum": 0
+       },
+       "item_id": {
+        "type": "integer",
+        "title": "Item Id",
+        "minimum": 1
+       }
+      },
+      "description": "One explicit equipped item for a normalized seeded loadout.",
+      "additionalProperties": false
+     },
+     "InitialCharacterSpec": {
+      "type": "object",
+      "title": "InitialCharacterSpec",
+      "required": [
+       "character_class"
+      ],
+      "properties": {
+       "race": {
+        "type": "string",
+        "title": "Race",
+        "default": "troll"
+       },
+       "gender": {
+        "enum": [
+         "male",
+         "female"
+        ],
+        "type": "string",
+        "title": "Gender",
+        "default": "male"
+       },
+       "allow_alliance": {
+        "type": "boolean",
+        "title": "Allow Alliance",
+        "default": false
+       },
+       "character_class": {
+        "type": "string",
+        "title": "Character Class",
+        "minLength": 1
+       }
+      },
+      "description": "Submitted identity preference for an account's first character.\n\nEvery stock-playable Vanilla race/class combination is available. Consumers\nmay create the character through the ordinary client or materialize a\nnormalized league fixture from the same identity.",
+      "additionalProperties": false
+     },
+     "CharacterCreationSpec": {
+      "type": "object",
+      "title": "CharacterCreationSpec",
+      "required": [
+       "character_class",
+       "name"
+      ],
+      "properties": {
+       "name": {
+        "type": "string",
+        "title": "Name",
+        "maxLength": 12,
+        "minLength": 2
+       },
+       "race": {
+        "type": "string",
+        "title": "Race",
+        "default": "troll"
+       },
+       "gender": {
+        "enum": [
+         "male",
+         "female"
+        ],
+        "type": "string",
+        "title": "Gender",
+        "default": "male"
+       },
+       "allow_alliance": {
+        "type": "boolean",
+        "title": "Allow Alliance",
+        "default": false
+       },
+       "character_class": {
+        "type": "string",
+        "title": "Character Class",
+        "minLength": 1
+       }
+      },
+      "description": "Character identity created through the ordinary Vanilla client path.",
+      "additionalProperties": false
+     },
+     "EpisodeCompletionSpec": {
+      "type": "object",
+      "title": "EpisodeCompletionSpec",
+      "properties": {
+       "minimum_total_xp_gained": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "minimum": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Minimum Total Xp Gained",
+        "default": null
+       },
+       "minimum_dungeon_bosses_defeated": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "minimum": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Minimum Dungeon Bosses Defeated",
+        "default": null
+       },
+       "minimum_dungeon_hostiles_defeated": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "minimum": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Minimum Dungeon Hostiles Defeated",
+        "default": null
+       }
+      },
+      "description": "Authoritative conditions that end an otherwise long-running episode.\n\nAn empty specification completes when every expected player is online.",
+      "additionalProperties": false
+     },
+     "KalimdorTraversalSpec": {
+      "type": "object",
+      "title": "KalimdorTraversalSpec",
+      "properties": {
+       "map_id": {
+        "type": "integer",
+        "const": 1,
+        "title": "Map Id",
+        "default": 1
+       },
+       "enabled": {
+        "type": "boolean",
+        "title": "Enabled",
+        "default": false
+       },
+       "goal_world_x": {
+        "type": "number",
+        "title": "Goal World X",
+        "default": 6687.333052
+       },
+       "goal_world_y": {
+        "type": "number",
+        "title": "Goal World Y",
+        "default": -4647.667
+       },
+       "goal_world_z": {
+        "type": "number",
+        "title": "Goal World Z",
+        "default": 721.678
+       },
+       "start_world_x": {
+        "type": "number",
+        "title": "Start World X",
+        "default": -9187.0
+       },
+       "goal_radius_yards": {
+        "type": "number",
+        "title": "Goal Radius Yards",
+        "default": 300.0,
+        "maximum": 1000,
+        "exclusiveMinimum": 0
+       }
+      },
+      "description": "Fixed south-to-north Kalimdor scoring boundary and Everlook goal.\n\nThe stock minimap projects geographic north/south from VMaNGOS world X,\nso northing is deliberately derived from world X rather than world Y.\nGoal completion is a three-dimensional radius around the terrain-verified\nEverlook anchor rather than the old world-X finish line.",
+      "additionalProperties": false
+     },
+     "PersistentEntrantSpec": {
+      "type": "object",
+      "title": "PersistentEntrantSpec",
+      "required": [
+       "player_id",
+       "policy_version_id"
+      ],
+      "properties": {
+       "player_id": {
+        "type": "string",
+        "title": "Player Id",
+        "maxLength": 128,
+        "minLength": 1
+       },
+       "player_name": {
+        "anyOf": [
+         {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Player Name",
+        "default": null
+       },
+       "runtime_mode": {
+        "enum": [
+         "bounded",
+         "persistent"
+        ],
+        "type": "string",
+        "title": "Runtime Mode",
+        "default": "bounded"
+       },
+       "initial_character": {
+        "anyOf": [
+         {
+          "$ref": "#/$defs/InitialCharacterSpec"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null
+       },
+       "policy_version_id": {
+        "type": "string",
+        "title": "Policy Version Id",
+        "maxLength": 128,
+        "minLength": 1
+       }
+      },
+      "description": "Stable account owner authored by the league Commissioner.",
+      "additionalProperties": false
+     },
+     "PersistentGatewaySpec": {
+      "type": "object",
+      "title": "PersistentGatewaySpec",
+      "required": [
+       "url",
+       "control_token_uri"
+      ],
+      "properties": {
+       "url": {
+        "type": "string",
+        "title": "Url",
+        "pattern": "^https?://",
+        "minLength": 1
+       },
+       "control_token_uri": {
+        "type": "string",
+        "title": "Control Token Uri",
+        "minLength": 1
+       }
+      },
+      "description": "Private gateway connection injected through a Coworld config overlay.",
+      "additionalProperties": false
+     },
+     "VmangosConfigOverrides": {
+      "type": "object",
+      "title": "VmangosConfigOverrides",
+      "properties": {
+       "class_deck": {
+        "$ref": "#/$defs/ClassDeckConfig"
+       },
+       "realm_ruleset": {
+        "enum": [
+         "stock",
+         "guild_wars",
+         "guild_wars_drain"
+        ],
+        "type": "string",
+        "title": "Realm Ruleset",
+        "default": "stock"
+       },
+       "npc_backstories": {
+        "type": "boolean",
+        "title": "Npc Backstories",
+        "default": false
+       },
+       "simulation_time_scale": {
+        "type": "integer",
+        "title": "Simulation Time Scale",
+        "default": 1,
+        "maximum": 10,
+        "minimum": 1
+       },
+       "realmd_config_overrides": {
+        "type": "object",
+        "title": "Realmd Config Overrides",
+        "additionalProperties": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "integer"
+          },
+          {
+           "type": "number"
+          }
+         ]
+        }
+       },
+       "mangosd_config_overrides": {
+        "type": "object",
+        "title": "Mangosd Config Overrides",
+        "additionalProperties": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "integer"
+          },
+          {
+           "type": "number"
+          }
+         ]
+        }
+       }
+      },
+      "additionalProperties": false
+     },
+     "CoworldStateParticipant": {
+      "type": "object",
+      "title": "CoworldStateParticipant",
+      "required": [
+       "player_id"
+      ],
+      "properties": {
+       "player_id": {
+        "type": "string",
+        "title": "Player Id",
+        "maxLength": 128,
+        "minLength": 1
+       }
+      },
+      "additionalProperties": false
+     },
+     "LeagueEntrantPreferences": {
+      "type": "object",
+      "title": "LeagueEntrantPreferences",
+      "properties": {
+       "dps": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Dps",
+        "default": null
+       },
+       "tank": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Tank",
+        "default": null
+       },
+       "healer": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Healer",
+        "default": null
+       },
+       "arena_slot_1": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Arena Slot 1",
+        "default": null
+       },
+       "arena_slot_2": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Arena Slot 2",
+        "default": null
+       },
+       "initial_character_race": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Initial Character Race",
+        "default": null
+       },
+       "initial_character_class": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 1
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Initial Character Class",
+        "default": null
+       },
+       "initial_character_gender": {
+        "anyOf": [
+         {
+          "enum": [
+           "male",
+           "female"
+          ],
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Initial Character Gender",
+        "default": null
+       }
+      },
+      "description": "Typed membership preferences projected into one scheduled player seat.",
+      "additionalProperties": false
+     },
+     "DungeonLabDifficultyOverride": {
+      "type": "object",
+      "title": "DungeonLabDifficultyOverride",
+      "properties": {
+       "armor_mult": {
+        "anyOf": [
+         {
+          "type": "number",
+          "exclusiveMinimum": 0
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Armor Mult",
+        "default": null
+       },
+       "damage_mult": {
+        "anyOf": [
+         {
+          "type": "number",
+          "exclusiveMinimum": 0
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Damage Mult",
+        "default": null
+       },
+       "health_mult": {
+        "anyOf": [
+         {
+          "type": "number",
+          "exclusiveMinimum": 0
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Health Mult",
+        "default": null
+       },
+       "level_shift": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "maximum": 62,
+          "minimum": -62
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Level Shift",
+        "default": null
+       }
+      },
+      "description": "Per-variant difficulty overrides layered over a dungeon definition.\n\nAny field left ``None`` keeps the definition's own ``difficulty`` value.\nBounds mirror ``dungeon.DifficultyMultipliers`` (the compiler clamps\nshifted clone levels into 1..63).",
+      "additionalProperties": false
+     }
+    },
+    "title": "ScenarioConfig",
+    "required": [
+     "tokens",
+     "players",
+     "max_ticks",
+     "tick_rate"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "title": "Seed",
+      "default": 0,
+      "maximum": 2147483647,
+      "minimum": 0
+     },
+     "arena": {
+      "$ref": "#/$defs/ArenaConfig"
+     },
+     "tower": {
+      "$ref": "#/$defs/TowerConfig"
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "title": "Tokens",
+      "maxItems": 7,
+      "minItems": 1
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "$ref": "#/$defs/PlayerSpec"
+      },
+      "title": "Players",
+      "maxItems": 7,
+      "minItems": 1
+     },
+     "vmangos": {
+      "$ref": "#/$defs/VmangosConfigOverrides"
+     },
+     "max_ticks": {
+      "type": "integer",
+      "title": "Max Ticks",
+      "maximum": 1080000,
+      "minimum": 1
+     },
+     "rfc_round": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/RfcRoundConfig"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "spell_lab": {
+      "$ref": "#/$defs/SpellLabConfig"
+     },
+     "tick_rate": {
+      "type": "number",
+      "title": "Tick Rate",
+      "maximum": 20,
+      "exclusiveMinimum": 0
+     },
+     "completion": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/EpisodeCompletionSpec"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "dungeon_lab": {
+      "$ref": "#/$defs/DungeonLabConfig"
+     },
+     "scenario_id": {
+      "type": "string",
+      "title": "Scenario Id",
+      "default": "vanilla_wow_session",
+      "minLength": 1
+     },
+     "sovereignty": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/SovereigntyConfig"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "coworld_state": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/CoworldStateSpec"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "world_snapshot": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/WorldSnapshotSpec"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "fixture_players": {
+      "type": "array",
+      "items": {
+       "$ref": "#/$defs/PlayerSpec"
+      },
+      "title": "Fixture Players",
+      "maxItems": 32
+     },
+     "roster_snapshot": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/RosterSnapshotSpec"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "kalimdor_traversal": {
+      "$ref": "#/$defs/KalimdorTraversalSpec"
+     },
+     "league_preferences": {
+      "type": "array",
+      "items": {
+       "$ref": "#/$defs/LeagueEntrantPreferences"
+      },
+      "title": "League Preferences",
+      "maxItems": 7,
+      "description": "Membership preferences aligned with policy seats by the platform commissioner."
+     },
+     "persistent_entrant": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/PersistentEntrantSpec"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "persistent_gateway": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/PersistentGatewaySpec"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "player_startup_timeout_seconds": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 3600,
+        "exclusiveMinimum": 0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Player Startup Timeout Seconds",
+      "default": null
+     }
+    },
+    "additionalProperties": false
+   },
+   "replay_viewer": {
+    "bundle": "sha256:7380a4a798f532187bce032e080298b14a10d1a51cb0591ba2c85e340936368c"
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores"
+    ],
+    "properties": {
+     "arena": {
+      "type": [
+       "object",
+       "null"
+      ]
+     },
+     "ticks": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "tower": {
+      "type": [
+       "object",
+       "null"
+      ]
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 1,
+      "description": "One score per player slot. Leveling episodes use level + XP / XP required for the next level; Kalimdor traversal uses authoritative mainland northing yards from the fixed southern origin; RFC speedruns use lower-is-better elapsed minutes (authoritative clear time, or 60.0 for a failed, timed-out, or otherwise unverified clear); Arena 2v2 uses the number of distinct opposing players eliminated by the slot's team; other dungeon variants use their objective score."
+     },
+     "score_metric": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": true
+   }
+  },
+  "tags": [
+   "mmorpg",
+   "multiplayer",
+   "reinforcement-learning",
+   "world-of-warcraft"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "persistent-certification-player",
+    "env": {},
+    "run": [
+     "python",
+     "-c",
+     "import asyncio, json, os\nfrom urllib.parse import parse_qs, urlparse\nimport websockets\nasync def main():\n    url = os.environ['COWORLD_PLAYER_WS_URL']\n    query = parse_qs(urlparse(url).query)\n    slot = int(query.get('slot', ['0'])[0])\n    async with websockets.connect(url) as websocket:\n        message = json.loads(await websocket.recv())\n        payload = {\n            'protocol': message['protocol'],\n            'type': 'done',\n            'slot': slot,\n            'success': True,\n            'detail': 'persistent connector certification',\n        }\n        await websocket.send(json.dumps(payload))\n        await websocket.recv()\nasyncio.run(main())"
+    ],
+    "name": "Persistent Certification Player",
+    "type": "player",
+    "image": "img_62ebdf0b-ee17-4115-913b-3a1398da23fd",
+    "description": "Lightweight connector-certification player. It validates the persistent session WebSocket contract and exits without starting the full WoW client."
+   }
+  ],
+  "reporter": [
+   {
+    "reporter": "hayb9m1pzz988c5nioyoffel/persistent-wow-vanilla-wow-episode-report@7"
+   }
+  ],
+  "variants": [
+   {
+    "id": "persistent-leveling-session",
+    "name": "Persistent Leveling Session",
+    "description": "A long-lived player runtime connected to the player's durable realm account. The submitted player creates and selects characters through the ordinary Vanilla client flow; its submitted initial race/class/gender is used only while the account is empty. Authoritative ten-minute recorded windows score end-character level progress while retaining XP gained and total XP diagnostics, and stable player identity survives policy-version uploads; the Commissioner supplies entrant identity and a private gateway overlay.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Persistent Entrant",
+       "driver": "bot"
+      }
+     ],
+     "max_ticks": 3500,
+     "tick_rate": 1,
+     "scenario_id": "persistent-leveling-session"
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "vanilla-wow-persistent-commissioner",
+    "env": {},
+    "run": [
+     "vanilla-wow-commissioner",
+     "--competition",
+     "persistent"
+    ],
+    "name": "Vanilla WoW Persistent Commissioner",
+    "type": "commissioner",
+    "image": "img_62ebdf0b-ee17-4115-913b-3a1398da23fd",
+    "description": "Runs the dedicated persistent league lifecycle."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "persistent-certification-player"
+    }
+   ],
+   "game_config": {
+    "players": [
+     {
+      "name": "Certification Entrant",
+      "driver": "bot"
+     }
+    ],
+    "max_ticks": 2400,
+    "tick_rate": 20,
+    "scenario_id": "persistent-connector-certification",
+    "coworld_state": {
+     "mode": "head",
+     "scope": "player",
+     "participants": [
+      {
+       "player_id": "coworld-certification-player"
+      }
+     ]
+    },
+    "persistent_entrant": {
+     "player_id": "coworld-certification-player",
+     "policy_version_id": "certification"
+    },
+    "persistent_gateway": {
+     "url": "http://coworld-certification.invalid",
+     "control_token_uri": "certification://token"
+    }
+   }
+  },
+  "episode_timeout_minutes": 60
+ },
+ "manifest_hash": "sha256:f6d328a6240ad08ffe9636ef13549e8d40909a743b5917e19438de535f8cceb5",
+ "size_bytes": 36488,
+ "created_at": "2026-08-27T00:01:18.380098Z",
+ "canonical": true
+}

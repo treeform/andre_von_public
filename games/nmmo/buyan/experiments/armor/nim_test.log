@@ -1,0 +1,29 @@
+Hint: used config file '/Users/me/.nimby/nim/config/nim.cfg' [Conf]
+Hint: used config file '/Users/me/.nimby/nim/config/config.nims' [Conf]
+Hint: used config file '/Users/me/p/nim.cfg' [Conf]
+Hint: used config file '/Users/me/p/andre_von_auto/nim.cfg' [Conf]
+..............................................................................................................................................................
+/Users/me/p/andre_von_auto/games/nmmo/buyan/experiments/armor/candidate.nim(229, 6) Hint: 'combatLevel' is declared but not used [XDeclaredButNotUsed]
+/Users/me/p/andre_von_auto/games/nmmo/buyan/experiments/armor/candidate.nim(930, 6) Hint: 'main' is declared but not used [XDeclaredButNotUsed]
+CC: system.nim
+CC: test_armor.nim
+Hint:  [Link]
+Hint: mm: orc; threads: on; opt: none (DEBUG BUILD, `-d:release` generates faster code)
+79616 lines; 0.693s; 142.301MiB peakmem; proj: /Users/me/p/andre_von_auto/games/nmmo/buyan/experiments/armor/test_armor.nim; out: /Users/me/.cache/nim/test_armor_d/test_armor_3A07FAEA35608F6B478F7FBA19B6FCF6736DADF6 [SuccessX]
+Hint: /Users/me/.cache/nim/test_armor_d/test_armor_3A07FAEA35608F6B478F7FBA19B6FCF6736DADF6 [Exec]
+armor_upgrade event=issued tick=42 agent=4 life=0 action=8 slot=helm oldTier=1 desiredTier=3 freshTier=1 issued=1 confirmed=0 tierGain=0
+armor_upgrade event=issued tick=10 agent=0 life=0 action=8 slot=helm oldTier=1 desiredTier=3 freshTier=1 issued=1 confirmed=0 tierGain=0
+armor_upgrade event=confirmed tick=12 agent=0 life=0 slot=helm oldTier=1 desiredTier=3 freshTier=3 issued=1 confirmed=1 tierGain=2
+armor_upgrade event=summary agent=0 life=0 issued=1 confirmed=1 tierGain=2
+armor_upgrade event=issued tick=20 agent=0 life=0 action=8 slot=helm oldTier=1 desiredTier=3 freshTier=1 issued=1 confirmed=0 tierGain=0
+armor_upgrade event=issued tick=21 agent=0 life=0 action=8 slot=helm oldTier=1 desiredTier=3 freshTier=1 issued=2 confirmed=0 tierGain=0
+armor_upgrade event=confirmed tick=23 agent=0 life=0 slot=helm oldTier=1 desiredTier=3 freshTier=3 issued=2 confirmed=1 tierGain=2
+armor_upgrade event=issued tick=1 agent=0 life=0 action=8 slot=helm oldTier=1 desiredTier=3 freshTier=1 issued=1 confirmed=0 tierGain=0
+armor_upgrade event=confirmed tick=3 agent=0 life=0 slot=helm oldTier=1 desiredTier=3 freshTier=3 issued=1 confirmed=1 tierGain=2
+armor_upgrade event=issued tick=1 agent=0 life=0 action=8 slot=chest oldTier=1 desiredTier=3 freshTier=1 issued=1 confirmed=0 tierGain=0
+armor_upgrade event=confirmed tick=3 agent=0 life=0 slot=chest oldTier=1 desiredTier=3 freshTier=3 issued=1 confirmed=1 tierGain=2
+armor_upgrade event=issued tick=1 agent=0 life=0 action=8 slot=legs oldTier=1 desiredTier=3 freshTier=1 issued=1 confirmed=0 tierGain=0
+armor_upgrade event=confirmed tick=3 agent=0 life=0 slot=legs oldTier=1 desiredTier=3 freshTier=3 issued=1 confirmed=1 tierGain=2
+armor_upgrade event=issued tick=10 agent=1 life=0 action=8 slot=helm oldTier=1 desiredTier=3 freshTier=1 issued=1 confirmed=0 tierGain=0
+armor_upgrade event=issued tick=-1 agent=0 life=0 action=8 slot=legs oldTier=1 desiredTier=3 freshTier=1 issued=1 confirmed=0 tierGain=0
+ok armor upgrade isolation

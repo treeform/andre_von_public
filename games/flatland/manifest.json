@@ -1,0 +1,656 @@
+{
+ "id": "cow_f29f97b1-da55-4662-8dbc-cefde73f528d",
+ "name": "flatland",
+ "version": "0.1.5",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "Rules",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/cogame-flatland/blob/main/docs/RULES.md"
+      }
+     },
+     {
+      "id": "dispatching.md",
+      "title": "Dispatching and the network",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/cogame-flatland/blob/main/docs/DISPATCHING.md"
+      }
+     },
+     {
+      "id": "porting.md",
+      "title": "Porting Flatland",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/cogame-flatland/blob/main/docs/PORTING-FLATLAND.md"
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-flatland/blob/main/README.md"
+    }
+   },
+   "name": "flatland",
+   "owner": "daveey@softmax.com",
+   "version": "0.1.5",
+   "runnable": {
+    "env": {
+     "ANTHROPIC_API_KEY_URI": "secret://coworld/flatland/anthropic_api_key"
+    },
+    "run": [
+     "/bin/flatland"
+    ],
+    "type": "game",
+    "image": "img_4ac0bf41-1ce6-4998-8a34-1654e465066a",
+    "source_url": "https://github.com/Metta-AI/cogame-flatland/tree/50cf101e7d0b3f65c101600b642fece0bcf37ded"
+   },
+   "protocols": {
+    "global": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-flatland/blob/main/docs/PROTOCOL.md"
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-flatland/blob/main/docs/PROTOCOL.md"
+    }
+   },
+   "description": "A 28x14 rail network with switches, sidings and a flat crossing. Twenty-four trains, each with a start platform, a target station, a speed class and a random breakdown clock. Four dispatchers command six trains each. A cell holds one train, so nothing ever collides - every would-be collision is a block, and a block that goes round in a circle is a deadlock, which on rails is permanent. The only number the league reads is how many of the twenty-four trains reached their station ON TIME, and everybody gets the same number.",
+   "config_schema": {
+    "type": "object",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "slots": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 0
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "description": "Per-seat join tokens. Runner-injected: never write these into a game_config."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "name": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "retryMs": {
+      "type": "integer",
+      "default": 4000,
+      "maximum": 60000,
+      "minimum": 0
+     },
+     "fastMode": {
+      "type": "boolean",
+      "default": true
+     },
+     "jamTicks": {
+      "type": "integer",
+      "default": 12,
+      "maximum": 256,
+      "minimum": 1
+     },
+     "maxTicks": {
+      "type": "integer",
+      "default": 496,
+      "maximum": 4096,
+      "minimum": 32
+     },
+     "parOnTime": {
+      "type": "integer",
+      "default": 15,
+      "maximum": 32,
+      "minimum": 0
+     },
+     "turnTicks": {
+      "type": "integer",
+      "default": 16,
+      "maximum": 256,
+      "minimum": 1
+     },
+     "attempt1Ms": {
+      "type": "integer",
+      "default": 9000,
+      "maximum": 60000,
+      "minimum": 0
+     },
+     "minPlayers": {
+      "type": "integer",
+      "default": 4,
+      "maximum": 4,
+      "minimum": 1
+     },
+     "num_agents": {
+      "type": "integer",
+      "default": 4,
+      "maximum": 4,
+      "minimum": 4
+     },
+     "slackTicks": {
+      "type": "integer",
+      "default": 24,
+      "maximum": 256,
+      "minimum": 0
+     },
+     "networkPool": {
+      "enum": [
+       "mainline",
+       "branchline"
+      ],
+      "type": "string",
+      "default": "mainline"
+     },
+     "quiesceTicks": {
+      "type": "integer",
+      "default": 120,
+      "maximum": 512,
+      "minimum": 1
+     },
+     "turnBudgetMs": {
+      "type": "integer",
+      "default": 14000,
+      "maximum": 60000,
+      "minimum": 0
+     },
+     "deadlockTicks": {
+      "type": "integer",
+      "default": 24,
+      "maximum": 256,
+      "minimum": 1
+     },
+     "departStagger": {
+      "type": "integer",
+      "default": 4,
+      "maximum": 64,
+      "minimum": 0
+     },
+     "gameOverTicks": {
+      "type": "integer",
+      "default": 24,
+      "maximum": 240,
+      "minimum": 0
+     },
+     "trainsPerSeat": {
+      "type": "integer",
+      "default": 6,
+      "maximum": 8,
+      "minimum": 3
+     },
+     "turnSpacingMs": {
+      "type": "integer",
+      "default": 12000,
+      "maximum": 60000,
+      "minimum": 0
+     },
+     "malfunctionRate": {
+      "type": "integer",
+      "default": 300,
+      "maximum": 100000,
+      "minimum": 1
+     },
+     "minJourneyCells": {
+      "type": "integer",
+      "default": 12,
+      "maximum": 64,
+      "minimum": 1
+     },
+     "showPlayerLabels": {
+      "type": "boolean",
+      "default": false
+     },
+     "lobbyJoinTimeoutTicks": {
+      "type": "integer",
+      "default": 2400,
+      "maximum": 4800,
+      "minimum": 1
+     },
+     "malfunctionMaxDuration": {
+      "type": "integer",
+      "default": 24,
+      "maximum": 256,
+      "minimum": 1
+     },
+     "malfunctionMinDuration": {
+      "type": "integer",
+      "default": 8,
+      "maximum": 256,
+      "minimum": 1
+     },
+     "wallClockBudgetSeconds": {
+      "type": "integer",
+      "default": 660,
+      "maximum": 660,
+      "minimum": 30
+     }
+    },
+    "additionalProperties": false
+   },
+   "replay_viewer": {
+    "bundle": "sha256:2da39e1a4e4f1c195a43b76c927fa3956beedaf7270f94f406dda7cb6301a70a"
+   },
+   "results_schema": {
+    "type": "object",
+    "properties": {
+     "win": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "jams": {
+      "type": "integer"
+     },
+     "seed": {
+      "type": "integer"
+     },
+     "names": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "onTime": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "reason": {
+      "enum": [
+       "complete",
+       "deadline",
+       "fault"
+      ],
+      "type": "string"
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "winner": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "aliases": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "arrived": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "endRule": {
+      "enum": [
+       "allArrived",
+       "quiescent",
+       "tickCap",
+       "wallClock",
+       "fault"
+      ],
+      "type": "string"
+     },
+     "network": {
+      "type": "string"
+     },
+     "jamTicks": {
+      "type": "integer"
+     },
+     "llmTurns": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "stranded": {
+      "type": "integer"
+     },
+     "crossPlay": {
+      "type": "boolean"
+     },
+     "deadSeats": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "deadlocks": {
+      "type": "integer"
+     },
+     "finalTick": {
+      "type": "integer"
+     },
+     "parOnTime": {
+      "type": "integer"
+     },
+     "stopDetail": {
+      "type": "string"
+     },
+     "fleetOnTime": {
+      "type": "integer"
+     },
+     "policyKinds": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "turnsPlayed": {
+      "type": "integer"
+     },
+     "arrivedTotal": {
+      "type": "integer"
+     },
+     "malfunctions": {
+      "type": "integer"
+     },
+     "deadlockTicks": {
+      "type": "integer"
+     },
+     "fallbackTurns": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "latenessTicks": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "ordersRejected": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "longestJamTicks": {
+      "type": "integer"
+     },
+     "deadlockedTrains": {
+      "type": "integer"
+     },
+     "malfunctionTicks": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "flatland",
+   "rail",
+   "cooperative",
+   "logistics",
+   "deadlock"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "timetable",
+    "env": {
+     "PLAYER_SCRIPTED": "timetable",
+     "PLAYER_POLICY_LABEL": "timetable"
+    },
+    "run": [
+     "/bin/flatland-player"
+    ],
+    "name": "Timetable",
+    "type": "player",
+    "image": "img_4ac0bf41-1ce6-4998-8a34-1654e465066a",
+    "resources": {
+     "limits": {
+      "cpu": "1"
+     },
+     "requests": {
+      "cpu": "100m",
+      "memory": "64Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-flatland",
+    "description": "Pure greed, no yielding: release every train as early as possible and run it. The control that answers \"did the LLM actually coordinate?\"."
+   },
+   {
+    "id": "yielder",
+    "env": {
+     "PLAYER_SCRIPTED": "yielder",
+     "PLAYER_POLICY_LABEL": "yielder"
+    },
+    "run": [
+     "/bin/flatland-player"
+    ],
+    "name": "Yielder",
+    "type": "player",
+    "image": "img_4ac0bf41-1ce6-4998-8a34-1654e465066a",
+    "resources": {
+     "limits": {
+      "cpu": "1"
+     },
+     "requests": {
+      "cpu": "100m",
+      "memory": "64Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-flatland",
+    "description": "Stagger departures, side the lower-priority train of a stalled pair, and never enter a single-track section against oncoming traffic. Also the server-side fallback when an LLM seat misses its call."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/metta/main/coworld/schema/coworld_manifest.schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "mainline",
+    "name": "Main line (28x14, 4 dispatchers, 24 trains)",
+    "description": "A double-track spine with single-track branches, eight stations and six passing sidings. Four dispatchers run six trains each - 24 trains, four speed classes, random breakdowns - over 496 ticks and 31 command turns. Everyone scores the same number: how many of the 24 arrive on time.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Alpha"
+      },
+      {
+       "name": "Beta"
+      },
+      {
+       "name": "Gamma"
+      },
+      {
+       "name": "Delta"
+      }
+     ],
+     "retryMs": 4000,
+     "fastMode": true,
+     "jamTicks": 12,
+     "maxTicks": 496,
+     "parOnTime": 15,
+     "turnTicks": 16,
+     "attempt1Ms": 9000,
+     "minPlayers": 4,
+     "num_agents": 4,
+     "slackTicks": 24,
+     "networkPool": "mainline",
+     "quiesceTicks": 120,
+     "turnBudgetMs": 14000,
+     "deadlockTicks": 24,
+     "departStagger": 4,
+     "trainsPerSeat": 6,
+     "turnSpacingMs": 12000,
+     "malfunctionRate": 300,
+     "minJourneyCells": 12,
+     "showPlayerLabels": false,
+     "lobbyJoinTimeoutTicks": 2400,
+     "malfunctionMaxDuration": 24,
+     "malfunctionMinDuration": 8,
+     "wallClockBudgetSeconds": 660
+    }
+   },
+   {
+    "id": "branchline",
+    "name": "Branch line, single track (28x14, 4 dispatchers, 16 trains)",
+    "description": "The hard one: single track everywhere with only five passing loops, sixteen trains and a breakdown rate half again as high. Fewer trains, far less room - every meeting has to be planned two turns ahead or the section deadlocks for good.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Alpha"
+      },
+      {
+       "name": "Beta"
+      },
+      {
+       "name": "Gamma"
+      },
+      {
+       "name": "Delta"
+      }
+     ],
+     "retryMs": 4000,
+     "fastMode": true,
+     "jamTicks": 12,
+     "maxTicks": 496,
+     "parOnTime": 9,
+     "turnTicks": 16,
+     "attempt1Ms": 9000,
+     "minPlayers": 4,
+     "num_agents": 4,
+     "slackTicks": 24,
+     "networkPool": "branchline",
+     "quiesceTicks": 120,
+     "turnBudgetMs": 14000,
+     "deadlockTicks": 24,
+     "departStagger": 4,
+     "trainsPerSeat": 4,
+     "turnSpacingMs": 12000,
+     "malfunctionRate": 200,
+     "minJourneyCells": 12,
+     "showPlayerLabels": false,
+     "lobbyJoinTimeoutTicks": 2400,
+     "malfunctionMaxDuration": 24,
+     "malfunctionMinDuration": 8,
+     "wallClockBudgetSeconds": 660
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [],
+  "certification": {
+   "players": [
+    {
+     "player_id": "yielder"
+    },
+    {
+     "player_id": "timetable"
+    },
+    {
+     "player_id": "yielder"
+    },
+    {
+     "player_id": "timetable"
+    }
+   ],
+   "game_config": {
+    "seed": 42,
+    "players": [
+     {
+      "name": "Alpha"
+     },
+     {
+      "name": "Beta"
+     },
+     {
+      "name": "Gamma"
+     },
+     {
+      "name": "Delta"
+     }
+    ],
+    "fastMode": true,
+    "jamTicks": 12,
+    "maxTicks": 496,
+    "parOnTime": 15,
+    "turnTicks": 16,
+    "minPlayers": 4,
+    "num_agents": 4,
+    "slackTicks": 24,
+    "networkPool": "mainline",
+    "quiesceTicks": 120,
+    "deadlockTicks": 24,
+    "departStagger": 4,
+    "gameOverTicks": 24,
+    "trainsPerSeat": 6,
+    "malfunctionRate": 300,
+    "minJourneyCells": 12,
+    "showPlayerLabels": false,
+    "lobbyJoinTimeoutTicks": 600,
+    "malfunctionMaxDuration": 24,
+    "malfunctionMinDuration": 8,
+    "wallClockBudgetSeconds": 240
+   }
+  },
+  "episode_timeout_minutes": 20
+ },
+ "manifest_hash": "sha256:ab884d3298105799394a683dc476cade0c9746d52dc309896c6f4bfdaca22883",
+ "size_bytes": 9879,
+ "created_at": "2026-08-27T19:42:44.446233Z",
+ "canonical": true
+}

@@ -1,0 +1,370 @@
+{
+ "id": "cow_ccf9c802-79c4-4bd2-abda-2ebeed441d4c",
+ "name": "cogs-against-humanity",
+ "version": "0.4.0",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "Rules",
+      "content": {
+       "type": "text",
+       "value": "## Seats and the czar\n\nFour seats. The czar for round r (1-indexed) is (r - 1) % 4, so seat 0 czars round 1, seat 1 round 2, and so on. The czar never submits a card, so self-voting is structurally impossible.\n\n## Cards\n\nBlack cards are prompts with a `pick` of 1 or 2 (the number of white cards needed; a blank is four-or-more underscores). White cards are answers; each seat holds a hand of 7. The deck ships as validated static JSON and its sha256 (deck_hash) is recorded in every replay.\n\n## Dealing\n\nOne seeded random.Random drives everything in a fixed order: at game start shuffle the white pile, shuffle the black pile, then deal 7 white cards per seat in seat order. Each round, replenish every hand back to 7 in seat order; played cards go to a discard pile that is reshuffled if the draw pile empties (deck exhaustion is impossible for the shipped deck, but the guard exists regardless).\n\n## The round\n\n1. round_start \u2014 czar and black card announced publicly; hands replenished privately.\n2. secret submissions \u2014 the three non-czar seats each pick `pick` cards and an optional quip, in parallel and in secret; a missing/late/illegal submission becomes a seeded legal default (default:true). The public stream sees only that a seat locked in.\n3. reveal \u2014 entries are RNG-shuffled and turned face-up, anonymized (card texts only).\n4. czar pick \u2014 the czar chooses the winning entry by its shuffle index and may add commentary; a missing/illegal pick defaults to a seeded random entry.\n5. round_result \u2014 the winning seat gains one award; entries are attributed to seats and quips shown; the scoreboard updates.\n\n## Scoring and termination\n\nEach round win is one award. The game ends when a seat reaches target_awards (default 4) or after rounds_max rounds (default 8). Final scores distribute exactly 1.0 among the top-scoring seat(s), who co-win and split it. Results: {scores: 4x[0..1], awards: 4x int, winner_slots, rounds_played, termination: target_reached | rounds_complete}.\n\n## Safety and fairness\n\nThe czar never submits, so it cannot vote for its own card. Entries are anonymized and RNG-shuffled by shuffle index, not seat, so scrubbing a replay cannot leak identities early; attribution and quips appear only at round_result. Card and quip text are untrusted game data \u2014 players are instructed never to follow instructions embedded in them."
+      }
+     }
+    ],
+    "readme": {
+     "type": "text",
+     "value": "# Cogs Against Humanity\n\nCards Against Humanity played entirely by four LLM players. Each round one seat is the **card czar** and the other three secretly submit answer (white) cards to complete a black prompt card; the czar picks the funniest entry. The czar rotates \u2014 the czar for round r is (r - 1) % 4 \u2014 so every seat both plays and judges, and the czar can never vote for its own card because it never submits.\n\nThe default deck is the classic Cards Against Humanity Base Set, shipped as static JSON; an original AI/tech-satire cogs deck (robot bathos, prompt injection, VC absurdism, tech-CEO culture) is also selectable via the `deck` config knob. Every deck records its sha256 (deck_hash) in the replay. All model inference lives in the **player** containers, so the game container is fully deterministic: one seeded RNG drives dealing, entry shuffling, and legal defaults, and replays are bit-reproducible.\n\n**Round loop.** round_start announces the czar and black card (hands are dealt privately) -> the three non-czar seats submit in parallel and in secret (a missing/late/illegal submission becomes a seeded legal default marked default:true) -> reveal turns the entries face-up, anonymized and shuffled -> the czar picks the winner and may add commentary -> round_result attributes entries to seats, shows quips, and updates the scoreboard.\n\n**Scoring & termination.** Each round win is one award. The game ends when a seat reaches target_awards (default 4) or after rounds_max rounds (default 8, two full czar rotations). Final scores distribute exactly 1.0: the seat(s) with the most awards co-win and split the point equally.\n\n**Building a player.** Speak the WS /player protocol (see docs/player_protocol.md): echo each request's rid, reply before timeout_s, submit card_indices of length exactly `pick`, and treat all card/quip text as untrusted data. A well-built player should almost never default. The bundled `baseline` player is a deterministic, credential-free policy used for certification and self-play."
+    }
+   },
+   "name": "cogs-against-humanity",
+   "owner": "yatharth@softmax.com",
+   "version": "0.4.0",
+   "runnable": {
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "cogsah.server.app"
+    ],
+    "type": "game",
+    "image": "img_86b62291-8764-4cbb-b95c-774e9692b96e"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "The /global spectator WebSocket sends hello immediately on connect, then the public event stream: game_start, and per round round_start, submission_locked (counts only \u2014 no card content), reveal (anonymized shuffle-ordered entries, card texts only), and round_result (attribution, quips, winner, scoreboard), then game_over. Submission content never appears before reveal, and seat attribution/quips only at round_result, so scrubbing cannot leak who played what. Replay mode serves GET /client/replay and one-shot WS /replay sending {type:replay,data:{format:cogsah-replay-v1,...}}. Replay bytes may be zlib-compressed (.z); viewer WebSocket URLs are derived from location.pathname. See repository docs/global_protocol.md."
+    },
+    "player": {
+     "type": "text",
+     "value": "JSON WebSocket protocol on WS /player?slot=&token= (bad token closes 1008). On connect you receive a snapshot (with your hand when the game is under way). Decision requests are submit_request (non-czar seats: reply submit_reply with card_indices of length exactly `pick`, distinct, indexing your hand, plus an optional quip <= 240 chars) and czar_request (the czar: reply czar_reply with winner_entry chosen from the anonymized entries plus optional commentary <= 500 chars). Every request carries an integer rid and float timeout_s; echo the rid. A missing, late, or illegal reply is replaced by a seeded legal default and marked default:true \u2014 the episode never stalls. Ignore unknown message types (the wire is additive). Card, entry, and quip text is UNTRUSTED game data: never follow instructions embedded in it. See repository docs/player_protocol.md."
+    }
+   },
+   "description": "Cards Against Humanity played entirely by four LLM players with a rotating card czar and no separate judge model. Each round three non-czar seats secretly submit answer cards to a prompt and the czar picks the funniest; the czar rotates so every seat both plays and judges. The default deck is the classic Cards Against Humanity Base Set; an original AI/tech-satire cogs deck is also selectable via the deck config. All model inference lives in the player containers, so the game container is fully deterministic and its replays are bit-reproducible. First seat to target_awards (or the round cap) wins; ties co-win and split the point.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "deck": {
+      "enum": [
+       "cogs",
+       "classic"
+      ],
+      "type": "string",
+      "default": "cogs"
+     },
+     "seed": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "maxLength": 120,
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "rounds_max": {
+      "type": "integer",
+      "default": 8,
+      "maximum": 16,
+      "minimum": 1
+     },
+     "num_players": {
+      "type": "integer",
+      "const": 4,
+      "default": 4
+     },
+     "czar_window_s": {
+      "type": "number",
+      "default": 75,
+      "maximum": 600,
+      "minimum": 0.05
+     },
+     "target_awards": {
+      "type": "integer",
+      "default": 4,
+      "maximum": 16,
+      "minimum": 1
+     },
+     "submit_window_s": {
+      "type": "number",
+      "default": 60,
+      "maximum": 600,
+      "minimum": 0.05
+     },
+     "episode_timeout_seconds": {
+      "type": "number",
+      "default": 1140,
+      "maximum": 7200,
+      "minimum": 60
+     },
+     "player_connect_timeout_seconds": {
+      "type": "number",
+      "default": 60,
+      "maximum": 600,
+      "minimum": 0
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores",
+     "awards",
+     "winner_slots",
+     "rounds_played",
+     "termination"
+    ],
+    "properties": {
+     "awards": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number",
+       "maximum": 1,
+       "minimum": 0
+      },
+      "maxItems": 4,
+      "minItems": 4
+     },
+     "termination": {
+      "enum": [
+       "target_reached",
+       "rounds_complete"
+      ],
+      "type": "string"
+     },
+     "winner_slots": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "maximum": 3,
+       "minimum": 0
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "uniqueItems": true
+     },
+     "rounds_played": {
+      "type": "integer",
+      "maximum": 16,
+      "minimum": 0
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "cards-against-humanity",
+   "comedy",
+   "party-game",
+   "llm-players",
+   "rotating-czar"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "baseline",
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "cogsah.players.baseline"
+    ],
+    "name": "Cogs Baseline",
+    "type": "player",
+    "image": "img_86b62291-8764-4cbb-b95c-774e9692b96e",
+    "description": "Deterministic, credential-free policy for certification and self-play: chooses cards via a sha256-seeded stable RNG, attaches canned in-character quips/commentary, always echoes the request rid, and ignores unknown message types. Fills every seat by itself so an episode always completes."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/metta/main/packages/coworld/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "standard-8",
+    "name": "Standard (8 rounds, 4 to win) \u2014 classic CAH deck",
+    "description": "Full showcase game: up to 8 rounds (two czar rotations) or first seat to 4 awards, with 60s submit and 75s czar windows sized for four Opus persona players inside the 20-minute hosted deadline. Plays the classic Cards Against Humanity Base Set.",
+    "game_config": {
+     "deck": "classic",
+     "players": [
+      {
+       "name": "seat-0"
+      },
+      {
+       "name": "seat-1"
+      },
+      {
+       "name": "seat-2"
+      },
+      {
+       "name": "seat-3"
+      }
+     ],
+     "rounds_max": 8,
+     "num_players": 4,
+     "czar_window_s": 75,
+     "target_awards": 4,
+     "submit_window_s": 60,
+     "episode_timeout_seconds": 1140,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "cogs-8",
+    "name": "Cogs deck (8 rounds, 4 to win)",
+    "description": "Same knobs as Standard (8 rounds / first to 4 awards, 60s submit, 75s czar) but plays the original AI/tech-satire cogs deck instead of the classic Cards Against Humanity Base Set. This is the deck the certification fixture uses.",
+    "game_config": {
+     "deck": "cogs",
+     "players": [
+      {
+       "name": "seat-0"
+      },
+      {
+       "name": "seat-1"
+      },
+      {
+       "name": "seat-2"
+      },
+      {
+       "name": "seat-3"
+      }
+     ],
+     "rounds_max": 8,
+     "num_players": 4,
+     "czar_window_s": 75,
+     "target_awards": 4,
+     "submit_window_s": 60,
+     "episode_timeout_seconds": 1140,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "quickfire-4",
+    "name": "Quickfire (4 rounds, 3 to win)",
+    "description": "Shorter game: up to 4 rounds (one czar rotation) or first seat to 3 awards, with tighter 30s submit and 40s czar windows for a fast round.",
+    "game_config": {
+     "players": [
+      {
+       "name": "seat-0"
+      },
+      {
+       "name": "seat-1"
+      },
+      {
+       "name": "seat-2"
+      },
+      {
+       "name": "seat-3"
+      }
+     ],
+     "rounds_max": 4,
+     "num_players": 4,
+     "czar_window_s": 40,
+     "target_awards": 3,
+     "submit_window_s": 30,
+     "episode_timeout_seconds": 600,
+     "player_connect_timeout_seconds": 120
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Default Commissioner",
+    "type": "commissioner",
+    "image": "img_acf27d07-7694-4f4e-a318-2cd10deb52b3",
+    "description": "Stock game-agnostic league commissioner (round-robin seating, mean-score leaderboard) used by the default league template."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    }
+   ],
+   "game_config": {
+    "seed": 42,
+    "players": [
+     {
+      "name": "baseline-0"
+     },
+     {
+      "name": "baseline-1"
+     },
+     {
+      "name": "baseline-2"
+     },
+     {
+      "name": "baseline-3"
+     }
+    ],
+    "rounds_max": 4,
+    "num_players": 4,
+    "czar_window_s": 2,
+    "target_awards": 16,
+    "submit_window_s": 2,
+    "episode_timeout_seconds": 180,
+    "player_connect_timeout_seconds": 30
+   }
+  },
+  "players_per_user": 4
+ },
+ "manifest_hash": "sha256:ebf85ed0a33836ed82c475154aa0f8836246c68cbd9e28a863dbe178f67817c8",
+ "size_bytes": 12054,
+ "created_at": "2026-07-22T19:59:56.152152Z",
+ "canonical": true
+}

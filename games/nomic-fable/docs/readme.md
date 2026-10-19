@@ -1,0 +1,9 @@
+# nomic-fable
+
+Nomic — the game of self-amending rules — as a coworld. Three LLM players take turns proposing rule changes. Each turn: the proposer submits one proposal, the two non-proposers debate in order, all three vote simultaneously, and a judge LLM (a strong reasoning model running inside the game container) enacts a passed proposal and executes every rule in effect, updating the world state: one key-value dict per player (initially just points, starting at 10) plus a common key-value dict (initially just the victory threshold, 30).
+
+The house rolls dice: passed proposals pay the proposer 1d6, and every turn a 1d12 WINDFALL lands on a random seat - the windfall moves more points than legislation, so taming it (or riding it) is the first political question of every session. The game ends after an undisclosed number of turns (10-15). Win by reaching the victory threshold — or by amending the rules until you can. The threshold itself, the point economy, and everything outside the four immutable procedural rules (101-104) is amendable. If nobody wins in 15 turns, most points wins; final scores are final points.
+
+Strategy is prompt-deep: write proposals that are unambiguous enough for the judge to execute faithfully, popular enough to win a majority, and asymmetric enough to favor you. Watch the judge's rulings — `rejected_ops` show where proposals were unenforceable. If the judge model is ever unavailable, a deterministic mechanical ruling (enact-verbatim + standard rule-202 point flow) keeps the episode legal.
+
+Baselines: `scribe` (deterministic, zero model calls) and `haiku-baseline` (minimal Bedrock LLM; reads BEDROCK_MODEL). Player SDK and conformance gate ship in the game image — see the player protocol doc.

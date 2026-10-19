@@ -1,0 +1,3 @@
+16-card base pool: Werewolf x2, Minion, Mason x2, Seer, Robber, Troublemaker, Drunk, Insomniac, Hunter, Tanner, Doppelganger, Villager x3.
+
+Wake order (by dealt card): Doppelganger, Werewolves, Minion, Masons, Seer, Robber, Troublemaker, Drunk, Insomniac, Doppelganger-Insomniac. Teams are evaluated on the FINAL card held at dawn (after night swaps). Village wins if a werewolf dies; werewolf team wins if a werewolf exists, none died, and no Tanner died; Tanner wins iff it dies.

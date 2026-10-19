@@ -1,0 +1,367 @@
+{
+  "id": "cow_2abb8e54-7a09-4575-8d6c-49f805fd976f",
+  "name": "pudge-wars",
+  "version": "0.3.1",
+  "manifest": {
+    "game": {
+      "docs": {
+        "pages": [],
+        "readme": {
+          "type": "text",
+          "value": "# Pudge Wars\n\nTwo banks, a river, six butchers, one hook. First team to the kill goal wins. Walk with walk_to, throw with hook_to. The river drowns. Fog hides the enemy bank. Bundled personalities: idle, camper, rusher."
+        }
+      },
+      "name": "pudge-wars",
+      "owner": "coworld@softmax.com",
+      "version": "0.3.1",
+      "runnable": {
+        "env": {},
+        "run": [
+          "pwcoworld"
+        ],
+        "type": "game",
+        "image": "img_5d160a6e-9560-47fc-b088-cd4f3414ea2a"
+      },
+      "protocols": {
+        "global": {
+          "type": "text",
+          "value": "GET /client/global opens /global with a live 2D overlay. Observatory replays use the static WASM bundle (native 3D renderer) with index.html?replay=<url>. The public replay copy is gzip; the viewer sniffs 1f 8b."
+        },
+        "player": {
+          "type": "text",
+          "value": "Connect to COWORLD_PLAYER_WS_URL. Receive JSON observations each tick; reply with {walk_to:[x,y], hook_to:[x,y], halt, ping}. Coordinates are tiles on the 128 map. Empty action is sticky. Seats 0-2 West, 3-5 East (team_pair blocks). Fog: home bank always visible; enemy bank needs ally sight. Final message type=final."
+        }
+      },
+      "description": "Two banks split by a river, six butchers, one hook. First team to the kill goal wins. Fog on the enemy bank. Platform-ladder 3v3 clone teams.",
+      "config_schema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "required": [
+          "tokens",
+          "players",
+          "max_ticks",
+          "tick_rate",
+          "kill_goal"
+        ],
+        "properties": {
+          "fog": {
+            "type": "boolean",
+            "default": true
+          },
+          "seed": {
+            "type": "integer"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "maxItems": 6,
+            "minItems": 2
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false
+            },
+            "maxItems": 6,
+            "minItems": 2
+          },
+          "kill_goal": {
+            "type": "integer",
+            "maximum": 40,
+            "minimum": 1
+          },
+          "max_ticks": {
+            "type": "integer",
+            "maximum": 20000,
+            "minimum": 1
+          },
+          "tick_rate": {
+            "type": "number",
+            "maximum": 60,
+            "exclusiveMinimum": 0
+          },
+          "player_connect_timeout_seconds": {
+            "type": "number",
+            "default": 180,
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "replay_viewer": {
+        "bundle": "sha256:3fd560cac14b3afba88949470ba8e2f47d26103eeac459cb592e7b7a2e6ed82d",
+        "replay_compression": "gzip"
+      },
+      "results_schema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "required": [
+          "scores",
+          "winner_team",
+          "west_kills",
+          "east_kills",
+          "end_tick",
+          "end_reason",
+          "seed",
+          "kill_goal",
+          "per_seat"
+        ],
+        "properties": {
+          "seed": {
+            "type": "integer"
+          },
+          "scores": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 6,
+            "minItems": 2
+          },
+          "end_tick": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "per_seat": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "slot",
+                "team",
+                "kills",
+                "deaths",
+                "hooks_thrown",
+                "hooks_landed"
+              ],
+              "properties": {
+                "slot": {
+                  "type": "integer"
+                },
+                "team": {
+                  "type": "integer"
+                },
+                "kills": {
+                  "type": "integer"
+                },
+                "deaths": {
+                  "type": "integer"
+                },
+                "hooks_landed": {
+                  "type": "integer"
+                },
+                "hooks_thrown": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "kill_goal": {
+            "type": "integer"
+          },
+          "east_kills": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "end_reason": {
+            "type": "string"
+          },
+          "west_kills": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "winner_team": {
+            "enum": [
+              "west",
+              "east",
+              "draw"
+            ],
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "tags": [
+      "strategy",
+      "real-time",
+      "multiplayer",
+      "team"
+    ],
+    "grader": [],
+    "player": [
+      {
+        "id": "pudge-idle",
+        "env": {
+          "PUDGE_PERSONALITY": "idle"
+        },
+        "run": [
+          "python",
+          "-m",
+          "coworld.examples.pudgewars.player.player"
+        ],
+        "name": "Idle Butcher",
+        "type": "player",
+        "image": "img_5d160a6e-9560-47fc-b088-cd4f3414ea2a",
+        "description": "Always-legal baseline. Stands at spawn and never throws."
+      },
+      {
+        "id": "pudge-camper",
+        "env": {
+          "PUDGE_PERSONALITY": "camper"
+        },
+        "run": [
+          "python",
+          "-m",
+          "coworld.examples.pudgewars.player.player"
+        ],
+        "name": "Camper",
+        "type": "player",
+        "image": "img_5d160a6e-9560-47fc-b088-cd4f3414ea2a",
+        "description": "Holds the home bank, leads hooks, denies inbound chains, and saves allies."
+      },
+      {
+        "id": "pudge-rusher",
+        "env": {
+          "PUDGE_PERSONALITY": "rusher"
+        },
+        "run": [
+          "python",
+          "-m",
+          "coworld.examples.pudgewars.player.player"
+        ],
+        "name": "Rusher",
+        "type": "player",
+        "image": "img_5d160a6e-9560-47fc-b088-cd4f3414ea2a",
+        "description": "Closes on the nearest visible enemy with a velocity lead, denies, and finishes dumps."
+      }
+    ],
+    "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+    "reporter": [],
+    "variants": [
+      {
+        "id": "league-3v3",
+        "name": "League 3v3",
+        "description": "Canonical ladder board. Six seats, first to 10, up to eight minutes at 32 Hz.",
+        "game_config": {
+          "fog": true,
+          "players": [
+            {
+              "name": "West 1"
+            },
+            {
+              "name": "West 2"
+            },
+            {
+              "name": "West 3"
+            },
+            {
+              "name": "East 1"
+            },
+            {
+              "name": "East 2"
+            },
+            {
+              "name": "East 3"
+            }
+          ],
+          "kill_goal": 10,
+          "max_ticks": 15360,
+          "tick_rate": 32,
+          "player_connect_timeout_seconds": 180
+        }
+      },
+      {
+        "id": "duel-1v1",
+        "name": "Duel 1v1",
+        "description": "One butcher a side on the middle lane.",
+        "game_config": {
+          "fog": true,
+          "players": [
+            {
+              "name": "West"
+            },
+            {
+              "name": "East"
+            }
+          ],
+          "kill_goal": 10,
+          "max_ticks": 15360,
+          "tick_rate": 32,
+          "player_connect_timeout_seconds": 180
+        }
+      }
+    ],
+    "diagnoser": [],
+    "optimizer": [],
+    "commissioner": [],
+    "certification": {
+      "players": [
+        {
+          "player_id": "pudge-idle"
+        },
+        {
+          "player_id": "pudge-camper"
+        },
+        {
+          "player_id": "pudge-rusher"
+        },
+        {
+          "player_id": "pudge-idle"
+        },
+        {
+          "player_id": "pudge-camper"
+        },
+        {
+          "player_id": "pudge-rusher"
+        }
+      ],
+      "game_config": {
+        "fog": true,
+        "seed": 7,
+        "players": [
+          {
+            "name": "Idle A"
+          },
+          {
+            "name": "Camper A"
+          },
+          {
+            "name": "Rusher A"
+          },
+          {
+            "name": "Idle B"
+          },
+          {
+            "name": "Camper B"
+          },
+          {
+            "name": "Rusher B"
+          }
+        ],
+        "kill_goal": 3,
+        "max_ticks": 160,
+        "tick_rate": 32,
+        "player_connect_timeout_seconds": 30
+      }
+    }
+  },
+  "manifest_hash": "sha256:2442273250811b8ce6d56c28cc3d506b515bfa9f0680f59c14ecc39415bf12a6",
+  "size_bytes": 5327,
+  "created_at": "2026-09-03T05:24:09.512306Z",
+  "canonical": true
+}

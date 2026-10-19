@@ -1,0 +1,288 @@
+{
+ "id": "cow_451d9eae-7ef0-4a17-b025-4ab7d48ac315",
+ "name": "planet_wars",
+ "version": "0.2.1",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "rules.md",
+      "content": {
+       "type": "text",
+       "value": "# Planet Wars Rules\n\nPlayers conquer planets and launch ships across a star map. Every player sees the whole board: there is no camera, no scrolling and no fog.\n\n## Controls\n\nThe mouse drives everything. Click one of your own planets to select it, shift-click to add more, and double-click to select everything you own. Click any other planet to launch a wave at it from every selected planet. The selection survives the send, so clicking a second target sends again.\n\nThe number keys set what share of a planet each wave launches: 1 for 10% through 9 for 90%, and 0 for everything. Waves start at half. A planet never sends its last ship, so a send can never leave one undefended.\n\n## Combat\n\nA wave spawns in rings around the planet circumference and fans out, each ship steering on its own heading. Ships from the same player push each other apart; ships from different players pass straight through. Arriving ships fight the garrison one for one, and the planet flips when the attackers outnumber it.\n\n## Winning\n\nNeutral planets never regrow, so an uncaptured planet is a fixed price. Owned planets grow a ship every interval, which makes early captures compound. Score accrues every second as the square of the planets you hold, so holding twelve planets scores four times as fast as holding six.\n\nA player wins when every remaining planet and ship belongs to them. If the tick limit is reached first, the game ends with no winner and the scores stand."
+      }
+     },
+     {
+      "id": "play_planet_wars.md",
+      "title": "play_planet_wars.md",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/coworld-planet-wars/blob/main/README.md"
+      }
+     },
+     {
+      "id": "reward.md",
+      "title": "reward.md",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/bitworld/blob/master/docs/reward_v1.md"
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld-planet-wars/blob/main/README.md"
+    }
+   },
+   "name": "planet_wars",
+   "owner": "treeform@softmax.com",
+   "version": "0.2.1",
+   "runnable": {
+    "env": {},
+    "run": [
+     "/bin/planet_wars"
+    ],
+    "type": "game",
+    "image": "img_1b928f31-6d45-4c05-a413-db8916624e73"
+   },
+   "protocols": {
+    "global": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/bitworld/blob/master/docs/sprite_v1.md"
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/bitworld/blob/master/docs/sprite_v1.md"
+    }
+   },
+   "description": "A BitWorld strategy game where players conquer planets and launch ships across a tiny star map.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "default": 108519,
+      "minimum": 0,
+      "description": "Random seed."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 0
+      },
+      "default": [
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       ""
+      ],
+      "maxItems": 8,
+      "minItems": 8,
+      "description": "One connection token per player slot, indexed by slot."
+     },
+     "maxGames": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "description": "Maximum games before shutdown, where 0 means infinite."
+     },
+     "maxTicks": {
+      "type": "integer",
+      "default": 18000,
+      "minimum": 0,
+      "description": "Maximum ticks per game, where 18000 is about five minutes at 60 Hz and 0 disables the tick limit."
+     },
+     "num_agents": {
+      "type": "integer",
+      "default": 8,
+      "maximum": 8,
+      "minimum": 1,
+      "description": "Player seat count used by hosted league seating."
+     },
+     "planetCount": {
+      "type": "integer",
+      "default": 47,
+      "maximum": 48,
+      "minimum": 1,
+      "description": "Number of planets to place in the world."
+     },
+     "defaultSendPercent": {
+      "type": "integer",
+      "default": 50,
+      "maximum": 100,
+      "minimum": 10,
+      "description": "Share of a planet's ships each wave launches before a player changes it."
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "names",
+     "scores",
+     "win",
+     "planets",
+     "ships"
+    ],
+    "properties": {
+     "win": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "description": "One win flag per player slot."
+     },
+     "names": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "description": "One player name or address per player slot."
+     },
+     "ships": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "description": "One total owned ship count per player slot."
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "description": "One strategy score per player slot."
+     },
+     "planets": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "description": "One owned planet count per player slot."
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "grader": [
+   {
+    "id": "bitworld-score-grader",
+    "env": {},
+    "run": [],
+    "name": "BitWorld Score Grader",
+    "type": "grader",
+    "image": "img_81fc3792-dd2a-45da-9c56-336e5f617f8c",
+    "source_url": "https://github.com/Metta-AI/coworld-planet-wars/tree/f31f9e2a6a84100059f8dd7e1248d88fbbb97b2b/grader/graders/bitworld_score/bitworld_score_grader",
+    "description": "Generic BitWorld grader that scores episode interest from score spread and game-specific activity signals."
+   }
+  ],
+  "player": [
+   {
+    "id": "skurge",
+    "env": {},
+    "run": [
+     "/bin/skurge"
+    ],
+    "name": "Skurge",
+    "type": "player",
+    "image": "img_4425f4eb-10e1-40a7-b6e0-50ecdd17ff28",
+    "description": "Planet Wars attacker that ranks every source and target on the board each tick and clicks the best affordable capture."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/metta/main/packages/coworld/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "league",
+    "name": "League",
+    "description": "One bounded eight-seat Planet Wars match, used for hosted league rounds.",
+    "game_config": {
+     "seed": 108519,
+     "maxGames": 1,
+     "maxTicks": 18000,
+     "num_agents": 8,
+     "planetCount": 47
+    }
+   },
+   {
+    "id": "smoke",
+    "name": "Smoke",
+    "description": "Short deterministic Planet Wars configuration used for manifest checks.",
+    "game_config": {
+     "seed": 108519,
+     "maxGames": 1,
+     "maxTicks": 1200,
+     "planetCount": 47
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Default Commissioner",
+    "type": "commissioner",
+    "image": "img_75f18acf-431c-4657-93d1-52006932b5d1",
+    "source_url": "https://github.com/Metta-AI/commissioners/tree/fa8ac7cb2bc6fd54c5675c7993919afabebcf4ba/commissioners/ruleset_strategy_commissioner",
+    "description": "Game-agnostic round-robin commissioner with mean-score rankings and hourly Planet Wars rounds."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "skurge"
+    },
+    {
+     "player_id": "skurge"
+    },
+    {
+     "player_id": "skurge"
+    },
+    {
+     "player_id": "skurge"
+    },
+    {
+     "player_id": "skurge"
+    },
+    {
+     "player_id": "skurge"
+    },
+    {
+     "player_id": "skurge"
+    },
+    {
+     "player_id": "skurge"
+    }
+   ],
+   "game_config": {
+    "seed": 108519,
+    "maxGames": 1,
+    "maxTicks": 1200,
+    "planetCount": 47
+   }
+  }
+ },
+ "manifest_hash": "sha256:6f4124c5e00778949ea1f96f9ce8dc578d11c0a1fcc0bcd8ab12e3a6b9c878ed",
+ "size_bytes": 6445,
+ "created_at": "2026-08-05T01:40:52.288193Z",
+ "canonical": true
+}

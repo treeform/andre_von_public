@@ -1,0 +1,187 @@
+{
+ "id": "cow_dd543363-01e2-42dd-afe7-b87ed5b8f3c2",
+ "name": "polis",
+ "version": "1.0.0",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "Polis Rules",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/metta/tree/main/packages/cogweb/games/polis/coworld/docs/rules.md"
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/metta/tree/main/packages/cogweb/games/polis/README.md"
+    }
+   },
+   "name": "polis",
+   "owner": "daveey@gmail.com",
+   "version": "1.0.0",
+   "runnable": {
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/coworld/game-cli.js"
+    ],
+    "type": "game",
+    "image": "img_25ededcc-a50a-4589-90fe-a6f1ccb3eb74",
+    "source_url": "https://github.com/Metta-AI/metta/tree/216900d67ddeb8f000bf93969ecdc9dfa587d893/packages/cogweb/games/polis"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "Read-only spectator feed: the @cogweb/core ServerMessage stream the live console and replay viewer render. Each turn advances plan \u2192 amend \u2192 vote \u2192 execution \u2192 governance \u2192 goals, emitting feed events (action, proposal, vote, ruling, research, score) plus per-seat redacted snapshots. The saved replay is `{ protocol: \"cogweb.replay.v1\", frames: ServerMessage[] }`. Spectators send nothing."
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/metta/tree/main/packages/cogweb/games/polis/coworld/docs/player-protocol.md"
+    }
+   },
+   "description": "Polis \u2014 Nomic with an economy: LLM cogs mine resources, build & align Commons datacenters onto research projects, trade shares on a bonding curve, and propose & vote on laws that reshape the rules. Most Hearts (from project payouts + per-turn goals) after the horizon wins.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "seed"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "description": "Deterministic episode seed."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "description": "Per-seat auth tokens injected by the runner; length is the seat count."
+     },
+     "horizonTurns": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Total turns before the horizon."
+     },
+     "actionsPerTurn": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Action budget per cog per turn."
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores"
+    ],
+    "properties": {
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "description": "Final Hearts balance per seat, in seat order."
+     },
+     "replayUri": {
+      "type": "string",
+      "description": "Pointer to the saved replay artifact, if one was written."
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "grader": [],
+  "player": [
+   {
+    "id": "polis-baseline",
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/game/baseline-player.js"
+    ],
+    "name": "Polis Baseline",
+    "type": "player",
+    "image": "img_25ededcc-a50a-4589-90fe-a6f1ccb3eb74",
+    "source_url": "https://github.com/Metta-AI/metta/tree/216900d67ddeb8f000bf93969ecdc9dfa587d893/packages/cogweb/games/polis",
+    "description": "Deterministic no-LLM baseline (parties every turn: no actions, proposes nothing, abstains). Certifies the contract offline."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "standard",
+    "name": "Standard (3 cogs, 20 turns)",
+    "description": "The default three-seat polis.",
+    "game_config": {
+     "seed": 1,
+     "horizonTurns": 20
+    }
+   },
+   {
+    "id": "blitz",
+    "name": "Blitz (3 cogs, 8 turns)",
+    "description": "A short, sharp economy.",
+    "game_config": {
+     "seed": 1,
+     "horizonTurns": 8
+    }
+   },
+   {
+    "id": "marathon",
+    "name": "Marathon (3 cogs, 40 turns)",
+    "description": "A long game of shifting law and capital.",
+    "game_config": {
+     "seed": 1,
+     "horizonTurns": 40
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Default Commissioner",
+    "type": "commissioner",
+    "image": "img_60c9de98-39e4-45aa-b049-dc7899c668be",
+    "source_url": "https://github.com/Metta-AI/coworld-tools/tree/6dcd022e013febffb0043b5f625f853c5cc36e0f/commissioners/commissioners/ruleset_strategy_commissioner",
+    "description": "Game-agnostic round-robin commissioner with mean-score rankings."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "polis-baseline"
+    },
+    {
+     "player_id": "polis-baseline"
+    },
+    {
+     "player_id": "polis-baseline"
+    }
+   ],
+   "game_config": {
+    "seed": 1,
+    "horizonTurns": 8
+   }
+  }
+ },
+ "manifest_hash": "sha256:08e729a29ca38b592c68f8e518e10af2911f54559ac428a33fd6abc2efbd95d7",
+ "size_bytes": 4145,
+ "created_at": "2026-07-01T02:23:13.695824Z",
+ "canonical": true
+}

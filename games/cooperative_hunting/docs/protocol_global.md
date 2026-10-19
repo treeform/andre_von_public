@@ -1,0 +1,1 @@
+The same sprite_v1 stream at world scale (384x384 px viewport, no 0x07 identity packet), plus the broadcast chrome carried as the label of a reserved 1x1 sprite, id 4090, re-emitted every tick. That label is UTF-8 JSON of at most 12 KB (12288 bytes) with tick, round, rounds, ticksPerRound, phase, variant, reason, seats[], feed[], beats[] and final.

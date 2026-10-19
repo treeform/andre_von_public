@@ -1,0 +1,9 @@
+daycare.player.v1 -- JSON text frames over the websocket named by COWORLD_PLAYER_WS_URL (/player?slot=N&token=T).
+
+game -> player, on connect: {"type":"welcome","protocol":"daycare.player.v1","slot":N,"role":"parent"|"child","name":"Alder"|"Bramble","turns":15,"ticksPerTurn":60,"variant":"..."}
+
+game -> player, at every turn boundary and at episode end: a role-specific {"type":"state",...} frame carrying the whole yard (every source's kind, species, cell, ripe count and time to next ripen; every ground fruit and its ttl; the basket), both cogs' cells / carried fruit / score, this seat's counters and last order, the OTHER seat's behaviour summary for the last turn and cumulatively, the per-turn history, this seat's own private notes and the rules. The parent's frame NEVER carries the child's preference, standing order, hunch or notes; the child's frame never carries the parent's guess, standing order, hunch or notes; neither carries the episode seed.
+
+game -> player, terminal: {"type":"final","done":true,"slot":N,"scores":[a,b],"names":["Alder","Bramble"],"roles":[...],"turns":T,"reason":...,"ending":...}. It carries NO preference field -- the parent must never learn the answer, not even at the buzzer. The player exits 0.
+
+player -> game: {"type":"prompt","prompt":"<= 4000 chars","scripted":"caretaker"|"stubborn"|""}, sent immediately on connect and again after the welcome (the re-send guards the slot-registration race). Any other frame is ignored with a log line. All decision-making happens in the GAME container, which is what lets both seats' LLM calls go out as one parallel batch per turn.

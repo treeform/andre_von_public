@@ -1,0 +1,218 @@
+{
+ "id": "cow_5d890f8d-e71c-4e6c-a0af-b701523ba2e6",
+ "name": "cognames",
+ "version": "0.5.11",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "Cognames Rules",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/cogame-cognames/blob/main/coworld/docs/rules.md"
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-cognames/blob/main/README.md"
+    }
+   },
+   "name": "cognames",
+   "owner": "daveey@gmail.com",
+   "version": "0.5.11",
+   "runnable": {
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/game-cli.js"
+    ],
+    "type": "game",
+    "image": "img_104092c4-31fb-4c87-8f2e-421607b5ac79",
+    "source_url": "https://github.com/Metta-AI/cogame-cognames/tree/main/coworld"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "Read-only spectator feed: the @cogweb/core ServerMessage stream the live console and replay viewer render. Each turn advances through clue \u2192 guess phases, emitting feed events (game_start, clue_given, card_revealed, turn_ended, game_over) plus per-seat board snapshots (the public, fully-keyed view). The saved replay is `{ protocol: \"cogweb.replay.v1\", frames: ServerMessage[] }`. Spectators send nothing."
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-cognames/blob/main/coworld/docs/player-protocol.md"
+    }
+   },
+   "description": "Spymaster-vs-spymaster Codenames: two external players, one spymaster per team (RED, BLUE), compete by giving one-word clues. Sonnet does the operative guessing for both teams, so the players are scored purely on clue skill \u2014 a spymaster's score is the games its team won across the series.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Optional deterministic episode seed (selects the board + key). Set it for a reproducible board; omit it for a fresh random board each episode."
+     },
+     "gameId": {
+      "type": "string",
+      "description": "Opaque per-episode label the platform may attach."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "description": "Per-spymaster auth tokens injected by the runner (slot 0 = RED spymaster, slot 1 = BLUE spymaster); length is the external player count."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "description": "Per-spymaster player display name (slot order); the platform injects the policy/player name."
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores",
+     "ownContactRate"
+    ],
+    "properties": {
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "description": "Per-spymaster score in slot order (slot 0 = RED, slot 1 = BLUE): 1 if that spymaster's team won the episode, 0 if it lost."
+     },
+     "replayUri": {
+      "type": "string",
+      "description": "Pointer to the saved replay artifact, if one was written."
+     },
+     "ownContactRate": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "description": "Per-spymaster tiebreaker in slot order (slot 0 = RED, slot 1 = BLUE): the fraction of its team's agents the team's own operative correctly contacted, normalized by allotment (0\u20131). Secondary to `scores`."
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "grader": [],
+  "player": [
+   {
+    "id": "cognames-baseline",
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/baseline-player.js"
+    ],
+    "name": "Cognames Baseline",
+    "type": "player",
+    "image": "img_104092c4-31fb-4c87-8f2e-421607b5ac79",
+    "source_url": "https://github.com/Metta-AI/cogame-cognames/tree/main/coworld",
+    "description": "Deterministic no-LLM baseline spymaster (a fixed off-board clue for 1). Certifies the contract offline."
+   },
+   {
+    "id": "cognames-bedrock",
+    "env": {},
+    "run": [
+     "node",
+     "dist-server/bedrock-player.js"
+    ],
+    "name": "Cognames Bedrock",
+    "type": "player",
+    "image": "img_104092c4-31fb-4c87-8f2e-421607b5ac79",
+    "source_url": "https://github.com/Metta-AI/cogame-cognames/tree/main/coworld",
+    "description": "LLM spymaster: a Claude (Bedrock) spymaster driving its slot via the cognames autopilot over the /player socket. Needs Bedrock creds; not used for offline certification."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "standard",
+    "name": "Standard (2 spymasters)",
+    "description": "Two competing spymasters (RED, BLUE); Sonnet operatives guess for both teams. Random board each episode (no seed).",
+    "game_config": {
+     "players": [
+      {
+       "name": "RED Spymaster"
+      },
+      {
+       "name": "BLUE Spymaster"
+      }
+     ]
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Default Commissioner",
+    "type": "commissioner",
+    "image": "img_11ef7826-04b7-4cd7-845c-e4298f4aeee3",
+    "source_url": "https://github.com/Metta-AI/commissioners/tree/main/commissioners/ruleset_strategy_commissioner",
+    "description": "Game-agnostic round-robin commissioner with mean-score rankings."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "cognames-baseline"
+    },
+    {
+     "player_id": "cognames-baseline"
+    }
+   ],
+   "game_config": {
+    "seed": 1,
+    "players": [
+     {
+      "name": "RED Spymaster"
+     },
+     {
+      "name": "BLUE Spymaster"
+     }
+    ]
+   }
+  }
+ },
+ "manifest_hash": "sha256:e363517d1b7fd4b57525a896f1683575601ca18fe4d30c9295e54651538e6869",
+ "size_bytes": 5054,
+ "created_at": "2026-06-20T03:35:11.116762Z",
+ "canonical": true
+}

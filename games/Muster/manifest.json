@@ -1,0 +1,708 @@
+{
+ "id": "cow_de4bcdc9-c5e9-46c8-9179-cad67134d18b",
+ "name": "Muster",
+ "version": "0.1.57",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "Muster \u2014 the race to the cogosseum",
+      "content": {
+       "type": "text",
+       "value": "# Muster\n\nAI generals command armies across a world of floating sky-island arenas arranged in concentric rings. Each general builds an economy (mine, farm, barracks, refinery), raises a military, fights for territory and glory, and sails INWARD ring by ring toward the cogosseum at the center.\n\n## What you can submit\n\nA policy can drive any of three layers \u2014 it's your local training choice, and all three compete in the same league:\n\n- **General** (macro): build order, recruiting, diplomacy, combat commands, and the dock \u2192 shipyard \u2192 transport \u2192 launch-inward race. This is the `coworld_pkg.player.player` entrypoint (the bundled default).\n- **RL soldier** (per-unit micro): the engine ships each unit's observation + action masks + role in the protocol's `soldier_obs` batch, and your policy returns per-unit `{move, target, mode}` actions. Entrypoint `coworld_pkg.player.soldier_player` (the bundled v34 numpy soldier paired with a heuristic general).\n- **Hybrid** (both): drive the general AND the soldiers in one policy.\n\nSee the player protocol doc for the wire format of both channels.\n\n## How an episode resolves\n\nAn episode is a bounded epoch of the whole world. At the tick budget, the CHAMPION is the seat that is in the cogosseum and alive with the most glory (fallback: top glory overall). Per-seat results report glory, territory, kills, whether each seat reached the cogosseum, and whether it survived. **The outer ring CRUMBLES on a timer** \u2014 linger on a starter island too long and your army is destroyed, so racing inward is survival, not just upside.\n\nThe core thesis: entertainment is the optimal strategy. Glory comes from theatrical play \u2014 flanks, comebacks, tide-turns \u2014 so boring agents starve and entertaining agents thrive."
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/muster/blob/main/README.md"
+    }
+   },
+   "name": "Muster",
+   "owner": "maxwellstarr@softmax.com",
+   "version": "0.1.57",
+   "runnable": {
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "coworld_pkg.game.server"
+    ],
+    "type": "game",
+    "image": "img_81cc7afe-1807-4b0a-aa2f-1e17b704ea14"
+   },
+   "protocols": {
+    "global": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/muster/blob/main/coworld_pkg/game/docs/global_protocol_spec.md"
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/muster/blob/main/coworld_pkg/game/docs/player_protocol_spec.md"
+    }
+   },
+   "description": "A spectator hex-RTS coworld: AI generals command armies across a world of floating sky-island arenas, racing inward through the rings to the cogosseum. A submitted policy can drive the GENERAL (macro: economy, military, diplomacy, sailing inward), the per-unit RL SOLDIERS (micro: movement, targeting, retreat), or BOTH (hybrid) \u2014 the protocol carries a general-action channel AND a per-unit soldier_obs batch. One episode is a bounded epoch of the multi-arena world; the champion is the seat that reaches the cogosseum alive with the most glory. Entertainment is the optimal strategy \u2014 boring agents starve, entertaining agents thrive.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "seed",
+     "max_ticks",
+     "tick_rate"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "description": "Deterministic episode seed \u2014 same seed reproduces a byte-identical world."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "description": "Connection tokens. config_schema requires a FIXED maximum, so this caps at 64 = MAX_COMPETITION_SEATS, the empirically reliable hosted-pod ceiling (the brain's binary search found N>76 fails at job setup; 64 ships with headroom). 64 is the MAX number of REAL policies one episode can seat \u2014 NOT the world size: the world is ~96 island-armies, and the GAME ENGINE scripted-fills every seat beyond the real ones. The custom MusterCommissioner decides how many are REAL per episode (qualifier=1, competition=the division's champion count, min 2, up to 64). The runner injects these."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        },
+        "version": {
+         "type": "string",
+         "minLength": 1,
+         "description": "Optional policy-authored version or artifact label."
+        },
+        "policy_id": {
+         "type": "string",
+         "minLength": 1,
+         "description": "Stable cross-episode policy identity. When absent, replay evidence uses an honest episode-scoped external-slot id."
+        },
+        "controller_kind": {
+         "enum": [
+          "lm",
+          "rl",
+          "combined",
+          "external"
+         ],
+         "type": "string",
+         "description": "Declared implementation kind. Muster never infers LM or RL from channel traffic."
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "description": "Display-name objects, one per REAL policy slot a variant uses (1 for the qualifier, up to 64 = MAX_COMPETITION_SEATS for competition). The engine scripted-fills the rest of the ~96-army world."
+     },
+     "max_ticks": {
+      "type": "integer",
+      "maximum": 5000,
+      "minimum": 1,
+      "description": "Bounded epoch length in decision ticks; the champion is crowned at this tick."
+     },
+     "tick_rate": {
+      "type": "number",
+      "maximum": 60,
+      "description": "Decision ticks per second for live viewing (does not affect the deterministic outcome).",
+      "exclusiveMinimum": 0
+     },
+     "num_agents": {
+      "type": "integer",
+      "maximum": 64,
+      "minimum": 1,
+      "description": "Deprecated commissioner-compat seat hint (VariantInfo.num_agents). Does NOT constrain the roster: infer_token_count ignores it, so the competition variant still seats the variable real-champion count the commissioner sends. Present only so the platform's _compat_variant_num_agents can resolve a concrete count for a players-omitted variant."
+     },
+     "num_arenas": {
+      "type": "integer",
+      "default": 19,
+      "maximum": 19,
+      "minimum": 2,
+      "description": "Number of arenas in the ring topology (cogosseum + outer rings). The full league world is 19 \u2014 the `default` competition variant's value; the qualifier load-check uses 2 (cogosseum + one starter island). Minimum 2 because a 1-arena world would seat the lone army in the fight-to-death cogosseum with no starter island."
+     },
+     "isQualifier": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, this episode is the Qualifiers division's connect/build/run/score LOAD-CHECK (the tiny `qualifier` variant), NOT a competitive match. The engine uses it to take the cheap path \u2014 no inward-race / ring-crumble pressure, which only matters at full scale. Competition variants omit it (or set false)."
+     },
+     "episode_timeout_seconds": {
+      "type": "number",
+      "description": "The REAL wall-clock budget (seconds) for one episode, read by the commissioner framework to set its per-episode duration limit (limit = max(300, 2 x this)). MUST be set for any multi-minute episode: otherwise the framework infers the budget as max_ticks/tick_rate \u2014 which treats tick_rate as real-time pacing (for Muster 750/50 = 15s) and floors the limit at 300s, CANCELLING the real episode ('Episode job duration exceeded 300 seconds'). Set this to the episode's true expected wall-clock so the full game runs to completion.",
+      "exclusiveMinimum": 0
+     },
+     "player_connect_timeout_seconds": {
+      "type": "number",
+      "default": 180,
+      "minimum": 0,
+      "description": "How long to wait for all player slots before starting anyway."
+     }
+    },
+    "additionalProperties": false
+   },
+   "replay_viewer": {
+    "bundle": "sha256:56af5c80ea45bc85071e2a7adb15bb8a9837e7903afafb1ed8d56c28b2ca73a1",
+    "replay_compression": "gzip"
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores",
+     "champion",
+     "entrant_winner",
+     "champion_earned",
+     "victory_kind",
+     "crown_match_record",
+     "world_champion_global_id",
+     "world_champion_name",
+     "world_champion_player",
+     "reached_cogosseum",
+     "glory",
+     "territory",
+     "kills",
+     "survived",
+     "banked",
+     "forfeited_glory",
+     "extracted",
+     "extraction_records",
+     "extraction_kind",
+     "last_signal_records",
+     "ticks",
+     "llm",
+     "war_summary"
+    ],
+    "properties": {
+     "llm": {
+      "type": "object",
+      "required": [
+       "llm_drove",
+       "llm_enabled",
+       "llm_transport",
+       "llm_calls_attempted",
+       "llm_calls_succeeded",
+       "llm_calls_failed",
+       "llm_fallback_reason",
+       "llm_decisions",
+       "autopilot_decisions",
+       "total_decisions"
+      ],
+      "properties": {
+       "llm_drove": {
+        "type": "boolean",
+        "description": "True only if >=1 LLM call succeeded AND >=1 decision was driven by model text."
+       },
+       "llm_region": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "llm_enabled": {
+        "type": "boolean"
+       },
+       "llm_endpoint": {
+        "type": [
+         "string",
+         "null"
+        ],
+        "description": "AWS_ENDPOINT_URL_BEDROCK_RUNTIME when the platform Bedrock sidecar is in play."
+       },
+       "llm_decisions": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "llm_preflight": {
+        "enum": [
+         "ok",
+         "failed",
+         "skipped",
+         "not_run"
+        ],
+        "type": "string"
+       },
+       "llm_transport": {
+        "type": "string",
+        "description": "bedrock | bedrock-sidecar | stub | disabled | unavailable."
+       },
+       "llm_latency_ms": {
+        "type": "object"
+       },
+       "total_decisions": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "llm_calls_failed": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "llm_input_tokens": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "llm_failure_kinds": {
+        "type": "object",
+        "description": "auth | model_access | throttle | timeout | quota | other:<Code> -> count."
+       },
+       "llm_output_tokens": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "skipped_decisions": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "llm_model_answered": {
+        "type": [
+         "string",
+         "null"
+        ],
+        "description": "The model id that ACTUALLY answered (the chain may fall forward on a model-access failure)."
+       },
+       "autopilot_decisions": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "llm_calls_attempted": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "llm_calls_succeeded": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "llm_fallback_reason": {
+        "type": [
+         "string",
+         "null"
+        ],
+        "description": "VERBATIM provider text of the FIRST failure, prefixed by kind and model id."
+       },
+       "llm_model_requested": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "llm_preflight_reason": {
+        "type": [
+         "string",
+         "null"
+        ]
+       }
+      },
+      "description": "Did an LLM actually drive this episode? `llm_drove` is the headline; when it is false, `llm_fallback_reason` names the cause in the provider's own words. Written by src/agents/lm/llm_telemetry.py."
+     },
+     "glory": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 96,
+      "minItems": 1
+     },
+     "kills": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 96,
+      "minItems": 1
+     },
+     "ticks": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "banked": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 96,
+      "minItems": 1,
+      "description": "Whether each seat banked its glory (all-or-nothing scoring: unbanked glory is forfeited on a wipe)."
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 96,
+      "minItems": 1,
+      "description": "Final score per seat (final glory)."
+     },
+     "champion": {
+      "type": "integer",
+      "maximum": 95,
+      "minimum": -1,
+      "description": "Winning seat (0..95), or -1 if no seat survived to be crowned."
+     },
+     "survived": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 96,
+      "minItems": 1
+     },
+     "exemplars": {
+      "type": "array",
+      "items": {
+       "type": "object"
+      },
+      "maxItems": 96,
+      "description": "Per-seat behaviour EXEMPLARS (additive, optional \u2014 lane P 2026-08-17): the episode's best deeds / peak-glory tick / elimination moments, each carrying tick + arena + a one-line what-happened so a replay viewer can deep-link the moment (the Logs contract: every event row deep-links to a replay tick). Derived from the artifact's glory_ledger + recorded eliminations joined through the seat's (arena, team) trail."
+     },
+     "extracted": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 96,
+      "minItems": 1
+     },
+     "territory": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 96,
+      "minItems": 1
+     },
+     "war_summary": {
+      "type": "object",
+      "required": [
+       "wars_opened",
+       "wars_closed",
+       "outcomes",
+       "betrayal_turns",
+       "largest_war_seats",
+       "wars_participated",
+       "wars_won",
+       "combat_effects",
+       "available"
+      ],
+      "properties": {
+       "outcomes": {
+        "type": "object",
+        "description": "War outcome kind -> count (elimination | withdrawal | truce | separation | arena_end | episode_end | unresolved), the war ledger's own histogram. NEVER summed across kinds \u2014 shapes differing by a discriminator are different KINDS (2026-08-17 law). Empty object when wars_opened == 0.",
+        "additionalProperties": {
+         "type": "integer",
+         "minimum": 0
+        }
+       },
+       "wars_won": {
+        "type": "array",
+        "items": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "maxItems": 96,
+        "minItems": 1,
+        "description": "Per-seat count of wars the seat's warband won \u2014 scoped to the unambiguous case only: outcome kind == elimination AND the seat's side was not the eliminated side. Truce/withdrawal/separation are not credited as a win to either side."
+       },
+       "available": {
+        "type": "boolean",
+        "description": "Did the war-ledger compiler run this episode without error? False means every other field above is the zero fallback, not a measurement."
+       },
+       "wars_closed": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Wars whose outcome kind != episode_end \u2014 i.e. the fight actually concluded (by whatever kind) before the episode ended, as opposed to still being hot at the horizon."
+       },
+       "wars_opened": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Count of wars that opened this episode."
+       },
+       "betrayal_turns": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Treachery beats (alliance_broken with betrayal:true) recorded INSIDE a tracked war's window, summed across wars. Excludes bond-decay breaks (reason: withered|strain) \u2014 a rotting alliance is not a stab in the back; the war ledger keeps these split and this field only ever counts the treachery side."
+       },
+       "combat_effects": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Raw combat_effect count fed to the war compiler this episode \u2014 distinguishes a genuine zero-war episode (combat_effects > 0, wars_opened == 0) from a channel that never fired (combat_effects == 0)."
+       },
+       "largest_war_seats": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Total belligerent warbands (both sides combined) in the episode's single largest war, 0 if no war opened. Counts every warband in the war, not only submitted-policy seats \u2014 the biggest fights are often scripted-fill vs scripted-fill."
+       },
+       "wars_participated": {
+        "type": "array",
+        "items": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "maxItems": 96,
+        "minItems": 1,
+        "description": "Per-seat count of wars the seat's warband was a belligerent in, same seat order as `scores`/`glory`/`kills`."
+       }
+      },
+      "description": "Compact per-episode WAR summary (lane war-ledger-public, 2026-08-17), compiled from the war-ledger channel (muster.war-ledger.v1 \u2014 sustained conflicts reified from causal_events/arena_events/world_events/team_bindings). Without this field, wars existed ONLY inside the live server's .replay bundle and never reached results.json / the public league page. Follows the `llm` block's own pattern: unconditionally emitted, `available=false` means every other field is the zero fallback, not a measurement \u2014 never confuse a real zero-war episode with a channel that didn't run.",
+      "additionalProperties": false
+     },
+     "seat_metrics": {
+      "type": "array",
+      "items": {
+       "type": "object"
+      },
+      "maxItems": 96,
+      "description": "Per-seat learning aggregates at LIVE tempo (additive, optional \u2014 lane P 2026-08-17): reward_mass_by_layer over the FULL term vocabulary (a 0.0 layer is the dead/farmed-layer finding), realized_norm_entropy per action head (collapse detector; realized-behaviour entropy, NOT policy output entropy), action_histograms (general action types + soldier move/target/mode), mask_legality_mean, and behaviour roll-ups (engagement rate, spread, focus-fire share, approach flips, whiff fraction, flanks/ambushes/saves, rout survival)."
+     },
+     "victory_kind": {
+      "type": "string"
+     },
+     "glory_by_deed": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "additionalProperties": {
+        "type": "number"
+       }
+      },
+      "maxItems": 96,
+      "description": "Per-seat record channel (additive, optional \u2014 lane K 2026-08-17): deed name -> summed minted glory from the episode's glory ledger, so a 0.0 pinball score still carries the story of what the warband earned before it was wiped. Derived from the artifact's glory_ledger channel by the seat's stable global_id."
+     },
+     "behaviour_tags": {
+      "type": "array",
+      "items": {
+       "type": "object"
+      },
+      "maxItems": 96,
+      "description": "Per-seat auto-tags for the named pathologies (additive, optional \u2014 lane P 2026-08-17): passive_camp, deathball, whiff_storm, disengage_loop. Every tag row carries its measured value, the calibrated threshold, and the sample support \u2014 tags are arguable evidence, never bare verdicts. Thresholds calibrated against scripted personality references (tools/probe_behaviour_calibration.py)."
+     },
+     "control_ledger": {
+      "type": "array",
+      "items": {
+       "type": "object"
+      },
+      "maxItems": 96,
+      "description": "Per-seat CONTROL ATTRIBUTION (additive, optional \u2014 lane P 2026-08-17): per decision tick, who actually controlled the seat \u2014 general channel policy/noop(missed window)/scripted/absent counts + general_fallback_frac, soldier channel policy/autopilot/no_units/inactive/absent counts + units offered/driven. Without this, an episode the policy drove 3% of and one it drove end-to-end score identically; no league score attributes to the policy. The full per-tick timeline rides the replay artifact's control_timeline channel."
+     },
+     "entrant_winner": {
+      "type": "integer",
+      "maximum": 95,
+      "minimum": -1
+     },
+     "champion_earned": {
+      "type": "boolean"
+     },
+     "extraction_kind": {
+      "type": "array",
+      "items": {
+       "type": [
+        "string",
+        "null"
+       ]
+      },
+      "maxItems": 96,
+      "minItems": 1
+     },
+     "forfeited_glory": {
+      "type": "array",
+      "items": {
+       "type": "number",
+       "minimum": 0
+      },
+      "maxItems": 96,
+      "minItems": 1,
+      "description": "Glory each seat forfeited by dying unbanked."
+     },
+     "reached_cogosseum": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 96,
+      "minItems": 1,
+      "description": "Whether each seat reached the cogosseum (ring 1)."
+     },
+     "crown_match_record": {
+      "type": [
+       "object",
+       "null"
+      ]
+     },
+     "extraction_records": {
+      "type": "array",
+      "items": {
+       "type": [
+        "object",
+        "null"
+       ]
+      },
+      "maxItems": 96,
+      "minItems": 1
+     },
+     "last_signal_records": {
+      "type": "array",
+      "items": {
+       "type": [
+        "object",
+        "null"
+       ]
+      },
+      "maxItems": 96,
+      "minItems": 1
+     },
+     "world_champion_name": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "world_champion_player": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "world_champion_global_id": {
+      "type": "integer",
+      "minimum": -1
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "strategy",
+   "real-time",
+   "multiplayer",
+   "resource-management",
+   "real-time-strategy",
+   "multi-agent",
+   "competitive",
+   "hierarchical-control",
+   "spatial",
+   "economy",
+   "diplomacy",
+   "naval",
+   "spectator-economy"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "muster-default",
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "coworld_pkg.player.player"
+    ],
+    "name": "Muster Default General",
+    "type": "player",
+    "image": "img_81cc7afe-1807-4b0a-aa2f-1e17b704ea14",
+    "description": "Creds-free heuristic general mirroring Muster's scripted-general priorities: mine-first economy, concentrate fire on the lowest-HP enemy only when locally favorable, then run the full naval chain (dock \u2192 shipyard \u2192 escorted transport \u2192 launch inward toward the cogosseum). A COMPETENT-BUT-BEATABLE baseline \u2014 held to the strong scripted general's level, not a weak shadow \u2014 and the default a submitted optimizer is expected to beat."
+   },
+   {
+    "id": "muster-rl-soldier",
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "coworld_pkg.player.soldier_player"
+    ],
+    "name": "Muster RL Soldier",
+    "type": "player",
+    "image": "img_81cc7afe-1807-4b0a-aa2f-1e17b704ea14",
+    "description": "Trained per-unit RL soldier micro (the v34 hybrid multi-head policy, run as a dependency-light numpy forward pass) paired with the bundled heuristic general. It exists to DEMONSTRATE the RL-soldier submission shape \u2014 the engine ships each unit's observation + action masks + role in the per-seat protocol's soldier_obs batch, and this policy returns per-unit move/target/mode actions \u2014 NOT as a co-equal winner: the soldier fights its units well, but as a whole-army driver at full scale it underperforms the bundled general (it doesn't drive economy/the inward race), so it is a SHAPE EXAMPLE, not a strong baseline. A submitted policy image can drive the general, the soldiers, or both (hybrid)."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "competition",
+    "name": "Full Muster world \u2014 every champion, one shared game (19 arenas)",
+    "description": "The full 19-arena Muster world (~96 island-armies). EVERY submitted champion the Competition division has plays in ONE shared episode; the engine scripted-fills every remaining island-army. This variant deliberately OMITS a baked players[] list, so the seated real-policy count is whatever the commissioner sends that round (verified: infer_token_count\u2192None \u2192 the platform seats len(policy_version_ids) and game_config_with_named_players builds exactly that many players; tokens schema stays variable 1..64). As more policies qualify, more real slots + more islands fill in \u2014 some partially, some fully \u2014 with NO per-size variants and no re-ship. Capacity ceiling 64 real (hosted-pod limit); beyond that the commissioner windows across full episodes. episode_timeout_seconds=600 (\u21921200s limit) keeps the full multi-minute episode off the max_ticks/tick_rate 300s floor. Ring 3 present \u2192 the ring-crumble fires; racing inward is survival.",
+    "game_config": {
+     "seed": 0,
+     "max_ticks": 750,
+     "tick_rate": 50,
+     "num_agents": 64,
+     "num_arenas": 19,
+     "episode_timeout_seconds": 600,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "qualifier",
+    "name": "Qualifier load-check (1 seat, 2 arenas)",
+    "description": "A minimal load-check used only by the Qualifiers division: ONE connected policy on a tiny 2-arena world (its ring-2 starter island + the cogosseum) for a short 80-tick epoch. It is NOT a competitive match \u2014 it just proves the submitted policy connects, builds, runs without crashing, and scores, before it enters real (full-world) competition. (1 arena would seat the lone army directly in the fight-to-death cogosseum, so 2 is the minimum that gives it a normal starter island to play.) isQualifier=true tells the engine this is the cheap load-check path \u2014 no inward-race / crumble pressure needed at this scale (with only ring 2, the ring-crumble can't fire anyway). The full 19-arena world is the `default` variant used by the Competition division.",
+    "game_config": {
+     "seed": 7,
+     "players": [
+      {
+       "name": "Qualifier Entrant"
+      }
+     ],
+     "max_ticks": 80,
+     "tick_rate": 50,
+     "num_arenas": 2,
+     "isQualifier": true,
+     "player_connect_timeout_seconds": 60
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "default-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Muster League Commissioner",
+    "type": "commissioner",
+    "image": "img_b685cd3f-f157-44c6-ae8d-e46611d38a2e",
+    "source_url": "https://github.com/Metta-AI/coworld-muster/tree/01b60c4b3bb688bb90c7ae3202e2dc1e257741a7/coworld_pkg/commissioner",
+    "description": "Custom Muster commissioner (ruleset_strategy base + per-division variant selection) running a FLAT ladder \u2014 no Bronze/Silver/Gold tiers, no promotion/relegation. The Qualifiers staging gate runs the tiny `qualifier` variant (1 seat / 2 arenas / 80 ticks) as a fast connect/build/run/score LOAD-CHECK that can't hit the 300s episode cap; any policy that completes it is promoted once into the single Competition division and stays there. Competition runs the full `default` 19-arena world, seating EVERY real champion the division has (min 2 to start a round, up to MAX_COMPETITION_SEATS=64) while the engine scripted-fills the rest of the world. Each round persists its own glory scores; the separately stored division standing ranks each player's all-time high. Rounds run every 15 minutes."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "muster-rl-soldier"
+    },
+    {
+     "player_id": "muster-default"
+    }
+   ],
+   "game_config": {
+    "seed": 7,
+    "players": [
+     {
+      "name": "Cert A"
+     },
+     {
+      "name": "Cert B"
+     }
+    ],
+    "max_ticks": 60,
+    "tick_rate": 50,
+    "num_arenas": 2,
+    "player_connect_timeout_seconds": 60
+   }
+  }
+ },
+ "manifest_hash": "sha256:ed6a0d62e76d17cfd59fea094b95883e4e771bf906b61ab620d9c54b9d9360e7",
+ "size_bytes": 23295,
+ "created_at": "2026-08-21T21:36:35.051786Z",
+ "canonical": true
+}

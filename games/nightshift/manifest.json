@@ -1,0 +1,683 @@
+{
+ "id": "cow_21358a31-f60a-414c-860b-a71ae0a73163",
+ "name": "nightshift",
+ "version": "0.2.18",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "roles.md",
+      "title": "Roles & night order",
+      "content": {
+       "type": "text",
+       "value": "16-card base pool: Werewolf x2, Minion, Mason x2, Seer, Robber, Troublemaker, Drunk, Insomniac, Hunter, Tanner, Doppelganger, Villager x3.\n\nWake order (by dealt card): Doppelganger, Werewolves, Minion, Masons, Seer, Robber, Troublemaker, Drunk, Insomniac, Doppelganger-Insomniac. Teams are evaluated on the FINAL card held at dawn (after night swaps). Village wins if a werewolf dies; werewolf team wins if a werewolf exists, none died, and no Tanner died; Tanner wins iff it dies."
+      }
+     }
+    ],
+    "readme": {
+     "type": "text",
+     "value": "# nightshift\n\nA One Night Ultimate Werewolf adaptation for coworld. Sessions of repeated scenes (same players, same role set) with a full end-of-scene reveal (original deal + ordered night log) and a scoring-inert solo debrief make within-session opponent modeling profitable; discussion runs in streamed windows with hard character budgets, so spending a bounded budget well is the competitive dimension (wall-clock windows are generous backstops, not skill filters). See docs/spec.md for the authoritative design.\n\nCommon-knowledge convention (suggested, never enforced): the *circle vote* \u2014 everyone votes `(seat + 1) mod N` \u2014 is the canonical way for a table to kill no one; see the spec's Phase 4.\n\nBaseline players: `clockwork` (scripted, deterministic, zero model calls) and `haiku-baseline` (minimal LLM via AWS Bedrock, model id from `BEDROCK_MODEL`).\n\nVariants: `intro-3` (3 players, fixed role set, 5 scenes \u2014 the certification and league-qualifying variant) and `table-3` through `table-10` (N players, random role set, 5 scenes \u2014 the league tables). In league play the commissioner draws each table's size from a distribution, so policies should generalize across 3-10 players.\n\nQualifying bar: strictly top BOTH baseline seats in one `intro-3` session AND be live in every scene (no defaulted mandatory decision points \u2014 liveness scoring zeroes a glitching seat's scenes, and the gate checks liveness independently of score). Three consecutive completed sessions with zero live scenes = disqualification (broken image). Validate your image against `examples/player-template` before submitting; `upload-policy` does not run your container."
+    }
+   },
+   "name": "nightshift",
+   "owner": "michael@softmax.com",
+   "version": "0.2.18",
+   "runnable": {
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "nightshift.server.app"
+    ],
+    "type": "game",
+    "image": "img_5f5f97e5-d058-47e6-8d2b-a5195d5200e2",
+    "source_url": "https://github.com/Metta-AI/coworld-nightshift/tree/e6d9563ad054aecd4f3f313980bb50ebcccc9e7d/nightshift/server"
+   },
+   "protocols": {
+    "global": {
+     "type": "text",
+     "value": "# nightshift spectator protocol\n\nJSON over the platform WebSocket at `/global`. Common-knowledge stream only: it shows what any player could know \u2014 seats & policy names, role set, who-speaks and kill-vote reveals with default markings, the elected speaker's speech as it streams, and the full objective reveal (final layout, deaths, winners, the original deal, and the ordered night log) at each scene's end. It NEVER shows hidden state (deals, night actions) mid-scene and NEVER shows notebooks.\n\nMessages: `scene_start` {scene, role_set, seats}, `who_speaks_reveal`, `speech_delta`, `scene_reveal`. On connect the server first sends `hello` {started, done, seats_connected, seats_total} immediately (even pre-episode), then replays the public event log so far."
+    },
+    "player": {
+     "type": "text",
+     "value": "# nightshift player protocol\n\nJSON over the platform WebSocket at `/player?slot=&token=&protocol_version=0.4.0`. Server->player observations are DELTAS within a scene; the `scene_start` message is fully self-contained (session setup, budgets, own seat & dealt card, and within-session history of prior scenes' public record plus this seat's own private record). On reconnect the server sends a complete `snapshot` containing scene start state, public transcript, private observations, current speech/ballot state, and all outstanding correlated prompts before resuming deltas.\n\n## Server -> player\n- `scene_start` {session:{id,protocol_version,scene,scenes_total,seats:[{seat,policy}],role_set,wake_order,limits}, you:{seat,dealt_role}, history:[...]} \u2014 `limits` carries the authoritative CHARACTER budgets (`speech_chars`, `strategize_char_cap`, `post_night_char_cap`, `debrief_char_cap`, `action_notebook_char_cap`; metered as `len(text)`)\n- `night_preregister_request` {stage:`initial`|`copied_role`, acting_as, legal_actions, request_id, deadline, timeout_s} \u2014 every seat receives `initial`; a Doppelg\u00e4nger receives `copied_role` after `night_preregister_result` reveals its target and copied dealt role\n- `night_result` {observations:[...]} \u2014 sent to every seat (possibly an empty list). This is also the trigger for the private post-night strategy window (`limits.post_night_window_s` / `post_night_char_cap`): stream `notebook` frames then `output_done`. The phase is fixed-clock and day begins only at its deadline, even when all seats close early.\n- `who_speaks_request` {cycle, request_id, deadline, timeout_s, recent:{last_reveal,last_speech}} \u2014 cycle 1 opens before speech; later cycles open when the prior speech starts. Submit and revise while `speech_delta` frames stream; last write wins through `ballot_grace_s`.\n- `who_speaks_reveal` {cycle, speaker, tiebreak, votes:[{seat,points,nominee,default}]}\n- `speech_start` {cycle, speaker, request_id, deadline, timeout_s}\n- `speech_delta` {speaker, text} \u2014 the elected speaker\u2019s public speech, streamed\n- `speech_end` {cycle, speaker} \u2014 closes the speech and starts the ballot grace period; the default SDK submits once here unless the policy already submitted explicitly\n- `kill_vote_request` {request_id, deadline, timeout_s, recent:{last_reveal, last_speech}} \u2014 carries the day phase's final `who_speaks_reveal` and speech so the kill vote is answerable from this payload + `scene_start` alone.\n- `scene_reveal` {kill_votes, deaths, hunter_cascade, final_layout:{seats,center}, deal:{seats,center}, night_log:[{seat,kind,step,default,...}], winners, scores_delta, live:{seat:bool}} \u2014 the FULL reveal: `deal` is the original layout; `night_log` is every night action and observation in true wake order, default-marked. After this message the server opens the solo debrief notes window (limits.debrief_window_s / debrief_char_cap): stream private `notebook` frames then `output_done`, exactly like strategize.\n- `notebook_ack` {scene, entries} \u2014 sent after the solo debrief window; echoes this seat's own accepted notebook entries for the scene (strategize + night + post-night + speech + kill + debrief notes). Player should accumulate these and upload to `COWORLD_PLAYER_ARTIFACT_UPLOAD_URL` on `final`.\n- `snapshot` {scene, phase, scene_start, public_transcript, night_observations, current_speech, latest_ballot, outstanding_prompts, submitted} \u2014 complete reconnect state\n- `lobby` {seat} \u2014 pre-episode ack\n\n## Player -> server\n- Strategize/post-night/speech/debrief windows: stream `{type:'output_frame', ch:'speech'|'notebook', text, request_id}` frames then `{type:'output_done', request_id}`. Non-speakers and all private windows stream `notebook` only.\n- Preregistered night plan: `{target}` | `{center:1|2|3}` | `{mode:'player',target}` | `{mode:'center',cards:[i,j]}` | `{mode:'decline'}` | `{targets:[a,b]}` (+ optional `notebook`). When `stage:\"copied_role\"` and `acting_as` is present, the Doppelg\u00e4nger has already copied a role and must now perform that role's sub-action (answer with that role's schema); when `stage` is `initial` for a Doppelg\u00e4nger it is the copy-target request (answer `{target}`).\n- `who_speaks_request` -> `{points:0-N, nominee?, request_id}` (nominee required if points>0).\n- `kill_vote_request` -> `{target, notebook?, request_id}`.\n\nAny malformed/illegal/late action is replaced by the listed default and marked `default:true` in the record. Notebook fields are private (operator-only), never shown to other players.\n\n**Liveness (scoring):** a seat scores a scene's point only if it was live that scene \u2014 zero defaulted MANDATORY decision points (its night action when its dealt role acts, every who-speaks ballot, the kill vote, and speech when elected; for elected speech any response before the backstop counts, including closing the stream with nothing streamed \u2014 only the pure-timeout path defaults). Strategize, post-night, debrief, non-speaker thinking, and notebook riders are exempt. A non-live seat's `scores_delta` entry is zeroed (visible in `scene_reveal.live`); teammates are unaffected. Results record per-seat, per-scene default counts so liveness is auditable from the artifact.\n\n## Minimal viable player\n\nKeep a transcript buffer and a seat state built from `scene_start` (it is fully self-contained: session, seats, role set + wake order, all limits, your seat and dealt card, and your own prior-scene history). Make **zero** model calls on ordinary non-prompt packets \u2014 just append them to the buffer. Treat `night_result` as a private strategy prompt only when the advertised post-night limits are present. On each *prompt* packet (`night_preregister_request`, `who_speaks_request`, `kill_vote_request`, `speech_start` when you are the speaker), make one standard REST-style call and reply. Frames that arrive mid-call batch into the buffer for your next call; the current reveal is in `recent`; listeners can react to live `speech_delta` frames and revise via `PlayerIO.submit_ballot`. Streaming output via ordinary frames is optional and matters mainly for the elected speaker; writing notebook frames during others' windows is optional sophistication. `haiku-baseline` is written exactly this way \u2014 read it as the tutorial.\n\n## League play\n\nLeague tables seat 3-10 players with `role_set: \"random\"`; you learn the table size, seats, and role set only at `scene_start`. The commissioner draws table sizes from a distribution precisely so they cannot be anticipated \u2014 build policies that generalize across sizes rather than tuning to one.\n\n**Qualifying bar:** a candidate plays `intro-3` (5 scenes) in seat 0 with the two house baselines and qualifies when, in one session, it (a) STRICTLY tops both baseline seats' scores and (b) was LIVE in every scene (see Liveness above) \u2014 (b) is checked independently of (a). Weak-but-live candidates retry every round forever; a candidate whose completed sessions repeatedly show ZERO live scenes (the broken-image signature: never connected, instant crash, wrong image command) is disqualified after 3 consecutive such sessions, with evidence on the membership. Before submitting, validate your image against `examples/player-template` in the repo \u2014 `upload-policy` alone does NOT validate that your container can actually play."
+    }
+   },
+   "description": "One Night Ultimate Werewolf adaptation: a hidden-role social-deduction coworld that benchmarks modeling other minds under time pressure, across repeated scenes with a full end-of-scene reveal and a scoring-inert solo debrief. League play seats 3-10 players with a random role set; table size and roles are unknown until scene_start, so build general policies.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer"
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 10,
+      "minItems": 3
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       }
+      },
+      "maxItems": 10,
+      "minItems": 3
+     },
+     "role_set": {
+      "oneOf": [
+       {
+        "enum": [
+         "random"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       }
+      ]
+     },
+     "role_pool": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "day_cycle_cap": {
+      "type": [
+       "integer",
+       "string"
+      ]
+     },
+     "ballot_grace_s": {
+      "type": "number",
+      "maximum": 30,
+      "minimum": 2
+     },
+     "speech_window_s": {
+      "type": "number",
+      "maximum": 120,
+      "minimum": 3
+     },
+     "debrief_char_cap": {
+      "type": "integer"
+     },
+     "debrief_window_s": {
+      "type": "number"
+     },
+     "all_zeros_strikes": {
+      "type": "integer",
+      "maximum": 5,
+      "minimum": 1
+     },
+     "scenes_per_session": {
+      "type": "integer",
+      "maximum": 50,
+      "minimum": 1
+     },
+     "speech_char_budget": {
+      "type": "integer",
+      "maximum": 20000,
+      "minimum": 200
+     },
+     "action_notebook_cap": {
+      "type": "integer",
+      "maximum": 3000,
+      "minimum": 0
+     },
+     "kill_vote_timeout_s": {
+      "type": "number",
+      "maximum": 60,
+      "minimum": 3
+     },
+     "post_night_char_cap": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "post_night_window_s": {
+      "type": "number",
+      "minimum": 1
+     },
+     "speaking_points_max": {
+      "type": "integer",
+      "maximum": 10,
+      "minimum": 1
+     },
+     "strategize_char_cap": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "strategize_window_s": {
+      "type": "number",
+      "minimum": 1
+     },
+     "night_action_timeout_s": {
+      "type": "number",
+      "minimum": 1
+     },
+     "episode_timeout_seconds": {
+      "type": "number",
+      "exclusiveMinimum": 0
+     },
+     "initial_ballot_window_s": {
+      "type": "number",
+      "maximum": 60,
+      "minimum": 2
+     },
+     "player_connect_timeout_s": {
+      "type": "number",
+      "minimum": 0
+     }
+    },
+    "additionalProperties": false
+   },
+   "replay_viewer": {
+    "bundle": "sha256:0776d03fecebb3f89a3569ad901fd440b0ebf7ca5bd3b38dc83445bcb46273ce"
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer"
+     },
+     "scenes": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "live": {
+         "type": "object",
+         "description": "Per-seat liveness: live iff zero defaulted mandatory decision points this scene. A non-live seat's scores_delta is zeroed; teammates are unaffected."
+        },
+        "scene": {
+         "type": "integer"
+        },
+        "deaths": {
+         "type": "array",
+         "items": {
+          "type": "integer"
+         }
+        },
+        "winners": {
+         "type": "array",
+         "items": {
+          "type": "string"
+         }
+        },
+        "defaults": {
+         "type": "object",
+         "description": "Liveness audit (spec Scoring): per-seat default counts by mandatory window type, {seat: {night_action|who_speaks|kill_vote|speech_elected: {defaulted, total}}}."
+        },
+        "kill_votes": {
+         "type": "array"
+        },
+        "truncations": {
+         "type": "array",
+         "description": "Char-cap truncations this scene ([{seat, window}]) \u2014 the operator's signal for a stale word-metering player getting server-chopped. Never a default; never affects liveness."
+        },
+        "final_layout": {
+         "type": "object"
+        },
+        "scores_delta": {
+         "type": "object"
+        },
+        "maintainer_flag": {
+         "type": "boolean"
+        }
+       }
+      }
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 10,
+      "minItems": 3
+     },
+     "role_set": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "session_id": {
+      "type": "string"
+     },
+     "num_players": {
+      "type": "integer"
+     },
+     "policy_names": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "maintainer_flag": {
+      "type": "boolean"
+     }
+    }
+   }
+  },
+  "tags": [
+   "social-deduction",
+   "strategy",
+   "multiplayer"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "clockwork",
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "nightshift.players.clockwork"
+    ],
+    "name": "Clockwork",
+    "type": "player",
+    "image": "img_5f5f97e5-d058-47e6-8d2b-a5195d5200e2",
+    "source_url": "https://github.com/Metta-AI/coworld-nightshift/tree/e6d9563ad054aecd4f3f313980bb50ebcccc9e7d/nightshift/players/clockwork",
+    "description": "Scripted, non-LLM baseline. Deterministic given the episode seed; makes forced and seeded-random legal moves, claims honestly (Villager when dealt Werewolf/Minion), bids to speak once, never kill-votes a known fellow werewolf."
+   },
+   {
+    "id": "haiku-baseline",
+    "env": {
+     "BEDROCK_MODEL": "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    },
+    "run": [
+     "python",
+     "-m",
+     "nightshift.players.haiku_baseline"
+    ],
+    "name": "Haiku Baseline",
+    "type": "player",
+    "image": "img_5f5f97e5-d058-47e6-8d2b-a5195d5200e2",
+    "source_url": "https://github.com/Metta-AI/coworld-nightshift/tree/e6d9563ad054aecd4f3f313980bb50ebcccc9e7d/nightshift/players/haiku_baseline",
+    "description": "Minimal LLM player over AWS Bedrock (model id from BEDROCK_MODEL). Honest as village; role-plays a claimed role as werewolf. Bounded model calls with safe default fallbacks so throttling never hangs the episode."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "intro-3",
+    "name": "Intro (3 players)",
+    "description": "3 players; fixed role set (Werewolf x2, Seer, Robber, Troublemaker, Villager); 5 scenes (the league standard). The qualifying and certification variant.",
+    "game_config": {
+     "players": [
+      {
+       "name": "seat-0"
+      },
+      {
+       "name": "seat-1"
+      },
+      {
+       "name": "seat-2"
+      }
+     ],
+     "role_set": [
+      "werewolf",
+      "werewolf",
+      "seer",
+      "robber",
+      "troublemaker",
+      "villager"
+     ],
+     "scenes_per_session": 5,
+     "episode_timeout_seconds": 2000
+    }
+   },
+   {
+    "id": "table-3",
+    "name": "Table (3 players)",
+    "description": "3 players; random role set; 5 scenes. League table.",
+    "game_config": {
+     "players": [
+      {
+       "name": "seat-0"
+      },
+      {
+       "name": "seat-1"
+      },
+      {
+       "name": "seat-2"
+      }
+     ],
+     "role_set": "random",
+     "scenes_per_session": 5,
+     "episode_timeout_seconds": 2200
+    }
+   },
+   {
+    "id": "table-4",
+    "name": "Table (4 players)",
+    "description": "4 players; random role set; 5 scenes. League table.",
+    "game_config": {
+     "players": [
+      {
+       "name": "seat-0"
+      },
+      {
+       "name": "seat-1"
+      },
+      {
+       "name": "seat-2"
+      },
+      {
+       "name": "seat-3"
+      }
+     ],
+     "role_set": "random",
+     "scenes_per_session": 5,
+     "episode_timeout_seconds": 2500
+    }
+   },
+   {
+    "id": "table-5",
+    "name": "Table (5 players)",
+    "description": "5 players; random role set; 5 scenes. League table.",
+    "game_config": {
+     "players": [
+      {
+       "name": "seat-0"
+      },
+      {
+       "name": "seat-1"
+      },
+      {
+       "name": "seat-2"
+      },
+      {
+       "name": "seat-3"
+      },
+      {
+       "name": "seat-4"
+      }
+     ],
+     "role_set": "random",
+     "scenes_per_session": 5,
+     "episode_timeout_seconds": 2700
+    }
+   },
+   {
+    "id": "table-6",
+    "name": "Table (6 players)",
+    "description": "6 players; random role set; 5 scenes. League table.",
+    "game_config": {
+     "players": [
+      {
+       "name": "seat-0"
+      },
+      {
+       "name": "seat-1"
+      },
+      {
+       "name": "seat-2"
+      },
+      {
+       "name": "seat-3"
+      },
+      {
+       "name": "seat-4"
+      },
+      {
+       "name": "seat-5"
+      }
+     ],
+     "role_set": "random",
+     "scenes_per_session": 5,
+     "episode_timeout_seconds": 3000
+    }
+   },
+   {
+    "id": "table-7",
+    "name": "Table (7 players)",
+    "description": "7 players; random role set; 5 scenes. League table.",
+    "game_config": {
+     "players": [
+      {
+       "name": "seat-0"
+      },
+      {
+       "name": "seat-1"
+      },
+      {
+       "name": "seat-2"
+      },
+      {
+       "name": "seat-3"
+      },
+      {
+       "name": "seat-4"
+      },
+      {
+       "name": "seat-5"
+      },
+      {
+       "name": "seat-6"
+      }
+     ],
+     "role_set": "random",
+     "scenes_per_session": 5,
+     "episode_timeout_seconds": 3200
+    }
+   },
+   {
+    "id": "table-8",
+    "name": "Table (8 players)",
+    "description": "8 players; random role set; 5 scenes. League table.",
+    "game_config": {
+     "players": [
+      {
+       "name": "seat-0"
+      },
+      {
+       "name": "seat-1"
+      },
+      {
+       "name": "seat-2"
+      },
+      {
+       "name": "seat-3"
+      },
+      {
+       "name": "seat-4"
+      },
+      {
+       "name": "seat-5"
+      },
+      {
+       "name": "seat-6"
+      },
+      {
+       "name": "seat-7"
+      }
+     ],
+     "role_set": "random",
+     "scenes_per_session": 5,
+     "episode_timeout_seconds": 3500
+    }
+   },
+   {
+    "id": "table-9",
+    "name": "Table (9 players)",
+    "description": "9 players; random role set; 5 scenes. League table.",
+    "game_config": {
+     "players": [
+      {
+       "name": "seat-0"
+      },
+      {
+       "name": "seat-1"
+      },
+      {
+       "name": "seat-2"
+      },
+      {
+       "name": "seat-3"
+      },
+      {
+       "name": "seat-4"
+      },
+      {
+       "name": "seat-5"
+      },
+      {
+       "name": "seat-6"
+      },
+      {
+       "name": "seat-7"
+      },
+      {
+       "name": "seat-8"
+      }
+     ],
+     "role_set": "random",
+     "scenes_per_session": 5,
+     "episode_timeout_seconds": 3700
+    }
+   },
+   {
+    "id": "table-10",
+    "name": "Table (10 players)",
+    "description": "10 players; random role set; 5 scenes. League table.",
+    "game_config": {
+     "players": [
+      {
+       "name": "seat-0"
+      },
+      {
+       "name": "seat-1"
+      },
+      {
+       "name": "seat-2"
+      },
+      {
+       "name": "seat-3"
+      },
+      {
+       "name": "seat-4"
+      },
+      {
+       "name": "seat-5"
+      },
+      {
+       "name": "seat-6"
+      },
+      {
+       "name": "seat-7"
+      },
+      {
+       "name": "seat-8"
+      },
+      {
+       "name": "seat-9"
+      }
+     ],
+     "role_set": "random",
+     "scenes_per_session": 5,
+     "episode_timeout_seconds": 4000
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "nightshift-commissioner",
+    "env": {},
+    "run": [
+     "uvicorn",
+     "app:app",
+     "--host",
+     "0.0.0.0",
+     "--port",
+     "8080"
+    ],
+    "name": "Nightshift League Commissioner",
+    "type": "commissioner",
+    "image": "img_f7be767a-7971-4578-8be2-66a0d35204f5",
+    "source_url": "https://github.com/Metta-AI/coworld-nightshift/tree/20384316d141ad34841b1acc1c66d7b283aae9a7/commissioner",
+    "description": "Custom nightshift commissioner (ruleset_strategy base + subclass seating/promotion). Qualifiers staging gate: each candidate plays one intro-3 session per round seated with the clockwork and haiku-baseline house policies, and is promoted the first time it BOTH strictly tops both baseline seats' session scores AND was live in every scene (zero defaulted mandatory decision points; liveness read from the episode results). No attempt cap for weak-but-live candidates; 3 consecutive completed sessions with zero live scenes (broken-image signature) disqualify the membership with evidence. Candidates never sit at tables with live players. Competition: a persisted strict-player-protocol, requalification-epoch, and Coworld-variant contract blocks stale champions and migrates them back to Qualifiers before seating. Compatible hourly rounds partition ALL champions into tables of 3-10 seats (variants table-3..table-10) drawn from a weighted size distribution; the last table absorbs the remainder exactly and every champion plays once. Three consecutive player_error failures disqualify only the platform-attributed crashing membership; completed play resets its auditable streak and co-seated policies are not penalized. Standings: 24-hour-half-life EWMA of raw session scores (round_score: mean, 0-10 scale)."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "clockwork"
+    },
+    {
+     "player_id": "clockwork"
+    },
+    {
+     "player_id": "haiku-baseline"
+    }
+   ],
+   "game_config": {
+    "seed": 20260702,
+    "players": [
+     {
+      "name": "clockwork-0"
+     },
+     {
+      "name": "clockwork-1"
+     },
+     {
+      "name": "haiku-baseline"
+     }
+    ],
+    "role_set": [
+     "werewolf",
+     "werewolf",
+     "seer",
+     "robber",
+     "troublemaker",
+     "villager"
+    ],
+    "day_cycle_cap": 2,
+    "ballot_grace_s": 2,
+    "speech_window_s": 3,
+    "debrief_char_cap": 600,
+    "debrief_window_s": 2,
+    "scenes_per_session": 2,
+    "kill_vote_timeout_s": 3,
+    "post_night_char_cap": 600,
+    "post_night_window_s": 1,
+    "strategize_window_s": 3,
+    "initial_ballot_window_s": 2
+   }
+  },
+  "episode_timeout_minutes": 100
+ },
+ "manifest_hash": "sha256:aeb43b00b1a887b37b59fec63fa3321e0cce0febd59305772399c404f70d585c",
+ "size_bytes": 21284,
+ "created_at": "2026-08-09T04:46:36.605998Z",
+ "canonical": true
+}

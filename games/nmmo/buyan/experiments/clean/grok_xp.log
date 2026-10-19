@@ -1,0 +1,27 @@
+[2m2026-09-12T14:38:43.162729Z[0m [33m WARN[0m tools allowlist had unmappable entries; keeping full grok toolset [3magent[0m[2m=[0mgrok-build-plan [3munresolved[0m[2m=[0m["run_terminal_command"] [3mallowed[0m[2m=[0m["run_terminal_command", "read_file"]
+[2m2026-09-12T14:38:43.167694Z[0m [33m WARN[0m hooks: skipped unrecognized event names (check for typos) [3mfile[0m[2m=[0m/Users/me/.claude/settings.json [3mskipped[0m[2m=[0m["PermissionRequest"]
+[2m2026-09-12T14:38:43.167747Z[0m [33m WARN[0m hook loading from settings file: failed to parse hook file /Users/me/.cursor/hooks.json: invalid matcher groups for event 'beforeMCPExecution': missing field `hooks`
+[2m2026-09-12T14:38:43.167764Z[0m [33m WARN[0m hook loading error [3merror[0m[2m=[0mParseFile { path: "/Users/me/.cursor/hooks.json", detail: "invalid matcher groups for event 'beforeMCPExecution': missing field `hooks`" }
+[2m2026-09-12T14:38:43.216950Z[0m [31mERROR[0m Failed to spawn MCP server 'metta-pr-similarity': No such file or directory (os error 2)
+[2m2026-09-12T14:38:43.217175Z[0m [33m WARN[0m Failed to spawn MCP server: Failed to spawn MCP server 'metta-pr-similarity': No such file or directory (os error 2)
+[2m2026-09-12T14:38:43.217347Z[0m [33m WARN[0m MCP server spawn failed, removing from initializing set [3mserver[0m[2m=[0m"metta-pr-similarity"
+[2m2026-09-12T14:38:43.289949Z[0m [31mERROR[0m worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer resource_metadata=\"https://mcp.figma.com/.well-known/oauth-protected-resource\",scope=\"mcp:connect\",authorization_uri=\"https://api.figma.com/.well-known/oauth-authorization-server\"" })
+[2m2026-09-12T14:38:43.335815Z[0m [31mERROR[0m worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer resource_metadata=\"https://mcp.figma.com/.well-known/oauth-protected-resource\",scope=\"mcp:connect\",authorization_uri=\"https://api.figma.com/.well-known/oauth-authorization-server\"" })
+[2m2026-09-12T14:38:43.336602Z[0m [33m WARN[0m both handshake phases failed (surfacing the legacy error) [3mserver[0m[2m=[0mfigma [3mprobe_error[0m[2m=[0mSend message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send discover request [3mlegacy_error[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request
+[2m2026-09-12T14:38:43.336790Z[0m [33m WARN[0m MCP server init failed [3mserver[0m[2m=[0mfigma [3merror[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request
+[2m2026-09-12T14:38:43.336807Z[0m [33m WARN[0m MCP server failed to initialize [3mserver[0m[2m=[0m"figma" [3melapsed_ms[0m[2m=[0m115 [3mtimeout_sec[0m[2m=[0m30 [3merror[0m[2m=[0mMCP server 'figma' handshake failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<xai_grok_mcp::mcp_http_client::McpHttpClient<reqwest::async_impl::client::Client>>>] error: Auth required, when send initialize request [3mneeds_auth[0m[2m=[0mtrue
+I'll run the first hosted XP request exactly as specified, then the second.Request A succeeded. Running the second hosted XP request now.Both creates succeeded. Reading the two response receipts next.Both hosted XP requests were created successfully.
+
+**Request A** (`response_a.json`)
+- **ID:** `xreq_b86e9068-91aa-4d37-a621-e311560aeb89`
+- **Status:** `pending`
+- **Episodes:** 10 pending, 0 completed, 0 failed
+- **Created:** 2026-09-12T14:38:54.964267Z
+
+**Request B** (`response_b.json`)
+- **ID:** `xreq_31165bdb-cc10-4612-80c6-65ea9fe4da1b`
+- **Status:** `pending`
+- **Episodes:** 10 pending, 0 completed, 0 failed
+- **Created:** 2026-09-12T14:38:58.820990Z
+
+Both are on coworld `cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc` (nmmo 0.1.5). `error` is null on both.

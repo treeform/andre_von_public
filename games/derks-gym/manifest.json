@@ -1,0 +1,796 @@
+{
+ "id": "cow_03c45b25-de4b-42e1-8e2f-056a496878c4",
+ "name": "derks-gym",
+ "version": "0.1.3",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "draft.md",
+      "title": "The loadout draft",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/cogame-derks-gym/blob/main/docs/DRAFT.md"
+      }
+     },
+     {
+      "id": "porting.md",
+      "title": "Porting PufferLib envs",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/cogame-derks-gym/blob/main/docs/PORTING.md"
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-derks-gym/blob/main/README.md"
+    }
+   },
+   "name": "derks-gym",
+   "owner": "daveey@softmax.com",
+   "version": "0.1.3",
+   "runnable": {
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "cogame_derks_gym.server"
+    ],
+    "type": "game",
+    "image": "img_26b29753-0bca-4028-b345-5d39d970a770",
+    "source_url": "https://github.com/Metta-AI/cogame-derks-gym/tree/4897b52e8e47ef1b413e6346d02ef8f7c2c9cb9b"
+   },
+   "protocols": {
+    "global": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-derks-gym/blob/main/docs/PROTOCOL.md"
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-derks-gym/blob/main/docs/PROTOCOL.md"
+    }
+   },
+   "description": "Derk's Gym: PufferLib's Ocean MOBA with a pre-match loadout draft. Six seats, three per team, one hero each (the other four heroes are driven in-process by the vendored pretrained network); before tick 0 all six seats simultaneously and blindly pick one ARM, one TAIL and one MISC item from a 12-item catalog, and the summed, clamped stat deltas are written into the heroes for the whole match. Then it is the upstream 5v5 MOBA, bit-exact with the training environment: the same C sim compiled to wasm, the same 510-byte observations and [7,7,3,2,2,2] MultiDiscrete actions, creep waves down three lanes, 24 towers and two 4500-HP Ancients. The match is won by destroying the enemy Ancient, or at the tick cap by remaining Ancient health. The policy is metagame plus micro: the draft is one decision that shapes 6000 ticks. Replays re-simulate deterministically in a static wasm viewer from the recorded seed, loadouts and per-tick action log.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "description": "Deterministic sim seed. Omitted: the server derives a fresh random seed and records it in results and the replay header."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "description": "One connection token per player seat, indexed by seat slot. Injected by the runner; never authored."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "description": "One player display-name object per seat, indexed by seat slot. Exactly six: each seat plays one hero (pids 0, 1, 2, 5, 6, 7); the other four heroes are driven in-process by the vendored pretrained network on the neutral loadout."
+     },
+     "max_ticks": {
+      "type": "integer",
+      "default": 6000,
+      "minimum": 1,
+      "description": "Tick cap; reaching it ends the episode with an Ancient-health tiebreak."
+     },
+     "num_agents": {
+      "type": "integer",
+      "default": 6,
+      "maximum": 6,
+      "minimum": 6,
+      "description": "Number of agent seats; must equal the player slot count. Used by the platform ladder service for block seating."
+     },
+     "draft_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "True: one simultaneous hidden draft turn before tick 0, and the summed post-clamp stat blocks are applied to the sim. False: the Puffer-fidelity mode \u2014 no draft turn and no loadout applied at all, so the sim is byte-identical to the upstream PufferLib Ocean MOBA."
+     },
+     "catalog_version": {
+      "enum": [
+       "v1"
+      ],
+      "type": "string",
+      "default": "v1",
+      "description": "Loadout catalog version, pinned so a future catalog cannot silently re-interpret an old replay. v1 is 3 slots x 4 items; its canonical sha256 (catalog + clamp table) is 7c80ff58b617e148de4bfddfbfcaf8c336512123de6bfd582351de35ccefaef7 \u2014 see docs/DRAFT.md."
+     },
+     "tick_deadline_ms": {
+      "type": "integer",
+      "default": 100,
+      "minimum": 1,
+      "description": "Per-tick action deadline in milliseconds; a late/missing/malformed reply plays the no-op action for that seat's hero."
+     },
+     "draft_deadline_ms": {
+      "type": "integer",
+      "default": 45000,
+      "minimum": 1000,
+      "description": "The single draft turn's shared wall-clock deadline; all six seats are asked as one parallel batch under it."
+     },
+     "wall_clock_budget_seconds": {
+      "type": "number",
+      "description": "Engine wall-clock hard stop, timed from the start of the draft turn: a slow episode ends itself with end_reason wall_clock (Ancient-health tiebreak, artifacts written). Sized so connect 60 s + draft 45 s + play 600 s = 705 s stays inside 60% of the 1200 s platform episode budget.",
+      "exclusiveMinimum": 0
+     },
+     "player_connect_timeout_seconds": {
+      "type": "number",
+      "default": 60,
+      "minimum": 0,
+      "description": "Seconds to wait for all six seats to connect before the draft turn; seats that never connect play the neutral loadout plus no-op and are reported to COGAME_PLAYER_FAILURE_URI."
+     }
+    },
+    "additionalProperties": false
+   },
+   "replay_viewer": {
+    "bundle": "sha256:64475e5b804d13af23146d47ffd25e044cfe7903f9be59dbdbb8c6867acaccfa"
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "names",
+     "scores",
+     "win",
+     "team",
+     "winner",
+     "end_reason",
+     "final_tick",
+     "seed",
+     "reward_sums",
+     "ancient_healths",
+     "agent_stats",
+     "noop_ticks",
+     "dead_seats",
+     "noop_causes",
+     "draft",
+     "draft_fallbacks"
+    ],
+    "properties": {
+     "win": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "description": "One win flag per seat."
+     },
+     "seed": {
+      "type": "integer",
+      "description": "The deterministic sim seed the episode ran with."
+     },
+     "team": {
+      "type": "array",
+      "items": {
+       "enum": [
+        "radiant",
+        "dire"
+       ],
+       "type": "string"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "description": "One team name per seat (server-assigned: seats 0-2 radiant, 3-5 dire)."
+     },
+     "draft": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "pid",
+        "seat",
+        "alias",
+        "player_name",
+        "team",
+        "role",
+        "picks",
+        "note",
+        "source",
+        "fallback",
+        "fallback_cause",
+        "decision_ms",
+        "applied"
+       ],
+       "properties": {
+        "pid": {
+         "type": "integer",
+         "maximum": 9,
+         "minimum": 0,
+         "description": "Hero pid this record describes (0-9)."
+        },
+        "note": {
+         "type": "string",
+         "maxLength": 120,
+         "description": "The seat's free-text note, truncated to 120 Unicode scalars."
+        },
+        "role": {
+         "enum": [
+          "support",
+          "assassin",
+          "burst",
+          "tank",
+          "carry"
+         ],
+         "type": "string"
+        },
+        "seat": {
+         "type": [
+          "integer",
+          "null"
+         ],
+         "maximum": 5,
+         "minimum": 0,
+         "description": "Seat slot that drafted it, or null for a house hero."
+        },
+        "team": {
+         "enum": [
+          "radiant",
+          "dire"
+         ],
+         "type": "string"
+        },
+        "alias": {
+         "type": "string",
+         "description": "The in-game (anonymous) name."
+        },
+        "picks": {
+         "type": "object",
+         "required": [
+          "arm",
+          "tail",
+          "misc"
+         ],
+         "properties": {
+          "arm": {
+           "enum": [
+            "arm_none",
+            "arm_blaster",
+            "arm_cleaver",
+            "arm_needler"
+           ],
+           "type": "string"
+          },
+          "misc": {
+           "enum": [
+            "misc_none",
+            "misc_regen",
+            "misc_battery",
+            "misc_focus"
+           ],
+           "type": "string"
+          },
+          "tail": {
+           "enum": [
+            "tail_none",
+            "tail_plate",
+            "tail_stinger",
+            "tail_rotor"
+           ],
+           "type": "string"
+          }
+         },
+         "description": "One catalog item id per slot.",
+         "additionalProperties": false
+        },
+        "source": {
+         "enum": [
+          "seat",
+          "house"
+         ],
+         "type": "string"
+        },
+        "applied": {
+         "type": "object",
+         "required": [
+          "base_health",
+          "base_mana",
+          "base_damage",
+          "basic_attack_cd",
+          "move_speed",
+          "hp_gain_per_level",
+          "mana_gain_per_level",
+          "damage_gain_per_level"
+         ],
+         "properties": {
+          "base_mana": {
+           "type": "number"
+          },
+          "move_speed": {
+           "type": "number"
+          },
+          "base_damage": {
+           "type": "number"
+          },
+          "base_health": {
+           "type": "number"
+          },
+          "basic_attack_cd": {
+           "type": "integer"
+          },
+          "hp_gain_per_level": {
+           "type": "integer"
+          },
+          "mana_gain_per_level": {
+           "type": "integer"
+          },
+          "damage_gain_per_level": {
+           "type": "integer"
+          }
+         },
+         "description": "The absolute post-clamp stat block written into the sim.",
+         "additionalProperties": false
+        },
+        "fallback": {
+         "type": "boolean",
+         "description": "True when the server substituted the neutral loadout."
+        },
+        "decision_ms": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Wall-clock ms the seat took to answer the draft turn."
+        },
+        "player_name": {
+         "type": [
+          "string",
+          "null"
+         ],
+         "description": "The real policy name, or null for a house hero."
+        },
+        "fallback_cause": {
+         "enum": [
+          "none",
+          "timeout",
+          "wrong_shape",
+          "unknown_item",
+          "disconnected",
+          "oversize"
+         ],
+         "type": "string",
+         "description": "Why the neutral loadout was substituted (none = it was not)."
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 10,
+      "minItems": 10,
+      "description": "The ten draft-reveal records in pid order: picks, note, source, fallback cause and the applied stat block for every hero."
+     },
+     "names": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "description": "One player name per seat, in seat-slot order."
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "description": "One scalar score per seat: win 1.0, draw 0.5, loss 0.0. Higher is better; the array sums to 3.0."
+     },
+     "winner": {
+      "enum": [
+       0,
+       1,
+       null
+      ],
+      "type": [
+       "integer",
+       "null"
+      ],
+      "description": "Winning team: 0 radiant, 1 dire, null draw."
+     },
+     "dead_seats": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "description": "Per-seat strike-rule dead flag at episode end (10 consecutive missed ticks marks a seat dead; a valid reply revives it)."
+     },
+     "end_reason": {
+      "enum": [
+       "ancient",
+       "tick_cap",
+       "wall_clock",
+       "sim_fault"
+      ],
+      "type": "string",
+      "description": "Why the episode ended: an Ancient fell, the tick cap was reached, the engine's wall-clock budget expired (tick_cap and wall_clock share the Ancient-health tiebreak), or the sim reported an internal fault (sim_fault: no winner, draw scores, partial replay). A draft failure is never fatal \u2014 it degrades to the neutral loadout."
+     },
+     "final_tick": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Sim tick at episode end."
+     },
+     "noop_ticks": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "description": "Per-seat count of ticks played as the no-op fallback (late, missing, malformed, or dead seat)."
+     },
+     "agent_stats": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "level",
+        "kills",
+        "deaths",
+        "towers_killed",
+        "creeps_killed",
+        "neutrals_killed",
+        "xp",
+        "damage_dealt",
+        "damage_received",
+        "healing_dealt",
+        "healing_received"
+       ],
+       "properties": {
+        "xp": {
+         "type": "integer"
+        },
+        "kills": {
+         "type": "integer"
+        },
+        "level": {
+         "type": "integer"
+        },
+        "deaths": {
+         "type": "integer"
+        },
+        "damage_dealt": {
+         "type": "integer"
+        },
+        "creeps_killed": {
+         "type": "integer"
+        },
+        "healing_dealt": {
+         "type": "integer"
+        },
+        "towers_killed": {
+         "type": "integer"
+        },
+        "damage_received": {
+         "type": "integer"
+        },
+        "neutrals_killed": {
+         "type": "integer"
+        },
+        "healing_received": {
+         "type": "integer"
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 10,
+      "minItems": 10,
+      "description": "Per-hero end-of-episode stats, indexed by hero pid (0-4 radiant, 5-9 dire) \u2014 all ten heroes, seats and house heroes alike."
+     },
+     "noop_causes": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "timeout",
+        "malformed",
+        "wrong_tick",
+        "disconnected",
+        "host_error"
+       ],
+       "properties": {
+        "timeout": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "malformed": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "host_error": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "wrong_tick": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "disconnected": {
+         "type": "integer",
+         "minimum": 0
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "description": "Per-seat NOOP-fallback cause counters. timeout/malformed/disconnected/host_error partition noop_ticks; wrong_tick counts mis-addressed reply messages at the transport."
+     },
+     "reward_sums": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "description": "Per-seat sum of the sim's per-hero training rewards (observability only, never ranked)."
+     },
+     "ancient_healths": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "description": "Remaining Ancient health at episode end: [radiant, dire]."
+     },
+     "draft_fallbacks": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "description": "One boolean per seat: true when the server substituted the neutral loadout for it."
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "moba",
+   "team",
+   "draft",
+   "pufferlib"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "baseline",
+    "env": {
+     "PLAYER_SCRIPTED": "puffer-forge"
+    },
+    "run": [
+     "python",
+     "-m",
+     "players.derk_player"
+    ],
+    "name": "baseline",
+    "type": "player",
+    "image": "img_26b29753-0bca-4028-b345-5d39d970a770",
+    "resources": {
+     "limits": {
+      "cpu": "2"
+     },
+     "requests": {
+      "cpu": "500m",
+      "memory": "512Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-derks-gym/tree/4897b52e8e47ef1b413e6346d02ef8f7c2c9cb9b/players",
+    "description": "puffer-forge: a deterministic draft rule (one fixed item set per role) plus the upstream PufferLib pretrained policy (moba_weights.bin through the vendored puffernet compiled to wasm) for the per-tick micro. The certification fixture player and the image's default."
+   },
+   {
+    "id": "lane-brawler",
+    "env": {
+     "PLAYER_SCRIPTED": "lane-brawler"
+    },
+    "run": [
+     "python",
+     "-m",
+     "players.derk_player"
+    ],
+    "name": "lane-brawler",
+    "type": "player",
+    "image": "img_26b29753-0bca-4028-b345-5d39d970a770",
+    "resources": {
+     "limits": {
+      "cpu": "2"
+     },
+     "requests": {
+      "cpu": "500m",
+      "memory": "512Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-derks-gym/tree/4897b52e8e47ef1b413e6346d02ef8f7c2c9cb9b/players",
+    "description": "lane-brawler: a draft rule derived from the observed base stats plus the hand-coded finite-state lane-push bot for the micro (no pretrained weights)."
+   },
+   {
+    "id": "drafter",
+    "env": {
+     "USE_BEDROCK": "true",
+     "PLAYER_PROMPT": "derk-drafter-v1",
+     "ANTHROPIC_API_KEY_URI": "secret://coworld/derks-gym/anthropic_api_key"
+    },
+    "run": [
+     "python",
+     "-m",
+     "players.derk_player"
+    ],
+    "name": "drafter",
+    "type": "player",
+    "image": "img_26b29753-0bca-4028-b345-5d39d970a770",
+    "resources": {
+     "limits": {
+      "cpu": "2"
+     },
+     "requests": {
+      "cpu": "500m",
+      "memory": "512Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-derks-gym/tree/4897b52e8e47ef1b413e6346d02ef8f7c2c9cb9b/players",
+    "description": "derk-drafter-v1: one Anthropic call decides the loadout before tick 0, then the vendored pretrained network plays every tick. With no API key it falls back to the puffer-forge draft rule and still plays a legal, complete episode."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/metta/main/packages/coworld/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "draft",
+    "name": "Draft (3v3)",
+    "description": "Six seats, one hero each, three per team. Each seat drafts one arm, one tail and one misc item before tick 0; the two remaining heroes per team run the vendored pretrained network on the neutral loadout.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Cog1"
+      },
+      {
+       "name": "Cog2"
+      },
+      {
+       "name": "Cog3"
+      },
+      {
+       "name": "Cog4"
+      },
+      {
+       "name": "Cog5"
+      },
+      {
+       "name": "Cog6"
+      }
+     ],
+     "max_ticks": 6000,
+     "num_agents": 6,
+     "draft_enabled": true,
+     "catalog_version": "v1",
+     "tick_deadline_ms": 100,
+     "draft_deadline_ms": 45000,
+     "wall_clock_budget_seconds": 645,
+     "player_connect_timeout_seconds": 60
+    }
+   },
+   {
+    "id": "nodraft",
+    "name": "No draft (Puffer fidelity)",
+    "description": "The same 3v3 seating with the draft turn disabled: no loadout is applied, so the sim is byte-identical to the upstream PufferLib Ocean MOBA the pretrained policies were trained on.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Cog1"
+      },
+      {
+       "name": "Cog2"
+      },
+      {
+       "name": "Cog3"
+      },
+      {
+       "name": "Cog4"
+      },
+      {
+       "name": "Cog5"
+      },
+      {
+       "name": "Cog6"
+      }
+     ],
+     "max_ticks": 6000,
+     "num_agents": 6,
+     "draft_enabled": false,
+     "catalog_version": "v1",
+     "tick_deadline_ms": 100,
+     "wall_clock_budget_seconds": 600,
+     "player_connect_timeout_seconds": 60
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [],
+  "certification": {
+   "players": [
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "drafter"
+    },
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "lane-brawler"
+    }
+   ],
+   "game_config": {
+    "seed": 42,
+    "players": [
+     {
+      "name": "Cog1"
+     },
+     {
+      "name": "Cog2"
+     },
+     {
+      "name": "Cog3"
+     },
+     {
+      "name": "Cog4"
+     },
+     {
+      "name": "Cog5"
+     },
+     {
+      "name": "Cog6"
+     }
+    ],
+    "max_ticks": 1200,
+    "num_agents": 6,
+    "draft_enabled": true,
+    "catalog_version": "v1",
+    "tick_deadline_ms": 250,
+    "draft_deadline_ms": 5000,
+    "wall_clock_budget_seconds": 400,
+    "player_connect_timeout_seconds": 60
+   }
+  },
+  "episode_timeout_minutes": 20
+ },
+ "manifest_hash": "sha256:b5e7d1927bb411fe56fa82c9a708bb6332169b69c9ccef080d0c60ef3b629fef",
+ "size_bytes": 15439,
+ "created_at": "2026-08-28T14:54:28.231749Z",
+ "canonical": true
+}

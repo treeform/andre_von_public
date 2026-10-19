@@ -1,0 +1,1179 @@
+{
+ "id": "cow_17b85e23-e2ad-4d16-8738-b297df2b9657",
+ "name": "liars-cog",
+ "version": "0.1.11",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "rules.md",
+      "title": "rules.md",
+      "content": {
+       "type": "text",
+       "value": "# Liar's Cog Rules\n\nEach player holds a secret hand of dice. On your turn, bid a claim about how many times a face appears across ALL hands combined (e.g. 'three 6s'), or challenge the previous bid. Each bid must strictly raise the last: higher quantity wins, ties broken by higher face. A challenge reveals all hands; if the bid was true the bidder wins, otherwise the challenger wins. The skill is reading opponents' bids as signals about their hidden hands."
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld-liars-cog/blob/main/README.md"
+    }
+   },
+   "name": "liars-cog",
+   "owner": "coworld@softmax.com",
+   "version": "0.1.11",
+   "runnable": {
+    "env": {},
+    "run": [
+     "/bin/lc-game"
+    ],
+    "type": "game",
+    "image": "img_694c3c65-7f6d-4165-b376-1bfa2c36b8b7"
+   },
+   "protocols": {
+    "global": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld-liars-cog/blob/main/src/liars_cog/game/docs/global_protocol_spec.md"
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/coworld-liars-cog/blob/main/src/liars_cog/game/docs/player_protocol_spec.md"
+    }
+   },
+   "description": "Turn-based hidden-information bluffing game (Liar's Dice), implemented in Nim. Players bid on the combined count of a face across all secret hands, or challenge a suspected lie. Winning requires modeling opponents from their bids.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players",
+     "hand_size",
+     "num_faces",
+     "max_rounds",
+     "decision_timeout_seconds"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "minimum": -1,
+      "description": "Optional deterministic episode seed. Omit it or set -1 for a fresh random deal; commissioner-scheduled episodes provide unique seeds."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 4,
+      "minItems": 2
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 4,
+      "minItems": 2
+     },
+     "scenario": {
+      "type": "object",
+      "required": [
+       "id"
+      ],
+      "properties": {
+       "id": {
+        "type": "string",
+        "minLength": 1
+       },
+       "name": {
+        "type": "string"
+       },
+       "category": {
+        "type": "string"
+       },
+       "template": {
+        "enum": [
+         "target_face_counts"
+        ],
+        "type": "string",
+        "description": "Optional game-owned curriculum setup template. The game expands it into fixed_hands and initial_bid_history at startup."
+       },
+       "objective": {
+        "type": "string"
+       },
+       "parameters": {
+        "type": "object",
+        "properties": {
+         "face": {
+          "type": "integer",
+          "maximum": 10,
+          "minimum": 1
+         },
+         "initial_bids": {
+          "type": "array",
+          "items": {
+           "type": "object",
+           "required": [
+            "slot",
+            "quantity"
+           ],
+           "properties": {
+            "face": {
+             "type": "integer",
+             "maximum": 10,
+             "minimum": 1
+            },
+            "slot": {
+             "type": "integer",
+             "maximum": 3,
+             "minimum": 0
+            },
+            "quantity": {
+             "type": "integer",
+             "minimum": 1
+            }
+           },
+           "additionalProperties": false
+          },
+          "description": "Optional preloaded bid sequence. Bid face defaults to parameters.face when omitted."
+         },
+         "slot_fillers": {
+          "type": "array",
+          "items": {
+           "type": "array",
+           "items": {
+            "type": "integer",
+            "maximum": 10,
+            "minimum": 1
+           }
+          },
+          "maxItems": 4,
+          "minItems": 2,
+          "description": "Optional exact non-target dice by slot. Each entry must fill hand_size after slot_face_counts target faces, and cannot contain the target face."
+         },
+         "starting_slot": {
+          "type": "integer",
+          "maximum": 3,
+          "minimum": 0
+         },
+         "slot_face_counts": {
+          "type": "array",
+          "items": {
+           "type": "integer",
+           "maximum": 12,
+           "minimum": 0
+          },
+          "maxItems": 4,
+          "minItems": 2,
+          "description": "Per-slot count of the target face. The game fills the rest of each hand with non-target faces."
+         }
+        },
+        "additionalProperties": false
+       },
+       "skill_tags": {
+        "type": "array",
+        "items": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "policy_slot": {
+        "type": "integer",
+        "maximum": 3,
+        "minimum": -1
+       },
+       "pass_criteria": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "required": [
+          "metric",
+          "op",
+          "value"
+         ],
+         "properties": {
+          "op": {
+           "enum": [
+            "==",
+            "!=",
+            ">",
+            ">=",
+            "<",
+            "<=",
+            "in"
+           ],
+           "type": "string"
+          },
+          "desc": {
+           "type": "string"
+          },
+          "value": {},
+          "metric": {
+           "type": "string",
+           "minLength": 1
+          }
+         },
+         "additionalProperties": false
+        },
+        "description": "Optional local curriculum pass/fail assertions evaluated by tools/local_curriculum.py."
+       }
+      },
+      "additionalProperties": false
+     },
+     "hand_size": {
+      "type": "integer",
+      "maximum": 12,
+      "minimum": 1
+     },
+     "num_faces": {
+      "type": "integer",
+      "maximum": 10,
+      "minimum": 2
+     },
+     "max_rounds": {
+      "type": "integer",
+      "maximum": 1000,
+      "minimum": 0
+     },
+     "fixed_hands": {
+      "type": "array",
+      "items": {
+       "type": "array",
+       "items": {
+        "type": "integer",
+        "maximum": 10,
+        "minimum": 1
+       },
+       "maxItems": 12,
+       "minItems": 1
+      },
+      "maxItems": 4,
+      "minItems": 2,
+      "description": "Optional exact hands by slot for curriculum scenarios. The game validates hand count, hand_size, and face bounds at startup."
+     },
+     "starting_slot": {
+      "type": "integer",
+      "maximum": 3,
+      "minimum": 0,
+      "description": "Optional slot to act first after scenario setup. Omit to infer the next slot from initial_bid_history."
+     },
+     "games_per_episode": {
+      "type": "integer",
+      "default": 10,
+      "maximum": 100,
+      "minimum": 1,
+      "description": "Number of sequential games (fresh deals) played within one episode. The episode score per slot is the fraction of games that slot won."
+     },
+     "initial_bid_history": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "slot",
+        "quantity",
+        "face"
+       ],
+       "properties": {
+        "face": {
+         "type": "integer",
+         "maximum": 10,
+         "minimum": 1
+        },
+        "slot": {
+         "type": "integer",
+         "maximum": 3,
+         "minimum": 0
+        },
+        "quantity": {
+         "type": "integer",
+         "minimum": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "description": "Optional preloaded legal bid sequence. The game validates slot bounds, quantity cap, face bounds, and strict raising."
+     },
+     "decision_timeout_seconds": {
+      "type": "number",
+      "maximum": 120,
+      "exclusiveMinimum": 0
+     },
+     "player_connect_timeout_seconds": {
+      "type": "number",
+      "default": 180,
+      "minimum": 0
+     }
+    },
+    "additionalProperties": false
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "scores",
+     "winner_slot",
+     "challenge_won",
+     "bids",
+     "rounds",
+     "final_bid_quantity",
+     "final_bid_face",
+     "actual_count",
+     "games_per_episode",
+     "games_played",
+     "game_wins",
+     "games",
+     "scenario"
+    ],
+    "properties": {
+     "bids": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "games": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "bids": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "hands": {
+         "type": "array",
+         "items": {
+          "type": "array",
+          "items": {
+           "type": "integer"
+          }
+         }
+        },
+        "rounds": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "game_index": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "winner_slot": {
+         "type": [
+          "integer",
+          "null"
+         ],
+         "minimum": 0
+        },
+        "actual_count": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "challenge_won": {
+         "type": "boolean"
+        },
+        "final_bid_face": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "final_bid_quantity": {
+         "type": "integer",
+         "minimum": 0
+        }
+       },
+       "additionalProperties": false
+      },
+      "description": "Per-game outcome summaries for the episode series."
+     },
+     "rounds": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 4,
+      "minItems": 2
+     },
+     "scenario": {
+      "type": [
+       "object",
+       "null"
+      ],
+      "properties": {
+       "id": {
+        "type": "string"
+       },
+       "name": {
+        "type": "string"
+       },
+       "category": {
+        "type": "string"
+       },
+       "template": {
+        "type": "string"
+       },
+       "objective": {
+        "type": "string"
+       },
+       "parameters": {
+        "type": "object"
+       },
+       "skill_tags": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       "policy_slot": {
+        "type": "integer"
+       }
+      },
+      "additionalProperties": false
+     },
+     "game_wins": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 4,
+      "minItems": 2
+     },
+     "winner_slot": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "minimum": 0
+     },
+     "actual_count": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "games_played": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "challenge_won": {
+      "type": "boolean"
+     },
+     "final_bid_face": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "games_per_episode": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "final_bid_quantity": {
+      "type": "integer",
+      "minimum": 0
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "hidden-information",
+   "bluffing",
+   "turn-based"
+  ],
+  "grader": [
+   {
+    "id": "liars-cog-grader",
+    "env": {},
+    "run": [
+     "/bin/lc-grader"
+    ],
+    "name": "Liar's Cog Grader",
+    "type": "grader",
+    "image": "img_694c3c65-7f6d-4165-b376-1bfa2c36b8b7",
+    "description": "Scores an episode by how interesting the negotiation was: bluff closeness (how near the final bid was to the true count) plus negotiation depth (number of bids)."
+   }
+  ],
+  "player": [
+   {
+    "id": "liars-cog",
+    "env": {},
+    "run": [
+     "/bin/lc-player"
+    ],
+    "name": "Liar's Cog",
+    "type": "player",
+    "image": "img_694c3c65-7f6d-4165-b376-1bfa2c36b8b7",
+    "description": "Reference player that maintains an exact per-opponent Bayesian posterior over hidden hands from the public bid history and picks the higher expected value of challenging vs raising (bluffing when deception pays). Optionally delegates turns to an LLM via AWS Bedrock when uploaded with --use-bedrock."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "default",
+    "name": "Default (3-player)",
+    "description": "Three-player Liar's Cog; each player rolls six pairs of dice (12 dice). An episode is a 10-game series scored by game-win share. Fresh deals unless an episode seed is supplied.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Liar's Cog"
+      },
+      {
+       "name": "Liar's Cog"
+      },
+      {
+       "name": "Liar's Cog"
+      }
+     ],
+     "hand_size": 12,
+     "num_faces": 6,
+     "max_rounds": 40,
+     "games_per_episode": 10,
+     "decision_timeout_seconds": 30,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "scn_call_obvious_bluff",
+    "name": "Scenario: Call Obvious Bluff",
+    "description": "Curriculum drill: slot 1 starts from a false high bid and must decide whether to challenge or keep bidding.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Bidder"
+      },
+      {
+       "name": "Policy"
+      }
+     ],
+     "scenario": {
+      "id": "scn_call_obvious_bluff",
+      "name": "Call Obvious Bluff",
+      "category": "challenge_calibration",
+      "template": "target_face_counts",
+      "objective": "Slot 1 starts facing an impossible-looking overbid and should identify the bluff pressure.",
+      "parameters": {
+       "face": 6,
+       "initial_bids": [
+        {
+         "slot": 0,
+         "quantity": 5
+        }
+       ],
+       "slot_face_counts": [
+        2,
+        0
+       ]
+      },
+      "skill_tags": [
+       "bluff_detection",
+       "challenge_ev",
+       "endgame"
+      ],
+      "policy_slot": 1,
+      "pass_criteria": [
+       {
+        "op": "==",
+        "desc": "policy immediately calls the overbid",
+        "value": "challenge",
+        "metric": "first_live_action_type"
+       },
+       {
+        "op": "==",
+        "desc": "the call wins because the bid is false",
+        "value": true,
+        "metric": "policy_won"
+       },
+       {
+        "op": "==",
+        "desc": "the final challenge catches a bluff",
+        "value": true,
+        "metric": "challenge_won"
+       }
+      ]
+     },
+     "hand_size": 4,
+     "num_faces": 6,
+     "max_rounds": 8,
+     "games_per_episode": 1,
+     "decision_timeout_seconds": 10,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "scn_respect_true_pressure",
+    "name": "Scenario: Respect True Pressure",
+    "description": "Curriculum drill: the standing bid is true despite pressure, testing challenge restraint.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Bidder"
+      },
+      {
+       "name": "Policy"
+      }
+     ],
+     "scenario": {
+      "id": "scn_respect_true_pressure",
+      "name": "Respect True Pressure",
+      "category": "challenge_calibration",
+      "template": "target_face_counts",
+      "objective": "Slot 1 starts facing a high but true bid that its own hand fully supports, and should avoid reflexively calling every pressure bid a lie.",
+      "parameters": {
+       "face": 6,
+       "initial_bids": [
+        {
+         "slot": 0,
+         "quantity": 4
+        }
+       ],
+       "slot_face_counts": [
+        0,
+        4
+       ]
+      },
+      "skill_tags": [
+       "calibration",
+       "challenge_ev",
+       "truth_estimation"
+      ],
+      "policy_slot": 1,
+      "pass_criteria": [
+       {
+        "op": "!=",
+        "desc": "policy does not reflexively challenge a true pressure bid",
+        "value": "challenge",
+        "metric": "first_live_action_type"
+       }
+      ]
+     },
+     "hand_size": 4,
+     "num_faces": 6,
+     "max_rounds": 8,
+     "games_per_episode": 1,
+     "decision_timeout_seconds": 10,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "scn_open_supported_pressure",
+    "name": "Scenario: Open Supported Pressure",
+    "description": "Curriculum drill: the policy opens from a hand with strong true support, testing pressure without unsupported bluffing.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Policy"
+      },
+      {
+       "name": "Opponent"
+      }
+     ],
+     "scenario": {
+      "id": "scn_open_supported_pressure",
+      "name": "Open Supported Pressure",
+      "category": "pressure_bidding",
+      "template": "target_face_counts",
+      "objective": "Slot 0 starts with strong private support for sixes and should convert that support into immediate pressure.",
+      "parameters": {
+       "face": 6,
+       "slot_face_counts": [
+        3,
+        1
+       ]
+      },
+      "skill_tags": [
+       "opening_bid",
+       "truth_estimation",
+       "pressure"
+      ],
+      "policy_slot": 0,
+      "pass_criteria": [
+       {
+        "op": "==",
+        "desc": "policy opens with a bid rather than vacating the turn",
+        "value": "bid",
+        "metric": "first_live_action_type"
+       },
+       {
+        "op": "==",
+        "desc": "policy names the strongly supported face",
+        "value": 6,
+        "metric": "first_live_action_face"
+       },
+       {
+        "op": ">=",
+        "desc": "policy applies pressure instead of making the minimum claim",
+        "value": 3,
+        "metric": "first_live_action_quantity"
+       }
+      ]
+     },
+     "hand_size": 4,
+     "num_faces": 6,
+     "max_rounds": 8,
+     "games_per_episode": 1,
+     "decision_timeout_seconds": 10,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "scn_raise_supported_low_bid",
+    "name": "Scenario: Raise Supported Low Bid",
+    "description": "Curriculum drill: the policy should turn private support into a raise instead of overcalling a low bid.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Bidder"
+      },
+      {
+       "name": "Policy"
+      }
+     ],
+     "scenario": {
+      "id": "scn_raise_supported_low_bid",
+      "name": "Raise Supported Low Bid",
+      "category": "pressure_bidding",
+      "template": "target_face_counts",
+      "objective": "Slot 1 starts behind a low sixes bid that is mostly supported by its own hand and should raise instead of wasting a challenge.",
+      "parameters": {
+       "face": 6,
+       "initial_bids": [
+        {
+         "slot": 0,
+         "quantity": 1
+        }
+       ],
+       "slot_face_counts": [
+        0,
+        2
+       ]
+      },
+      "skill_tags": [
+       "raise_selection",
+       "truth_estimation",
+       "challenge_restraint"
+      ],
+      "policy_slot": 1,
+      "pass_criteria": [
+       {
+        "op": "==",
+        "desc": "policy raises rather than challenging a bid its own hand supports",
+        "value": "bid",
+        "metric": "first_live_action_type"
+       },
+       {
+        "op": "==",
+        "desc": "policy continues pressure on the supported face",
+        "value": 6,
+        "metric": "first_live_action_face"
+       },
+       {
+        "op": ">=",
+        "desc": "policy makes a strictly higher supported claim",
+        "value": 2,
+        "metric": "first_live_action_quantity"
+       }
+      ]
+     },
+     "hand_size": 4,
+     "num_faces": 6,
+     "max_rounds": 8,
+     "games_per_episode": 1,
+     "decision_timeout_seconds": 10,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "scn_anchored_line_bluff",
+    "name": "Scenario: Anchored-Line Bluff",
+    "description": "Curriculum drill: an opponent has credibly anchored a face the policy does not hold, testing posterior-driven line choice.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Anchor"
+      },
+      {
+       "name": "Policy"
+      },
+      {
+       "name": "Opponent B"
+      },
+      {
+       "name": "Opponent C"
+      }
+     ],
+     "scenario": {
+      "id": "scn_anchored_line_bluff",
+      "name": "Anchored-Line Bluff",
+      "category": "theory_of_mind",
+      "template": "target_face_counts",
+      "objective": "Slot 1 starts after slot 0 anchored on sixes; good policies should reason about the bidder's likely hidden sixes, not only their own hand.",
+      "parameters": {
+       "face": 6,
+       "initial_bids": [
+        {
+         "slot": 0,
+         "quantity": 3
+        }
+       ],
+       "slot_fillers": [
+        [
+         1
+        ],
+        [
+         1,
+         2,
+         3,
+         3
+        ],
+        [
+         1,
+         2,
+         4,
+         5
+        ],
+        [
+         1,
+         2,
+         4,
+         5
+        ]
+       ],
+       "slot_face_counts": [
+        3,
+        0,
+        0,
+        0
+       ]
+      },
+      "skill_tags": [
+       "theory_of_mind",
+       "posterior_update",
+       "profitable_bluff"
+      ],
+      "policy_slot": 1,
+      "pass_criteria": [
+       {
+        "op": "==",
+        "desc": "policy continues the line instead of treating its own zero sixes as decisive",
+        "value": "bid",
+        "metric": "first_live_action_type"
+       },
+       {
+        "op": "==",
+        "desc": "policy stays on the opponent-anchored face",
+        "value": 6,
+        "metric": "first_live_action_face"
+       }
+      ]
+     },
+     "hand_size": 4,
+     "num_faces": 6,
+     "max_rounds": 10,
+     "games_per_episode": 1,
+     "decision_timeout_seconds": 10,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "scn_trust_consistent_anchor",
+    "name": "Scenario: Trust Consistent Anchor",
+    "description": "Curriculum drill: prior anchoring and strong private support should keep the policy bidding on a marginal pressure line.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Anchor"
+      },
+      {
+       "name": "Policy"
+      },
+      {
+       "name": "Opponent B"
+      },
+      {
+       "name": "Opponent C"
+      }
+     ],
+     "scenario": {
+      "id": "scn_trust_consistent_anchor",
+      "name": "Trust Consistent Anchor",
+      "category": "theory_of_mind",
+      "template": "target_face_counts",
+      "objective": "Slot 1 starts with four sixes after slot 0 has repeatedly anchored sixes; good policies should combine private support with opponent history instead of overcalling the line.",
+      "parameters": {
+       "face": 6,
+       "initial_bids": [
+        {
+         "slot": 0,
+         "quantity": 1
+        },
+        {
+         "face": 1,
+         "slot": 2,
+         "quantity": 2
+        },
+        {
+         "slot": 0,
+         "quantity": 6
+        }
+       ],
+       "slot_face_counts": [
+        0,
+        4,
+        0,
+        0
+       ]
+      },
+      "skill_tags": [
+       "theory_of_mind",
+       "opponent_modeling",
+       "challenge_restraint"
+      ],
+      "policy_slot": 1,
+      "pass_criteria": [
+       {
+        "op": "==",
+        "desc": "policy continues the historically anchored line",
+        "value": "bid",
+        "metric": "first_live_action_type"
+       },
+       {
+        "op": "==",
+        "desc": "policy keeps pressure on the anchored face",
+        "value": 6,
+        "metric": "first_live_action_face"
+       },
+       {
+        "op": ">=",
+        "desc": "policy makes the required strict raise instead of challenging",
+        "value": 7,
+        "metric": "first_live_action_quantity"
+       }
+      ]
+     },
+     "hand_size": 4,
+     "num_faces": 6,
+     "max_rounds": 10,
+     "games_per_episode": 1,
+     "decision_timeout_seconds": 10,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "scn_discount_serial_bluffer",
+    "name": "Scenario: Discount Serial Bluffer",
+    "description": "Curriculum drill: repeated low-credibility pressure from the same opponent should make the policy willing to call.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Bluffer"
+      },
+      {
+       "name": "Policy"
+      },
+      {
+       "name": "Opponent B"
+      },
+      {
+       "name": "Opponent C"
+      }
+     ],
+     "scenario": {
+      "id": "scn_discount_serial_bluffer",
+      "name": "Discount Serial Bluffer",
+      "category": "theory_of_mind",
+      "template": "target_face_counts",
+      "objective": "Slot 1 starts after slot 0 has made repeated unsupported sixes pressure; good policies should discount that line and call the final overbid.",
+      "parameters": {
+       "face": 6,
+       "initial_bids": [
+        {
+         "slot": 0,
+         "quantity": 3
+        },
+        {
+         "face": 1,
+         "slot": 2,
+         "quantity": 4
+        },
+        {
+         "slot": 0,
+         "quantity": 4
+        }
+       ],
+       "slot_face_counts": [
+        1,
+        1,
+        0,
+        0
+       ]
+      },
+      "skill_tags": [
+       "theory_of_mind",
+       "bluff_detection",
+       "opponent_modeling"
+      ],
+      "policy_slot": 1,
+      "pass_criteria": [
+       {
+        "op": "==",
+        "desc": "policy challenges the serial pressure line",
+        "value": "challenge",
+        "metric": "first_live_action_type"
+       },
+       {
+        "op": "==",
+        "desc": "the challenge wins because the repeated sixes line is false",
+        "value": true,
+        "metric": "policy_won"
+       },
+       {
+        "op": "==",
+        "desc": "the final challenge catches the overbid",
+        "value": true,
+        "metric": "challenge_won"
+       }
+      ]
+     },
+     "hand_size": 4,
+     "num_faces": 6,
+     "max_rounds": 10,
+     "games_per_episode": 1,
+     "decision_timeout_seconds": 10,
+     "player_connect_timeout_seconds": 180
+    }
+   },
+   {
+    "id": "scn_call_false_reraise",
+    "name": "Scenario: Call False Re-Raise",
+    "description": "Curriculum drill: the policy should recognize when an opponent's re-raise breaks a previously credible line.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Policy"
+      },
+      {
+       "name": "Opponent"
+      }
+     ],
+     "scenario": {
+      "id": "scn_call_false_reraise",
+      "name": "Call False Re-Raise",
+      "category": "challenge_calibration",
+      "template": "target_face_counts",
+      "objective": "Slot 0 opened a true line, then slot 1 over-raised beyond the revealed total; the policy should catch the false re-raise.",
+      "parameters": {
+       "face": 6,
+       "initial_bids": [
+        {
+         "slot": 0,
+         "quantity": 2
+        },
+        {
+         "slot": 1,
+         "quantity": 3
+        }
+       ],
+       "slot_face_counts": [
+        2,
+        0
+       ]
+      },
+      "skill_tags": [
+       "bluff_detection",
+       "line_consistency",
+       "challenge_ev"
+      ],
+      "policy_slot": 0,
+      "pass_criteria": [
+       {
+        "op": "==",
+        "desc": "policy challenges the unsupported re-raise",
+        "value": "challenge",
+        "metric": "first_live_action_type"
+       },
+       {
+        "op": "==",
+        "desc": "the challenge wins because the re-raise is false",
+        "value": true,
+        "metric": "policy_won"
+       },
+       {
+        "op": "==",
+        "desc": "the final challenge catches a bluff",
+        "value": true,
+        "metric": "challenge_won"
+       }
+      ]
+     },
+     "hand_size": 4,
+     "num_faces": 6,
+     "max_rounds": 8,
+     "games_per_episode": 1,
+     "decision_timeout_seconds": 10,
+     "player_connect_timeout_seconds": 180
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [
+   {
+    "id": "liars-cog-commissioner",
+    "env": {},
+    "run": [],
+    "name": "Liar's Cog Commissioner",
+    "type": "commissioner",
+    "image": "img_b553b5b8-6900-4b62-a1ab-31a33377025e",
+    "description": "Round-robin commissioner: schedules configurable 2-4 player pods across competing entrants and ranks them by mean episode score."
+   }
+  ],
+  "certification": {
+   "players": [
+    {
+     "player_id": "liars-cog"
+    },
+    {
+     "player_id": "liars-cog"
+    },
+    {
+     "player_id": "liars-cog"
+    }
+   ],
+   "game_config": {
+    "seed": 7,
+    "players": [
+     {
+      "name": "Liar's Cog"
+     },
+     {
+      "name": "Liar's Cog"
+     },
+     {
+      "name": "Liar's Cog"
+     }
+    ],
+    "hand_size": 4,
+    "num_faces": 6,
+    "max_rounds": 20,
+    "games_per_episode": 1,
+    "decision_timeout_seconds": 30,
+    "player_connect_timeout_seconds": 300
+   }
+  },
+  "players_per_user": 3
+ },
+ "manifest_hash": "sha256:044b70f0722f2da336c6b494e921ec64ac0955284dabd0af9e449df7c90db105",
+ "size_bytes": 19268,
+ "created_at": "2026-08-08T18:11:38.318457Z",
+ "canonical": true
+}

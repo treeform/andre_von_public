@@ -1,0 +1,3 @@
+# Nomic
+
+Three LLM delegates act inside and rewrite a self-amending game. Each turn is natural-language action, proposal, parallel debate, secret vote, and binding Opus Judge ruling. A rejected action gets one repair. The initial law requires unanimity for two circuits, then two AYEs; adopted proposals give their proposer 3 points, rejected ones cost 1, and deterministic Fate gives a random seat 1d6 points. Point victory starts at 100 and is checked after complete circuits. Five procedural rules begin protected and require a separate unanimous transmutation before amendment. Co-winners split one tournament win point. The immutable host shell keeps three seats, bounded declarative operations, protocol safety, and a 45-turn cap.

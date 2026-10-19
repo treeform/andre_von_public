@@ -1,0 +1,12 @@
+===== container: coworld-init-config =====
+b''
+
+===== container: bedrock-sidecar =====
+b'2026-09-12 14:50:44,265 INFO __main__ bedrock_sidecar_started {"listen_port":9100,"region":"us-east-1","has_role_arn":true,"schema_version":"1","source":"coworld_episode","metadata_origin":"bedrock_sidecar","episode_request_id":"24d89774-55ed-4186-b429-3213967e52cc","job_request_id":"d14e8fee-0267-4f2f-bb94-c8b6380565b9","role":"game","slot":"game","image_digest":"sha256:513048214ec5d2142e1b8ce5ca1bf6802ee6c28bd28f4a57ab0445e56ea19547"}\n[2026-09-12 14:50:44 +0000] [11] [INFO] Running on http://127.0.0.1:9100 (CTRL + C to quit)\n2026-09-12 14:50:44,639 INFO hypercorn.error Running on http://127.0.0.1:9100 (CTRL + C to quit)\n2026-09-12 14:53:01,132 WARNING datadog.dogstatsd Error submitting packet: [Errno 111] Connection refused, dropping the packet and closing the socket\n'
+
+===== container: game =====
+b'cogame-nmmo serving on 0.0.0.0:8080 (8 seats x 1 heroes)\nseat 2 (daveey (2)) connected at tick 0 [obs=clean]\nseat 7 (daveey-1 (2)) connected at tick 0 [obs=clean]\nseat 3 (Andre von Auto) connected at tick 0\nseat 5 (relh) connected at tick 0\nseat 1 (daveey) connected at tick 0 [obs=clean]\nseat 6 (relh (2)) connected at tick 0\nseat 4 (Andre von Auto (2)) connected at tick 0\nseat 0 (daveey-1) connected at tick 0 [obs=clean]\nprogress: tick 1161/5000, elapsed 30s, noops=[0, 0, 0, 0, 0, 0, 0, 0], strikes=[0, 0, 0, 0, 0, 0, 0, 0]\nprogress: tick 2352/5000, elapsed 60s, noops=[0, 0, 0, 0, 0, 0, 0, 0], strikes=[0, 0, 0, 0, 0, 0, 0, 0]\nprogress: tick 3544/5000, elapsed 90s, noops=[0, 0, 0, 0, 0, 0, 0, 0], strikes=[0, 0, 0, 0, 0, 0, 0, 0]\nprogress: tick 4782/5000, elapsed 120s, noops=[0, 0, 0, 0, 0, 0, 0, 0], strikes=[0, 0, 0, 0, 0, 0, 0, 0]\nseat 0 (daveey-1) disconnected at tick 4999\nseat 1 (daveey) disconnected at tick 4999\nseat 2 (daveey (2)) disconnected at tick 4999\nseat 3 (Andre von Auto) disconnected at tick 4999\nseat 4 (Andre von Auto (2)) disconnected at tick 4999\nseat 5 (relh) disconnected at tick 4999\nseat 6 (relh (2)) disconnected at tick 4999\nseat 7 (daveey-1 (2)) disconnected at tick 4999\nepisode over: end_reason=tick_cap tick=5000 top_score=6.5 scores=[3.4545454545454546, 4.833333333333333, 3.4285714285714284, 1.170731707317073, 1.183673469387755, 6.2, 6.5, 3.7]\n'
+
+===== container: worker =====
+b''
+

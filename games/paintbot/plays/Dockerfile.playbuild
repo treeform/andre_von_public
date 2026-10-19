@@ -1,0 +1,15 @@
+# Build Vasilisa's custom plays against the engine's play SDK. Build context =
+# ~/p (both checkouts): docker build -f andre_von_auto/games/paintbot/plays/Dockerfile.playbuild -t vasilisa-plays --platform linux/amd64 ~/p
+FROM --platform=linux/amd64 nimlang/nim:2.2.6 AS playbook
+ARG WASI_SDK_VERSION=33
+ARG WASI_SDK_RELEASE=33.0
+RUN set -eux; \
+    case "$(uname -m)" in x86_64) wasi_target=x86_64-linux ;; aarch64) wasi_target=arm64-linux ;; *) exit 1 ;; esac; \
+    curl -fsSL -o /tmp/wasi-sdk.tar.gz "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_SDK_VERSION}/wasi-sdk-${WASI_SDK_RELEASE}-${wasi_target}.tar.gz"; \
+    mkdir -p /opt/wasi-sdk; tar -xzf /tmp/wasi-sdk.tar.gz --strip-components=1 -C /opt/wasi-sdk; rm /tmp/wasi-sdk.tar.gz
+ENV WASI_SDK_PATH=/opt/wasi-sdk
+WORKDIR /src
+COPY coworld-ctf/play_sdk ./coworld-ctf/play_sdk
+COPY coworld-ctf/tools/runtime_spike ./coworld-ctf/tools/runtime_spike
+COPY andre_von_auto/games/paintbot/plays ./andre_von_auto/games/paintbot/plays
+RUN cd andre_von_auto/games/paintbot/plays && nim c -f --hints:off center_hold.nim && nim c -f --hints:off sentinel.nim && nim c -f --hints:off watch_ride.nim && nim c -f --hints:off sentinel_cover.nim && nim c -f --hints:off aim_ride.nim && nim c -f --hints:off shield_ride.nim && cp shield_ride.nim shield_aim_ride.nim && nim c -f --hints:off shield_aim_ride.nim && ls -l build/*.wasm

@@ -1,0 +1,448 @@
+{
+ "id": "cow_6272bfca-6bfa-4268-be2c-9ee35f669cfc",
+ "name": "nmmo",
+ "version": "0.1.5",
+ "manifest": {
+  "game": {
+   "docs": {
+    "pages": [
+     {
+      "id": "porting.md",
+      "title": "Porting PufferLib envs",
+      "content": {
+       "type": "uri",
+       "value": "https://github.com/Metta-AI/cogame-moba/blob/main/docs/PORTING.md"
+      }
+     }
+    ],
+    "readme": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-nmmo/blob/main/README.md"
+    }
+   },
+   "name": "nmmo",
+   "owner": "daveey@softmax.com",
+   "version": "0.1.5",
+   "runnable": {
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "cogame_nmmo.server"
+    ],
+    "type": "game",
+    "image": "img_63e2ccaa-13af-4c12-9678-b6c1ae0e64b5",
+    "source_url": "https://github.com/Metta-AI/cogame-nmmo/tree/96d4ce5a2d279dfb37f252366fa6209645c79a0c"
+   },
+   "protocols": {
+    "global": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-nmmo/blob/main/docs/PROTOCOL.md"
+    },
+    "player": {
+     "type": "uri",
+     "value": "https://github.com/Metta-AI/cogame-nmmo/blob/main/docs/PROTOCOL.md"
+    }
+   },
+   "description": "PufferLib's Ocean NMMO3 (Neural MMO 3) as a Coworld: a persistent 512x512 survival world, bit-exact with the upstream training environment (same C sim compiled to wasm, same 1707-byte observations and 26-way discrete actions). Eight free-for-all agents harvest resources, fight enemies, level combat and profession skills, and equip gear; death or 500-tick stagnation respawns an agent in place. Episodes end at the tick cap; seats are ranked by score: mean min(combat, profession) level per life, summed over the seat's agents \u2014 normalizing by lives makes every death hurt, so suicide-respawn farming never pays. Replays re-simulate deterministically in a static wasm viewer from the recorded seed and per-tick action log.",
+   "config_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "tokens",
+     "players"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "description": "Deterministic sim seed. Omitted: the server derives a fresh random seed and records it in results and the replay header."
+     },
+     "tokens": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      },
+      "maxItems": 16,
+      "minItems": 2,
+      "description": "One connection token per player seat, indexed by seat slot. Injected by the runner; never authored."
+     },
+     "players": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name"
+       ],
+       "properties": {
+        "name": {
+         "type": "string",
+         "minLength": 1
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 16,
+      "minItems": 2,
+      "description": "One player display-name object per seat, indexed by seat slot. Total sim agents = players x heroes_per_seat (num_agents is elastic upstream; the default variant is 8 seats x 1 agent, free-for-all)."
+     },
+     "max_ticks": {
+      "type": "integer",
+      "default": 5000,
+      "minimum": 1,
+      "description": "Tick cap; reaching it ends the episode (NMMO3 has no in-env termination) with seats ranked by score."
+     },
+     "num_agents": {
+      "type": "integer",
+      "default": 8,
+      "maximum": 16,
+      "minimum": 2,
+      "description": "Number of agent seats; must equal the player slot count. Used by the platform ladder service for block seating; ignored by the game server."
+     },
+     "heroes_per_seat": {
+      "type": "integer",
+      "default": 1,
+      "maximum": 4,
+      "minimum": 1,
+      "description": "Sim agents each seat controls (default 1: one agent per policy, free-for-all). Capped at 4 so total sim agents (players x heroes_per_seat, players capped at 16) never exceed 64 - comfortably under the replay viewer's 1024-agent bound (sim/viewer_main.c VIEWER_MAX_AGENTS) and the tested world-population range."
+     },
+     "tick_deadline_ms": {
+      "type": "integer",
+      "default": 1000,
+      "minimum": 1,
+      "description": "Per-tick action deadline in milliseconds; a late/missing/malformed reply plays the no-op action for that seat's agents."
+     },
+     "wall_clock_budget_seconds": {
+      "type": "number",
+      "description": "Engine wall-clock hard stop: a slow episode ends itself with end_reason wall_clock (scores read as they stand, artifacts written) once this much real time has elapsed. Default: min(0.9 x episode_timeout_minutes x 60, max_ticks x tick_deadline_ms / 1000) - always under the platform's episode_timeout_minutes container kill, which would lose results and replay.",
+      "exclusiveMinimum": 0
+     },
+     "player_connect_timeout_seconds": {
+      "type": "number",
+      "default": 180,
+      "minimum": 0,
+      "description": "Seconds to wait for all seats to connect before starting; seats that never connect play no-op and are reported to COGAME_PLAYER_FAILURE_URI."
+     }
+    },
+    "additionalProperties": false
+   },
+   "replay_viewer": {
+    "bundle": "sha256:bc3f493f4ba29a3a1aa8c97dbefa9977a14c8e31b3d2a65c013500651ff652d1"
+   },
+   "results_schema": {
+    "type": "object",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+     "names",
+     "scores",
+     "reward_sums",
+     "end_reason",
+     "final_tick",
+     "seed",
+     "state_digest",
+     "agent_stats",
+     "noop_ticks",
+     "dead_seats",
+     "noop_causes"
+    ],
+    "properties": {
+     "seed": {
+      "type": "integer",
+      "description": "The deterministic sim seed the episode ran with."
+     },
+     "names": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 16,
+      "minItems": 2,
+      "description": "One player name per seat, in seat-slot order."
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 16,
+      "minItems": 2,
+      "description": "One scalar score per seat (higher = better): per agent, the mean min(combat, profession) level per life \u2014 cumulative min over ended lives plus the final life's min, divided by lives (deaths + 1) \u2014 summed over the seat's agents. Normalizing by lives kills the suicide-farming exploit (raw cumulative score would reward dying to bank min >= 1 and respawn). Episodes have no winner; ranking consumers order by this value. sim_fault episodes score all seats 0.0 (equal = drawn)."
+     },
+     "dead_seats": {
+      "type": "array",
+      "items": {
+       "type": "boolean"
+      },
+      "maxItems": 16,
+      "minItems": 2,
+      "description": "Per-seat strike-rule dead flag at episode end (10 consecutive missed ticks marks a seat dead; a valid reply revives it)."
+     },
+     "end_reason": {
+      "enum": [
+       "tick_cap",
+       "wall_clock",
+       "sim_fault"
+      ],
+      "type": "string",
+      "description": "Why the episode ended: the tick cap was reached, the engine's wall-clock budget expired, or the sim reported an internal fault (sim_fault: all scores 0.0, partial replay). NMMO3 has no in-env termination."
+     },
+     "final_tick": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Sim tick at episode end."
+     },
+     "noop_ticks": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "maxItems": 16,
+      "minItems": 2,
+      "description": "Per-seat count of ticks played as the no-op fallback (late, missing, malformed, or dead seat)."
+     },
+     "agent_stats": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "cum_min_comb_prof",
+        "deaths",
+        "comb_lvl",
+        "prof_lvl",
+        "gold",
+        "time_alive"
+       ],
+       "properties": {
+        "gold": {
+         "type": "integer"
+        },
+        "deaths": {
+         "type": "integer",
+         "description": "Ended lives: attack deaths plus 500-tick stagnation resets."
+        },
+        "comb_lvl": {
+         "type": "integer",
+         "description": "Final life's combat level."
+        },
+        "prof_lvl": {
+         "type": "integer",
+         "description": "Final life's profession level."
+        },
+        "time_alive": {
+         "type": "integer",
+         "description": "Ticks since the final life spawned."
+        },
+        "cum_min_comb_prof": {
+         "type": "integer",
+         "description": "Sum of min(comb_lvl, prof_lvl) over the agent's ended lives."
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 16,
+      "minItems": 2,
+      "description": "Per-agent end-of-episode score breakdown, indexed by agent pid; seat i owns pids [i*heroes_per_seat, (i+1)*heroes_per_seat) \u2014 with the default heroes_per_seat=1 this is the per-seat breakdown."
+     },
+     "noop_causes": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "timeout",
+        "malformed",
+        "wrong_tick",
+        "disconnected",
+        "host_error"
+       ],
+       "properties": {
+        "timeout": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "malformed": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "host_error": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "wrong_tick": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "disconnected": {
+         "type": "integer",
+         "minimum": 0
+        }
+       },
+       "additionalProperties": false
+      },
+      "maxItems": 16,
+      "minItems": 2,
+      "description": "Per-seat NOOP-fallback cause counters. timeout/malformed/disconnected/host_error partition noop_ticks; wrong_tick counts mis-addressed reply messages at the transport (such a tick also counts as timeout)."
+     },
+     "reward_sums": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "maxItems": 16,
+      "minItems": 2,
+      "description": "Per-seat sum of the sim's per-agent training rewards over the episode."
+     },
+     "state_digest": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "u32 sim state digest at episode end; a re-simulation of the replay (seed + recorded actions) must reproduce it. 0 for sim_fault episodes whose state was unreadable."
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "tags": [
+   "nmmo",
+   "mmo",
+   "pufferlib"
+  ],
+  "grader": [],
+  "player": [
+   {
+    "id": "baseline",
+    "env": {},
+    "run": [
+     "python",
+     "-m",
+     "players.baseline_player"
+    ],
+    "name": "baseline",
+    "type": "player",
+    "image": "img_63e2ccaa-13af-4c12-9678-b6c1ae0e64b5",
+    "resources": {
+     "limits": {
+      "cpu": "2"
+     },
+     "requests": {
+      "cpu": "500m",
+      "memory": "512Mi"
+     }
+    },
+    "source_url": "https://github.com/Metta-AI/cogame-nmmo/tree/96d4ce5a2d279dfb37f252366fa6209645c79a0c/players",
+    "description": "Upstream PufferLib pretrained MMONet policy (nmmo3_weights.bin) run through the demo network forward pass compiled to wasm - the exact network the sim was trained with. Image placeholder is replaced at deploy time."
+   }
+  ],
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/metta/main/packages/coworld/src/coworld/coworld_manifest_schema.json",
+  "reporter": [],
+  "variants": [
+   {
+    "id": "default",
+    "name": "Default (8 seats FFA)",
+    "description": "Eight seats, one agent each: free-for-all survival, seats ranked by score: mean min(combat, profession) level per life.",
+    "game_config": {
+     "players": [
+      {
+       "name": "Player1"
+      },
+      {
+       "name": "Player2"
+      },
+      {
+       "name": "Player3"
+      },
+      {
+       "name": "Player4"
+      },
+      {
+       "name": "Player5"
+      },
+      {
+       "name": "Player6"
+      },
+      {
+       "name": "Player7"
+      },
+      {
+       "name": "Player8"
+      }
+     ],
+     "max_ticks": 5000,
+     "num_agents": 8,
+     "heroes_per_seat": 1,
+     "tick_deadline_ms": 1000,
+     "wall_clock_budget_seconds": 3240
+    }
+   }
+  ],
+  "diagnoser": [],
+  "optimizer": [],
+  "commissioner": [],
+  "certification": {
+   "players": [
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    },
+    {
+     "player_id": "baseline"
+    }
+   ],
+   "game_config": {
+    "seed": 42,
+    "players": [
+     {
+      "name": "Player1"
+     },
+     {
+      "name": "Player2"
+     },
+     {
+      "name": "Player3"
+     },
+     {
+      "name": "Player4"
+     },
+     {
+      "name": "Player5"
+     },
+     {
+      "name": "Player6"
+     },
+     {
+      "name": "Player7"
+     },
+     {
+      "name": "Player8"
+     }
+    ],
+    "max_ticks": 600,
+    "num_agents": 8,
+    "heroes_per_seat": 1,
+    "tick_deadline_ms": 1000,
+    "player_connect_timeout_seconds": 60
+   }
+  },
+  "episode_timeout_minutes": 60
+ },
+ "manifest_hash": "sha256:c8d1b63796495d5136c8d19d87301051ecf3f5f3253b47d85c7f22f81e5f95eb",
+ "size_bytes": 9963,
+ "created_at": "2026-08-26T21:12:25.179131Z",
+ "canonical": true
+}
