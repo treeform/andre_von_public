@@ -1,7 +1,8 @@
 ## Publish quiet games into the public mirror repo (andre_von_public).
 ## A game is released when nothing under games/<game> was committed for
 ## delayDays, unless it is in "hold"; games in "now" release regardless.
-## Replay dumps, vendored and rival code (skipDirs) never leave this repo.
+## Replay dumps, vendored and rival code (skipDirs) never leave this repo,
+## nor do the exact paths listed in skipPaths.
 ##   nim r tools/release.nim            # copy, commit in the public repo
 ##   nim r tools/release.nim --dry-run  # only print what would happen
 ##   nim r tools/release.nim --push     # copy, commit and push
@@ -46,18 +47,22 @@ proc tracked(root, path: string): seq[string] =
     if line.len > 0:
       result.add(line)
 
-proc skipped(path: string, skipDirs: seq[string]): bool =
-  ## True when any directory component of path is in skipDirs.
+proc skipped(path: string, skipDirs, skipPaths: seq[string]): bool =
+  ## True when a directory component is in skipDirs or path is under skipPaths.
   let parts = path.split('/')
   for part in parts[0 ..< parts.len - 1]:
     if part in skipDirs:
       return true
+  for prefix in skipPaths:
+    if path == prefix or path.startsWith(prefix & "/"):
+      return true
   false
 
-proc copyTracked(root, pub, path: string, skipDirs: seq[string]): int =
+proc copyTracked(root, pub, path: string,
+    skipDirs, skipPaths: seq[string]): int =
   ## Copy tracked files under path from root into pub, returning the count.
   for file in tracked(root, path):
-    if file.skipped(skipDirs):
+    if file.skipped(skipDirs, skipPaths):
       continue
     let dest = pub / file
     createDir(dest.parentDir)
@@ -132,6 +137,7 @@ proc main() =
     hold = config["hold"].getElems().mapIt(it.getStr())
     now = config["now"].getElems().mapIt(it.getStr())
     skipDirs = config["skipDirs"].getElems().mapIt(it.getStr())
+    skipPaths = config{"skipPaths"}.getElems().mapIt(it.getStr())
     shared = config["shared"].getElems().mapIt(it.getStr())
     names = parseJson(readFile(root / "games" / "names.json"))
     dryRun = "--dry-run" in commandLineParams()
@@ -160,16 +166,16 @@ proc main() =
   var copied: seq[string]
   for name in releasing:
     removeDir(pub / "games" / name)
-    discard copyTracked(root, pub, "games" / name, skipDirs)
+    discard copyTracked(root, pub, "games" / name, skipDirs, skipPaths)
     for file in tracked(root, "games" / name):
-      if not file.skipped(skipDirs):
+      if not file.skipped(skipDirs, skipPaths):
         copied.add(file)
   for path in shared:
     if dirExists(root / path):
       removeDir(pub / path)
-    discard copyTracked(root, pub, path, skipDirs)
+    discard copyTracked(root, pub, path, skipDirs, skipPaths)
     for file in tracked(root, path):
-      if not file.skipped(skipDirs):
+      if not file.skipped(skipDirs, skipPaths):
         copied.add(file)
   writeReleased(pub, games)
 

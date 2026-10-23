@@ -128,7 +128,7 @@ stopped. Games still being played are not here yet.
 | vanilla-wow | bova | a91d2c13 | 2026-09-01 |
 | vizdoom-deathmatch | chert | 92f06376 | 2026-09-01 |
 | walker-waterworld | vodyanoy | 20ae58b7 | 2026-09-01 |
-| webdiplomacy | kutuzov | 8815ea66 | 2026-10-23 |
+| webdiplomacy | kutuzov | 2ac71a33 | 2026-10-23 |
 | werecog | volkolak | 20ae58b7 | 2026-09-01 |
 | who-cried-wolf | volchok | 22b8438d | 2026-10-07 |
 | zero-sum | belobog | 20ae58b7 | 2026-09-01 |
