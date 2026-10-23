@@ -1699,3 +1699,310 @@ as awm-base:v1 under Andre von Auto for testing):
 - Next: keep screening single changes in the random-filler field (800+
   games, keep only >= 2 SD, about 30 wins per 800), confirm keeps with a
   hosted XP whose roster is us plus four reference fillers, then submit.
+
+## 2026-10-22: rivals migrated, Primordial meta
+
+- League (last 24 h): stilt:v15 (Andrew Brower) 43%, greenshank:v21 33%,
+  richard-awm-deckwarden-body-deck:v1 15%, radogost:v79 22% (#4 by
+  rating, 2/60 in the last 12 rounds), relh 13%, AWM Baseline:v2 8%.
+  All rivals are Mages whose decks list Primordial x4 (10/10 for 8) and
+  Bubble x4 (0-cost attacker bounce) directly: deckProblems only checks
+  that a name is a base card, so summon-only cards are legal deck cards.
+  stilt/greenshank deck: Bouncer, Spirit, Plan, Primordial, Summon
+  Primordial, Bubble Shield, Oozification, Study, Bubble, Control (x4);
+  wardens swap Study for Morphosis Chamber (and decline its trigger).
+- Extractors (tools/): `rivalstats FOLDER [LABEL]` (decks, plays/game,
+  attack targeting, kills, deaths), `rivallogic FOLDER LABEL` (targeting
+  hypotheses, play energy histograms), `narrate GAME.raw LABELS` (turn by
+  turn story), `fit FOLDER LABEL SCRIPT.bas` (runs a script on the rival's
+  recorded states and scores agreement), `suffered FOLDER LABEL` (damage
+  sources, removal aimed at us, Bubble hits). Replay folders hold
+  index.tsv + gunzipped <episode>.raw (eps/league/replays_recent = 72
+  league games, eps/xp_v79ctl = control XP).
+- stilt's observed logic: Bubble on draw, Study at 2, Spirit at 3,
+  Bouncer with the last energy, Control/Oozification/Bouncer at the
+  highest-power enemy minion (92%), Summon Primordial from 8 at the hero
+  with the biggest board, Primordial after, attacks mostly at the next
+  seat's unbubbled hero, Spirits also pick off 1-hp minions. The rivals
+  are modified reference scripts (fit 50-63%, first replay divergence at
+  tick 13), not exact copies; proxies `others/stiltlike2.bas` (fit 58%),
+  `others/refstilt.bas`, `others/refwarden.bas`.
+- Why v79 loses the league: 1054 of ~1330 hero damage taken is from
+  Primordials, 952 of it in turns 40-49 (mean death turn 46), mostly the
+  wardens' (richard 403). We carry no Bubbles, so every Primordial swing
+  lands on us while bubbled rivals bounce the 10/10 back to hand (183 of
+  our 836 hero attacks hit a Bubble). We kill the most (65) and die
+  anyway.
+- Control XP `v79ctl` (xreq_a4cb60dd, 24 episodes, 4 seats vs stilt:v15,
+  greenshank:v21, richard body-deck, rotated): v79 10/24, greenshank 10,
+  richard 3, stilt 1. The 4-seat gate format favours our rush (stilt dies
+  to us 17 times) while the 6-entrant league does not.
+- Local fields (`field.nim`, AWM_FIELD_SEATS=4, AWM_FIELD_RECORD=dir):
+  w9b 54% in 4-seat vs [stiltlike2 x2, refwarden], 38% in the 5-seat
+  league-like random field; proxies do not reproduce the hosted
+  Primordial collapse, so hosted XP decides.
+- Candidates uploaded: w14a (`trials/w14a_bubbles.bas`, radogost:v80,
+  Tactician -> Bubble, cost 3 as a Warrior) XP `v80top` (xreq_1d6a429a);
+  w15 (`trials/w15_bouncer.bas`, radogost:v81, Tactician -> Bouncer,
+  played only at an enemy minion of power >= 6) XP `v81top`
+  (xreq_d33d7992). 24 episodes each vs the same top 3 as v79ctl.
+  Not kept locally: w14b (Mage cards + Bubbles for Shields), w14c (Mage
+  cards + Bubble Shield), m1 (Mage priority deck, 9% local), m2 (stilt
+  base).
+- Hosted XP (4 seats vs top 3, 24 episodes each): v80 (Bubbles) 8/24,
+  v81 (Bouncers) 11/24 vs v79 10/24: neither significant, and the
+  4-seat format barely separates anything (stilt dies to our rush).
+- Fast-XP (user pointed at https://fast-xp-k8s-prod.tail0f4a29.ts.net,
+  serves AWM 2026.10.15.1, policy_ref opponents, no auth):
+  `tools/fastfield.nim TAG SEED BATCHES A.bas [B.bas ...]` plays paired
+  league-like games (five seats: ours plus four of the five live rivals
+  drawn and shuffled per batch, ten episodes per request) against the
+  real submitted policies: 1200 games in 63 s. Replays land in
+  eps/fast/TAG/replays_<name>/ with index.tsv for the extractors. This is
+  now the screening score (hosted, real rivals, league format); the
+  observatory XP vs top 3 stays as the submit record.
+- r1 (seed 4000, 200 games each): w9b 16.0%, w14a Bubbles 18.0% (p
+  0.29), w15 Bouncers 21.5% (p 0.04 vs w9b), m1 16.5%, m2 stilt-like
+  base 22.5% (p 0.056), reference warrior 7.0%. stilt wins ~30% of these
+  games.
+- r2 (seed 5000, 300 games each, m2 base): m2 23.0%, m3a weakest-hero
+  attacks 24.7% (p 0.31), m3b Summon at most board power 22.7%, m3c
+  Control first when an enemy minion has power >= 8 27.3% (p 0.088),
+  m3d Primordial before Summon 23.7%, m3e Bubble Shield first 23.0%,
+  m3f big minions avoid Bubbles 24.0%, w9b 15.3%. Only m3c is a lead;
+  confirming on 600 games (r3, seed 7000).
+- r3 (seed 7000, 600 games): m3c 19.0% vs m2 20.7%, sign p 0.83:
+  not confirmed, reverted. In those games stilt won 25%, greenshank
+  22%, relh 12.5%, richard 10%, baseline 9%.
+- m2's losses (suffered/rivalstats on r3): Primordials deal 7771 of
+  ~11.6k hero damage to us, turns 40-59; we play Control 0.73/game and
+  Oozification 0.29 (stilt 1.40/1.64) and attack minions 18 times in 600
+  games (stilt 1322, Spirits picking off Oozes/Bouncers); we die in 79%
+  of games (stilt 67%) despite the most kills (633). stilt discards
+  Ooze > Bouncer > Control > Bubble > Spirit, never Primordial, Summon,
+  Study or Plan (`tools/tosses.nim`).
+- r4 (seed 8000, 300): m4a reference attack scoring 20.7% = m2 20.7%,
+  m4b ungated Control/Oozification 19.0%, m4c both 20.0%: noise.
+- r5 (seed 9000, 300): m5a board cap 20.7%, m5b attack the previous seat
+  20.7%, m5c quickest kill 20.0%, m5d Summon at the previous seat 23.7%
+  (p 0.24) vs m2 22.3%: noise.
+- r6 (seed 10000, 300): m6a Primordial trades 19.0% (p 0.98), m6b hold
+  spare Bubbles 21.7%, m6c weakest minion attacks first 23.0% vs m2
+  24.0%: noise or worse.
+- m2 vs v79's script pooled over r1+r2 (500 paired games): 114 vs 78
+  wins, gained 94 lost 58, sign p 0.002. m2 uploaded as radogost:v82,
+  observatory XP `m2top` (xreq_53a4c3ba, 24 episodes vs top 3).
+- r7 (seed 11000, 300): m7a Plan -> Hail 21.7%, m7b Study -> Hail
+  22.7%, m7c Oozification -> Hail 24.7% (p 0.28) vs m2 22.7%; r8 (seed
+  12000, 300): m8a Summon at the next seat 19.0%, m8g cost-descending
+  order (stiltlike2) 20.7%, m7c again 20.7% vs m2 20.3%: all noise.
+- r9 (seed 13000, 300): m9a the leader's discard order (never Primordial,
+  Summon, Study, Plan) 17.3% vs m2 22.3%, sign p 0.985: worse. m2's
+  reference discard throws away Summon Primordial 53% of the time it is
+  in hand and that is better, so Summon is suspect (r10 tests its slot).
+- Observatory XP, 4 seats vs top 3: m2 (v82) 7/24 vs v79 10/24 (noise).
+  League format (6 seats, one champion per player, 24 episodes, rotated):
+  `v79six` (xreq_545fc1e5) radogost:v79 0/24, `v82six` (xreq_7afe75a9)
+  radogost:v82 5/24, Fisher p 0.025; with the pooled fast-XP 114 vs 78
+  of 500 (p 0.002) v82 is kept and submitted 2026-10-22 ~16:20 PDT.
+- r10 (seed 14000, 300): Summon Primordial -> Hail 19.7%, -> Morphosis
+  Chamber 15.0%, -> Mage class cards 16.7% vs m2 19.3%: Summon keeps its
+  slot (the discards of it are what the reference toss rule does when the
+  card is unaffordable, and that is fine).
+- BLOCKER 2026-10-22 ~16:30 PDT: `auto_player submit radogost:v82` is
+  refused with HTTP 403 "Your coach has not chosen a league for this
+  cogent yet; ask them to pick one in the IDE" under the Andre von Auto
+  player session (xp-request create fails the same way; it works with
+  the user credential after `coworld player unset`). A fallback in
+  auto_player (user credential + explicit --player) was denied by the
+  session's safety classifier, so v82 waits for the user: either pick a
+  league for the Auto player in the IDE, or submit v82 by hand. v79
+  (0/24 in league-format XP) stays champion until then.
+- 2026-10-22 evening: v82 3/20 in its first league rounds (stilt 15/30).
+  r11 (seed 15000, 600 paired games): m12 combo (weakest unbubbled hero
+  attacks + Summon at the previous seat + Hail for Oozification + weakest
+  minion first) 24.5% (p 0.083), m11a Primordials -> Oozes 23.3% (p
+  0.20), m11b removal prefers the previous seat's minions 23.7% (p 0.11)
+  vs m2 21.3%. r12 (seed 16000, 1000 games): m12 23.2% (p 0.24), m13 =
+  m12 + m11b 24.9% (p 0.049), m14 = m13 + Oozes 24.7% (p 0.068) vs m2
+  22.0%. Bot logs show rare "BASIC string count limit exceeded" (2-4 per
+  1000 games, a player failure): boardName$ inside the per-attack Bubble
+  check; fixed by counting Bubbles once per decision into an array.
+- r13 (seed 17000, 1000 games): m13 (string fix) 21.8% vs m2 19.0%,
+  gained 149 lost 121, sign p 0.050; pooled r12+r13 gained 307 lost 250,
+  p 0.008. KEEP. Uploaded as radogost:v83; observatory `m13six`
+  (xreq_aca3ec8e, 48 episodes, 6 seats vs all five rivals) and `m13top`
+  (xreq_68da83d9, 24 episodes, 4 seats vs top 3) for the record.
+- r14 (seed 18000, 600, m13 base): m14 Oozes for Primordials 28.0% vs
+  m13 28.2% (equal), m15d only 0-power minions swing into Bubbles 19.0%
+  (p 1.0: Spirit pops are worth their bounce), m15b Bubble Shield first
+  when life <= 10 and unshielded 29.2% (gained 7 lost 1, p 0.035; rare).
+- r17 (seed 21000, 600, m13 base): m16a chip attacks below heroes 19.8%,
+  m16d Summon at the previous seat only with 3+ cards 20.8%, m15b 21.3%
+  vs m13 20.8%. m15b pooled r14+r15+r17: gained 19 lost 7, sign p 0.014:
+  KEEP (new base m15b; tiny effect, folded into the next upload).
+- Same-game comparison (r17, 600 games): stilt dies 56%, we 79%, with
+  equal damage taken (~19 per game); stilt 41% of hero attacks into
+  Bubbles (Ooze pops), we 10%; we attack minions 3470 times. `suffered`
+  now splits landed vs "absorbed" and showed the sim truth: attackHero
+  deals the damage BEFORE queueAttackTriggers, so a Bubble never prevents
+  damage, it only bounces the attacker afterwards (a Primordial still
+  lands 10, then returns to hand: 8 energy to replay). Bubbles are tempo
+  punishers, not shields. Bug found: our 0-power Oozes attack minions
+  (chip value 6, zero effect) instead of popping bubbled heroes (m18a).
+- r18 (seed 22000, 600, m15b base): m18a 0-power minions only pop
+  Bubbles 25.8%, m18b soft Bubble penalty 27.2% (p 0.28), m18c both
+  26.2% vs m15b 26.3%: noise. r19 (seed 23000, 600): m19a no big
+  minions at all 5.0% (p 1.0: Primordials are mandatory), m19b Oozes for
+  Primordials 21.3%, m19c Control first vs a Primordial 27.0% (p 0.09)
+  vs m15b 24.0%; r20 (seed 24000, 1000): m19c 22.6% vs 22.1%, p 0.40:
+  not confirmed.
+- `tools/rivalstats` now prints deaths by players alive; `tools/duels.nim
+  FOLDER LABEL` summarizes final duels. r18/r19 (600 games): we reach the
+  final duel in ~51% of games (stilt 53%) but win 51% of our duels
+  (stilt 68%, greenshank 63%). We enter duels at 12.3 life vs 17.1,
+  stilt at 16.6 vs 8.7; a life lead at duel start wins 74%, a trail
+  39%. Our damage taken in turns 40-49 is 10.1 per game vs stilt's 5.3,
+  nearly all Primordials: the mid-game Primordial pressure on us is the
+  problem, not the duel play itself.
+- r21 (seed 25000, 600, m15b base): m21a Bouncer first vs a standing
+  Primordial 25.5%, m21b Oozification back for Hail 19.7% (p 1.0: Hail
+  is a real keep, Oozification hands out Oozes), m21c both 21.5%, m21d
+  all face in the final duel 27.0% (gained 7 lost 3) vs m15b 26.3%.
+- r22 (seed 26000, 600): m22a hold Bubbles and Shields until an enemy
+  Primordial stands or life <= 10 25.5% (p 0.25), m22b hold Bubble cards
+  only 23.8%, m22c hold until power-5 minion or life <= 12 25.3% vs m15b
+  24.0%: noise.
+- 2026-10-22 ~21:40 PDT: the user says observatory XP is not working;
+  from here fast-XP (https://fast-xp-k8s-prod.tail0f4a29.ts.net, real
+  rivals, league 5-seat format) is the sole hosted score. m15b uploaded
+  as radogost:v84 and submitted (kept on pooled fast-XP p 0.014). League
+  so far: v83 1/5, v82 5/15 in the rounds since 02:00Z; stilt 10/20.
+- r23 (seed 27000, 600): three-player rules on m15b: attack the previous
+  seat 24.0%? (m23a gained 20 lost 17, p 0.37), attack the next seat
+  (m23b gained 23 lost 15, p 0.13), attack the healthier rival (m23c
+  19/19): noise. v84 (m15b) placed as champion 2026-10-22 ~21:50 PDT.
+- Backlog: why do stilt's and greenshank's Primordials land on us twice
+  as often as on stilt in turns 40-49? Extract, per enemy Primordial
+  attack, whether the victim was the attacker's next seat, unbubbled,
+  lowest-life, and how we compare with stilt as a victim; if being
+  unbubbled at their turn is the trigger, the lever is Bubble count at
+  end of our turn vs the previous seat's popper count.
+
+## 2026-10-23: Primordial victims and the duel entry
+
+- `tools/victims.nim FOLDER` (r23, 600 games): Primordial hits per game
+  are about equal (us 1.49, stilt 1.51, richard 1.45). By attacker:
+  greenshank's Primordial hits its next seat 100% (bubbled or not),
+  stilt's 58% next and 58% into Bubbles (Bubbles do not deter it), the
+  wardens' 70% lowest life and only 3-5% into Bubbles (a standing Bubble
+  deters the wardens almost absolutely). Bubble uptime at others' turns
+  is 67-71% for every Mage. So the midgame hits are not the lever; the
+  duel entry is: we kill 1.26 players per game by finishing the weakest,
+  who were dying anyway, while stilt pre-damages its next seat, the one
+  it will duel. r24 tests next-seat, finish-or-next and healthiest-hero
+  targeting on m15b.
+- r24 (seed 28000, 600): m24a next-seat attacks 27.7% (p 0.30), m24b
+  finish a reachable kill else next seat 28.7% (p 0.17), m24c wear down
+  the healthiest 25.0% vs m15b 26.3%. r25 (seed 29000, 1000): m24a 23.8%
+  (p 0.16), m24b 24.1% (p 0.12) vs 22.1%. r26 (seed 30000, 1000): m24b
+  26.9% (p 0.65), m24a 26.0% vs 27.4%. m24b pooled 2600 games: gained
+  363 lost 334, p 0.14: not a keep. Next-seat targeting cuts stilt's wins
+  (344 -> 297 per 1000) but hands them to the Warrior baseline.
+- Backlog idea: Duel (Warrior, 2 + 3 off-class = 5 for a Mage): target 1
+  gets +1/+1, target 2 loses Ranged, then they fight. Our Primordial
+  (11/11) fights theirs: theirs dies, ours survives at 1; or it fights a
+  Spirit (stripped of Ranged) and kills the otherwise unkillable chip.
+- r27 (seed 31000, 600): m25a Duel for Plan 17.3% (p 1.0), m25b Duel for
+  Study 20.5% (p 0.999) vs m15b 27.2%. Duel fired 1.42 times a game but
+  displaced Primordials (2.15 vs 2.56) and Summons and left 1.37 energy
+  unused per turn (0.66). Reverted: Primordial fights are not worth the
+  five energy and the draw slot.
+- r28 (seed 32000, 1000): m19c Control first vs a Primordial 26.6% vs
+  m15b 27.2%, pooled r19+r20+r28 gained 353 lost 336: not a keep, dropped.
+- 2026-10-22 ~23:00 PDT: v84 3/5 in its first round; ratings Andrew
+  Brower 1583, Andrew Brower B 1517, Andre von Auto 1497 (#3), richard
+  1486, relh 1463, Houck 1449. Plateau: ~28 paired fast-XP screens on
+  the m2 line; structural ideas tried and lost: no Primordials, Duel
+  fights, Oozification, leader discards. Still open: a damage-race
+  planner (allocate attacks and removal per turn by simulated outcome)
+  and detecting the leader's seat by behaviour to focus it.
+- r31 (seed 35000, 1000): decoy rules (never hit the lowest-life hero
+  unless it is our attacker or the last): m28a next-seat default 26.4%
+  (p 0.64), m28b healthiest-hero default 27.9% (p 0.30) vs m15b 26.9%:
+  noise. Hero targeting is exhausted on this base.
+- Idea: Explode (Archer, 3 + 3 = 6 for a Mage): destroy a friendly
+  minion, deal its power to any target. A Primordial that swung (10)
+  then explodes (10) is a 20-point burst, a kill from full life, aimed
+  where we choose; the minion would be bounced or stolen anyway. Needs
+  energy reservation (keep 6 while the Primordial is still ready).
+- r32 (seed 36000, 600): Explode for Plan 19.3% (p 0.994), for Study
+  19.7% (p 0.993) vs m15b 24.2%. Explode fired 0.76 times a game but the
+  six-energy reservation starved turns (1.41 energy unused per turn vs
+  0.64, Primordial swings 1.65 vs 2.06, damage dealt 18.6 vs 22.6).
+  Reverted; a burst finisher is not worth the tempo.
+- Fit vs stilt on league games: m8g cost-order 58% (attacks 34%), m2
+  56%, m15b 52% (attacks 14%); m27c never-discard-8-cost lifts toss
+  agreement to 83% yet loses 5 points. Agreement does not track
+  strength: the imitation ceiling on this framework is reached.
+- r33 (seed 37000, 1000): no Bubble avoidance m30a 24.4% (p 0.65),
+  next seat + no avoidance m30b 25.2% (p 0.43) vs m15b 24.8%: noise.
+- r34 (seed 38000, 1000): m32a Study as a filler 25.3% (p 0.86), m32c
+  bodies first 22.6% (p 0.998), m31a Oozes for Plan 23.0% (p 0.99) vs
+  m15b 26.7%: all worse. m15b is a local optimum on this framework.
+- r35 (seed 39000, 1000): the leader's traits together (cost-descending
+  play + its discard order + Summon at the biggest board) m33a 22.5%
+  (p 0.77), m8g 22.2% vs m15b 23.7%. League last 12 rounds: v84 13/60
+  (21.7%), stilt 22/60; rating 1504 (#3, stilt 1558, greenshank 1536).
+- Conclusion after 35 paired screens (600-1000 games each): the
+  priority-list framework with stilt's deck tops out near 25% while stilt
+  holds 30-40%. Card choice, in-turn order, discards, Bubble handling,
+  hero targeting, removal targeting, Summon targeting, timing rules and
+  three new mechanics (Duel, Explode, Ooze poppers) are all exhausted.
+  The next step is a different decision engine: per-turn planning that
+  simulates attack and removal allocations (who dies when, how much we
+  take next turn) rather than fixed priorities.
+
+## 2026-10-23: one-round planner (p1/p2)
+
+- Idea: replace the priority list and swing values with a planner.
+  Change (`trials/p1_planner.bas`, m15b setup/discards/triggers kept):
+  each decision reads every minion, life and Bubble count, enumerates
+  every affordable set of playable cards (same-name cards counted, odometer
+  over counts) and our ready minions' attack targets (every combination
+  when there are at most 400, else two rounds of one-minion improvements),
+  and scores each plan by simulating our cards, our swings (weakest first,
+  Bubbles bounce the attacker after the hit, Ranged rules) and one round of
+  rival attacks: Warrior/Archer and pingers hit their next seat (pingers
+  80%), wardens the lowest-life unbubbled hero, unread Mages half each.
+  A rival whose deck falls by 2+ between our turns is a pinger; one that
+  never draws extra by our fourth turn is a warden. Value in tenths of
+  life: 3x our life, -1x each rival's life, +150 per rival killed (+100 if
+  it was our attacker), our board (3*power + hp)/2, -1.5 per power on our
+  attacker's board after the round, -0.2 on other boards, 2.5 per Bubble,
+  draws +4 (dead at deck <= 5). Removal (Bouncer, Control) takes targets
+  ranked by simulating each enemy minion's removal; Summon Primordial
+  bounces the best-ranked hero. The first action of the best plan is
+  played, then the next decision re-plans. Smoke tool now records replays
+  (AWM_SMOKE_RECORD), cycles AWM_SMOKE_OPP lists, prints peak
+  instructions/strings/work; narrate on smoke and hosted games shows
+  Summon on the attacker's board, Control on enemy Primordials, holds
+  into Bubbles, finishes kills.
+- r36 (seed 40000, 1000 paired): p1 49.4% vs m15b 27.0%, gained 327 lost
+  103, p 0.000. Stilt's wins fell 313 -> 216, greenshank 259 -> 128.
+- r37 (seed 41000, 1000): p1 48.7% vs m15b 24.8% (gained 336 lost 97);
+  p1b (bounced minions keep full value, swing into Bubbles) 50.4%, p1c
+  (our life weight 2) 49.6%: both = p1. But p1 had 2 "BASIC work limit
+  exceeded" decisions (8 attackers x 40 options and many Oozes: work
+  ~1.4x instructions, 5M cap).
+- p2 (`trials/p2_budget.bas`) = p1 + simulation budget 3M / (1000 + 250
+  per minion) shared by attack search and card sets, no swings at
+  0-power minions. r38 (seed 42000, 1000): p2 47.0% vs m15b 22.9%,
+  gained 330 lost 89, p 0.000, 0 log errors.
+- r39 (seed 43000, 1000): p2 48.8% vs m15b 25.2%, gained 341 lost 105,
+  p 0.000, 0 log errors: confirmed keep. Uploaded as radogost:v85 and
+  submitted to the league 2026-10-23 (submission sub_77bc6b9d). Pooled
+  p1/p2 over 4000 paired games: ~48.5% vs ~25%; stilt's wins in our games
+  fall from ~31% to ~22%. Next levers on the planner: model our Bubbles
+  bouncing rivals' attackers, rivals' removal of our biggest minion, and
+  a two-round horizon.

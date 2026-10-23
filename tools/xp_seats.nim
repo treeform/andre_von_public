@@ -32,8 +32,8 @@ proc line(name: string, t: Tally): string =
 
 proc results(episodeId: string): JsonNode =
   let (output, code) = execCmdEx(
-    "uv --project " & getHomeDir() / "p/metta" &
-    " run coworld episode-results " & episodeId,
+    "uvx --from " & quoteShell(getHomeDir() / "p/metta-coworld-cli/packages/coworld[auth]") &
+    " coworld episode-results " & episodeId,
     options = {poUsePath, poStdErrToStdOut})
   let start = output.find('{')
   if code != 0 or start < 0:

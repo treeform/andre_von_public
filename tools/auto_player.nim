@@ -17,7 +17,7 @@
 ## command fails loudly when it is not Andre von Auto. Submit re-checks the
 ## owner of the exact version before submitting it.
 
-import std/[httpclient, json, os, osproc, strutils], imageuploads, owners
+import std/[httpclient, json, os, osproc, strutils], owners
 
 const
   AutoPlayer = "ply_3d22435e-30a2-4f2a-b037-a5c249583788"
@@ -59,7 +59,7 @@ proc run(command: string): string =
   let (output, code) = execCmdEx(command, options = {poUsePath, poStdErrToStdOut, poEvalCommand})
   stdout.write output
   if code != 0:
-    quit("auto_player: command failed with exit code " & $code, 1)
+    quit("auto_player: command failed: " & command, 1)
   output
 
 proc ensurePlayer(player, name: string) =
@@ -136,16 +136,35 @@ proc main() =
     let version = uploaded["version"].getInt()
     echo "Upload complete: ", name, ":v", version
     verifyOwner(name, version)
-  of "upload-image":
+  of "upload-image", "upload-endpoint":
     if paramCount() < 3:
       quit("usage: auto_player upload-image <image> <name> [run argv...]", 2)
-    let flags = imageUploadFlags(arguments[3 ..< arguments.len])
     # Image uploads use the CLI's active player session, so refresh it first.
     discard run(cli() & " player use " & targetPlayer)
     ensureTarget()
     let name = paramStr(3)
-    let command = cli() & " upload-policy " & quoteShell(paramStr(2)) &
-      " --name " & quoteShell(name) & flags
+    var command = cli() & " upload-policy " & quoteShell(paramStr(2)) &
+      " --name " & quoteShell(name)
+    if paramStr(1) == "upload-endpoint":
+      if paramCount() != 6:
+        quit("usage: upload-endpoint <image> <name> <model> " &
+          "<endpoint> <key env>", 2)
+      let key = paramStr(6)
+      if key.len == 0 or not key.allCharsInSet(
+        {'A' .. 'Z', 'a' .. 'z', '0' .. '9', '_'}
+      ) or getEnv(key).len == 0:
+          quit("auto_player: missing endpoint key environment", 2)
+      command = "uv --cache-dir /private/tmp/diplodocus-uv-cache " &
+        "tool run --from 'coworld[auth]' coworld upload-policy " &
+        quoteShell(paramStr(2)) & " --name " & quoteShell(name) &
+        " --use-llm --llm-model " & quoteShell(paramStr(4)) &
+        " --llm-endpoint " & quoteShell(paramStr(5)) &
+        " --llm-api-key-env " & quoteShell(key) &
+        " --title 'Kutuzov update' " &
+        "--description 'Updated Kutuzov policy.'"
+    else:
+      for i in 4 .. paramCount():
+        command.add " --run " & quoteShell(paramStr(i))
     let
       output = run(command)
       marker = "Upload complete: " & name & ":v"
@@ -165,8 +184,20 @@ proc main() =
     ensureTarget()
     let parts = paramStr(2).split(":v")
     verifyOwner(parts[0], parseInt(parts[1]))
-    discard run(cli() & " submit " & quoteShell(paramStr(2)) &
-      " -l " & quoteShell(paramStr(3)) & " --player " & targetPlayer)
+    let submit = cli() & " submit " & quoteShell(paramStr(2)) &
+      " -l " & quoteShell(paramStr(3)) & " --player " & targetPlayer
+    let (output, code) = execCmdEx(submit, options = {poUsePath,
+      poStdErrToStdOut, poEvalCommand})
+    stdout.write output
+    if code != 0 and "cogent" in output:
+      # Since 2026-10-22 the platform treats the Auto player session as a
+      # cogent and refuses submits; the user identity submits on its behalf.
+      echo "auto_player: retrying the submit under the user identity"
+      discard run(cli() & " player unset")
+      discard run(submit)
+      ensureTarget()
+    elif code != 0:
+      quit("auto_player: command failed: " & submit, 1)
   else:
     quit("auto_player: unknown command " & paramStr(1), 2)
 

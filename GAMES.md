@@ -60,6 +60,7 @@ competition environments — prior art and known strategies transfer.
 | [Focus](games/focus/) | Finist Yasny Sokol | required | prompt seat | After **Focus**. Focus (Domination): Sid Sackson's stacking board game for two cogs. |
 | [Fog Of War Boards](games/fog-of-war-boards/) | Morok | required | prompt seat | After **classic boards under kriegspiel fog**. Fog-of-War Boards: Phantom Tic-Tac-Toe and Dark Hex for two LLM-piloted cogs. |
 | [Gen Generals Io](games/gen-generals-io/) | Suvorov | required | prompt seat | After **generals.io**. Four commanders, one crown each, on a seeded four-fold-symmetric grid. |
+| [Generals Competition](games/generals-competition/) | Zhukov | none | full Nim | After **generals.io**. Classic 1v1 fog-of-war grid conquest on 18-21 square boards: capture the enemy general within 2000 turns. |
 | [Gnomic](games/gnomic/) | Gnom Gnomych | none | full Nim | After **Nomic**. Three gnome elders of Heartleaf convene the Gnome Moot and rewrite Gnome Law while living under it: natural-language moves, self-amending ru… |
 | [Goofspiel Oshi Zumo](games/goofspiel-oshi-zumo/) | Dubynya | required | prompt seat | After **Goofspiel and Oshi-Zumo**. Goofspiel / Oshi-Zumo: two simultaneous-move, zero-sum, budget-pacing games from OpenSpiel, ported as one coworld with one sim and two varia… |
 | [Grf Football](games/grf-football/) | Alyosha Popovich | required | prompt seat | After **Google Research Football**. Eleven-a-side association football in a continuous 2D physics world: 22 cogs, one ball, throw-ins, corners and goal kicks. |

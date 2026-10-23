@@ -1,4 +1,4 @@
-' Radogost w9b: w3 with Duel replaced by Hail of Arrows.
+' Radogost m15b: m13 with Bubble Shield first when low on life and unshielded. m2 + weakest-hero attacks + Summon at the previous seat + Hail for Oozification + weakest minion first.
 '
 ' Each decision selects one explicit action, then runs again for the next.
 ' The engine never attacks, chooses targets, discards, or ends turns for you.
@@ -96,22 +96,34 @@
 ' an action. A decision with no action stops the match with a player error.
 
 IF selectingClass THEN
-  pickClass(1)          ' Warrior
-  deckCard("Bear", 4)
-  deckCard("Swords", 4)
-  deckCard("Shields", 4)
+  pickClass(2)          ' Mage
+  deckCard("Bouncer", 4)
+  deckCard("Spirit", 4)
+  deckCard("Plan", 4)
+  deckCard("Primordial", 4)
+  deckCard("Summon Primordial", 4)
+  deckCard("Bubble Shield", 4)
   deckCard("Hail of Arrows", 4)
-  deckCard("Tactician", 4)
-  deckCard("Footsoldier", 4)
-  deckCard("Commander", 4)
-  deckCard("Rally", 4)
-  deckCard("Banner", 4)
-  deckCard("Pillage", 4)
+  deckCard("Study", 4)
+  deckCard("Bubble", 4)
+  deckCard("Control", 4)
   END
 END IF
 
 DIM picks(1023)
 DIM junk(1023)
+DIM shields(7)
+' Bubbles per seat, counted once so string use stays under the limit.
+p = 0
+WHILE p < playerCount
+  shields(p) = 0
+  b = 0
+  WHILE b < boardCount(p)
+    IF boardKind(p, b) = 2 AND boardName$(p, b) = "Bubble" THEN shields(p) = shields(p) + 1
+    b = b + 1
+  WEND
+  p = p + 1
+WEND
 IF tossCount > 0 THEN
   ' Rank the hand by what it is worth to you: a card you are still far from
   ' affording is dead weight, a minion is worth its body, and a spell about
@@ -155,7 +167,24 @@ IF triggerTargets > 0 THEN
     n = nextChoiceCount(-1, "picks", s)
     IF n = 0 THEN STOP
     i = -1
-    GOSUB aim
+    branch = -1
+    IF nextChoiceKind(-1, "picks", s, 0) = 4 THEN
+      ' Morphosis Chamber: hide the big minion (branch 1), else Ranged (0).
+      bigPower = 0
+      b = 0
+      WHILE b < boardCount(selfPlayer)
+        IF boardKind(selfPlayer, b) = 0 AND boardPower(selfPlayer, b) > bigPower THEN bigPower = boardPower(selfPlayer, b)
+        b = b + 1
+      WEND
+      branch = 0
+      IF bigPower >= 5 THEN branch = 1
+      IF branch >= n THEN branch = 0
+    END IF
+    IF branch >= 0 THEN
+      picks(s) = branch
+    ELSE
+      GOSUB aim
+    END IF
     ' A trigger that offers a choice reveals more targets once it is made.
     count = nextTargetCount(-1, "picks", s + 1)
     s = s + 1
@@ -164,15 +193,41 @@ IF triggerTargets > 0 THEN
   END
 END IF
 
-' Cards first, in a fixed priority: the board engine (Banner, Commander,
-' Rally) before bodies (Bear, Tactician, Footsoldier), and the buff spells
-' (Swords, Shields) only once two minions stand to take them. Attacks come
-' after the buffs so they land with the raised power.
-minions = 0
-b = 0
-WHILE b < boardCount(selfPlayer)
-  IF boardKind(selfPlayer, b) = 0 THEN minions = minions + 1
-  b = b + 1
+' The living seat before ours: the rival whose next seat is us.
+prevSeat = selfPlayer
+q = 1
+WHILE q < playerCount
+  c2 = (selfPlayer - q + playerCount) MOD playerCount
+  IF prevSeat = selfPlayer AND playerDead(c2) = 0 THEN prevSeat = c2
+  q = q + 1
+WEND
+
+' Cards first, by priority: free Bubbles, then the Primordial, Control on
+' a big enemy minion, Spirits, Morphosis, Bubble Shields, Oozification and
+' Bouncers on big threats, draws last. Attacks follow the cards.
+bigEnemy = 0
+p = 0
+WHILE p < playerCount
+  IF p <> selfPlayer AND playerDead(p) = 0 THEN
+    b = 0
+    WHILE b < boardCount(p)
+      IF boardKind(p, b) = 0 AND boardPower(p, b) > bigEnemy THEN bigEnemy = boardPower(p, b)
+      b = b + 1
+    WEND
+  END IF
+  p = p + 1
+WEND
+hailKills = 0
+p = 0
+WHILE p < playerCount
+  IF p <> selfPlayer AND playerDead(p) = 0 THEN
+    b = 0
+    WHILE b < boardCount(p)
+      IF boardKind(p, b) = 0 AND boardHp(p, b) <= 1 THEN hailKills = hailKills + 1
+      b = b + 1
+    WEND
+  END IF
+  p = p + 1
 WEND
 bestCard = -1
 bestPriority = 0
@@ -181,23 +236,38 @@ WHILE i < handSize
   IF canPlay(i) THEN
     priority = 10
     name$ = handName$(i)
-    IF name$ = "Banner" THEN priority = 100
-    IF name$ = "Commander" THEN priority = 90
-    IF name$ = "Rally" THEN priority = 85
-    IF name$ = "Bear" THEN priority = 70
-    IF name$ = "Tactician" THEN priority = 55
-    IF name$ = "Footsoldier" THEN priority = 60
-    IF name$ = "Swords" THEN
+    IF name$ = "Bubble" THEN priority = 100
+    IF name$ = "Summon Primordial" THEN priority = 95
+    IF name$ = "Primordial" THEN priority = 90
+    IF name$ = "Control" THEN
+      priority = 85
+      IF bigEnemy < 3 THEN priority = 0
+    END IF
+    IF name$ = "Study" THEN
+      priority = 80
+      IF selfDeckSize <= 5 THEN priority = 0
+    END IF
+    IF name$ = "Spirit" THEN priority = 70
+    IF name$ = "Oozification" THEN
+      priority = 65
+      IF bigEnemy < 3 THEN priority = 0
+    END IF
+    IF name$ = "Bubble Shield" THEN
+      priority = 60
+      IF selfLife <= 10 AND shields(selfPlayer) = 0 THEN priority = 96
+    END IF
+    IF name$ = "Plan" THEN
       priority = 50
-      IF minions < 2 THEN priority = 0
+      IF selfDeckSize <= 5 THEN priority = 0
     END IF
-    IF name$ = "Shields" THEN
-      priority = 45
-      IF minions < 2 THEN priority = 0
+    IF name$ = "Hail of Arrows" THEN
+      priority = 20 + hailKills * 15
+      IF priority > 93 THEN priority = 93
     END IF
-    IF name$ = "Duel" THEN priority = 40
-    IF name$ = "Pillage" THEN priority = 30
-    IF name$ = "Hail of Arrows" THEN priority = 35
+    IF name$ = "Bouncer" THEN
+      priority = 40
+      IF bigEnemy < 2 THEN priority = 20
+    END IF
     IF priority > bestPriority THEN
       bestPriority = priority
       bestCard = i
@@ -218,7 +288,11 @@ IF bestCard >= 0 THEN
       IF n = 0 THEN
         valid = 0
       ELSE
-        GOSUB aim
+        IF name$ = "Summon Primordial" THEN
+          GOSUB aimBoard
+        ELSE
+          GOSUB aim
+        END IF
         count = nextTargetCount(i, "picks", s + 1)
       END IF
       s = s + 1
@@ -227,40 +301,33 @@ IF bestCard >= 0 THEN
       IF playCardTargets(i, "picks") THEN END
     END IF
   END IF
-  ' A refused or targetless card: fall back to the reference walk.
-  start = random(handSize)
-  offset = 0
-  WHILE offset < handSize
-    i = (start + offset) MOD handSize
-    IF canPlay(i) AND i <> bestCard THEN
-      count = targetCount(i)
-      IF count = 0 THEN
-        IF playCard(i) THEN END
-      ELSE
-        valid = 1
-        s = 0
-        WHILE s < count AND valid
-          n = nextChoiceCount(i, "picks", s)
-          IF n = 0 THEN
-            valid = 0
-          ELSE
-            GOSUB aim
-            count = nextTargetCount(i, "picks", s + 1)
-          END IF
-          s = s + 1
-        WEND
-        IF valid THEN
-          IF playCardTargets(i, "picks") THEN END
-        END IF
-      END IF
-    END IF
-    offset = offset + 1
-  WEND
 END IF
 
 GOSUB attacks
 endTurn()
 END
+
+aimBoard:
+' The enemy hero with the most cards in play; ties to the lowest seat.
+best = -1
+bestScore = -1
+c = 0
+WHILE c < n
+  k = nextChoiceKind(i, "picks", s, c)
+  o = nextChoiceOwner(i, "picks", s, c)
+  IF k = 2 AND o >= 0 AND o <> selfPlayer THEN
+    value = boardCount(o)
+    IF o = prevSeat THEN value = value + 100
+    IF value > bestScore THEN
+      bestScore = value
+      best = c
+    END IF
+  END IF
+  c = c + 1
+WEND
+IF best < 0 THEN best = 0
+picks(s) = best
+RETURN
 
 aim:
 ' Choose the s'th target of hand card i (-1 for a waiting trigger) by what
@@ -348,7 +415,13 @@ ELSE
 END IF
 IF value > 0 THEN
   IF o = enemyPlayer THEN value = value + 1
+  IF o = prevSeat AND mine = 0 AND k = 3 THEN value = value + 12
 END IF
+RETURN
+
+bubbled:
+' How many Bubbles stand on player o's board (counted once per decision).
+shielded = shields(o)
 RETURN
 
 stats:
@@ -376,7 +449,18 @@ attacks:
 ' minions take no combat damage from non-ranged ones, attacking or
 ' defending. Trinkets and unready minions have no attack choices.
 IF boardCount(selfPlayer) > 0 THEN
-  start = random(boardCount(selfPlayer))
+  i = -1
+  lowPower = 999
+  b = 0
+  WHILE b < boardCount(selfPlayer)
+    IF attackChoiceCount(boardId(selfPlayer, b)) > 0 AND boardPower(selfPlayer, b) < lowPower THEN
+      lowPower = boardPower(selfPlayer, b)
+      i = b
+    END IF
+    b = b + 1
+  WEND
+  start = 0
+  IF i >= 0 THEN start = i
   offset = 0
   WHILE offset < boardCount(selfPlayer)
     i = (start + offset) MOD boardCount(selfPlayer)
@@ -422,9 +506,10 @@ swing:
 ' What attacking choice c is worth to a minion of myPower and myHp.
 value = 0
 IF k = 2 THEN
-  ' Their hero: every point of power lands on it, the weakest hero first,
-  ' and a killing blow above everything.
-  value = 4 + myPower * 2 + (20 - playerLife(o)) \ 4
+  ' Their hero: the next seat's, unbubbled first.
+  value = 4 + myPower * 2 + (20 - playerLife(o)) \ 2
+  GOSUB bubbled
+  IF shielded > 0 THEN value = value - 6
   IF myPower >= playerLife(o) THEN value = value + 30
 ELSE
   GOSUB stats

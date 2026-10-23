@@ -1,44 +1,60 @@
-// Mokosh: a 6000 tick GCL race colony for Screeps PW.
-// Every energy unit should end up in upgradeController.
+// Mokosh: a 1500 tick GCL race colony for Screeps PW (0.1.11 matched homes).
+// Immobile WORK miners and WORK/CARRY upgraders are towed into place by
+// haulers; haulers carry source drops to the spawn while ramping and to
+// controller piles afterwards, where upgraders pick up and upgrade.
 
-const MatchTicks = 6000
-const LogEvery = 250
-const PileCount = 3
-const RemoteStart = 2000
-const UseRemotes = true
-
-// Neutral sources near each start room, nearest first (tools/remote.js).
-// W3N3 and W2N2 are the 0.1.3 starts in the 4x4 world; the colony example
-// never remote mines before RCL 3, so shared rooms are free in practice.
-const Remotes = {
-  W3N3: [
-    { room: "W3N4", x: 13, y: 42, id: "b357077426772ba" },
-    { room: "W4N2", x: 45, y: 23, id: "fa060773e1dacfc" },
-    { room: "W2N3", x: 30, y: 7, id: "cdb3077498b3316" },
-    { room: "W4N3", x: 46, y: 4, id: "8b320773ce4b827" },
-    { room: "W4N3", x: 29, y: 5, id: "77930773ce4f30e" },
-    { room: "W3N4", x: 40, y: 20, id: "a80c077426766aa" },
-    { room: "W3N2", x: 12, y: 45, id: "1a5f077434777e6" }
-  ],
-  W2N2: [
-    { room: "W2N1", x: 17, y: 18, id: "491f0774ad7dec8" },
-    { room: "W3N1", x: 45, y: 16, id: "14b10774411436b" },
-    { room: "W2N3", x: 30, y: 7, id: "cdb3077498b3316" },
-    { room: "W1N2", x: 9, y: 46, id: "89b807750b171d8" },
-    { room: "W1N3", x: 14, y: 44, id: "1aba07750418579" },
-    { room: "W3N2", x: 12, y: 45, id: "1a5f077434777e6" }
-  ],
-  W1N1: [
-    { room: "W1N2", x: 9, y: 46, id: "89b807750b171d8" },
-    { room: "W1N3", x: 46, y: 32, id: "cc6707750413cc9" },
-    { room: "W2N1", x: 17, y: 18, id: "491f0774ad7dec8" }
-  ],
-  W9N9: [
-    { room: "W8N9", x: 8, y: 13, id: "a64f07720376ad7" },
-    { room: "W8N9", x: 32, y: 8, id: "dcc70772037c9b1" },
-    { room: "W8N8", x: 5, y: 43, id: "30d007720e8ef7b" },
-    { room: "W8N8", x: 33, y: 22, id: "fd3d07720e87b83" }
-  ]
+const MatchTicks = 1500
+const LogEvery = 100
+const PileCount = 2
+const Tune = {
+  // Scripted opening: role prefix and body letters, built in order as
+  // energy allows; miners go to the source missing the most WORK.
+  order: ["m:WW", "h:CM", "h:CCCMMM", "m:WWC", "h:CCCMMM", "h:CCMM", "m:WWC",
+    "h:CCMM", "m:WWC", "h:CCCMMM", "h:CCMM", "m:WC", "m:WC", "h:CCCMMM",
+    "h:CCCMMM", "h:CCMM"],
+  // Per-room openings (the homes are rotated copies but paths tie-break
+  // differently); null falls back to order.
+  orderW3N3: ["m:WW", "h:CM", "h:CCCMMM", "m:WWC", "h:CCMM", "h:CCMM",
+    "m:WWC", "h:CCMM", "m:WWC", "h:CCCMMM", "h:CCMM", "m:WC", "h:CCCMMM",
+    "m:WC", "h:CCCMMM", "h:CCMM", "h:CCMM", "h:CCCMMM"],
+  orderW2N2: ["m:WW", "h:CM", "h:CCCMMM", "m:WWC", "h:CCCMMM", "h:CCMM",
+    "m:WWC", "h:CCMM", "m:WWC", "h:CCCMMM", "h:CCMM", "m:WC", "h:CCCMMM",
+    "m:WC", "h:CCCMMM", "h:CCMM"],
+  maxUpgraders: 12,    // upgrader cap
+  upgrader: "WWC",     // upgrader body
+  replaceAt: 100000,   // tick to replace the dropping opener miner with WWC
+  miners: ["WW", "WWC", "WC"], // miner bodies per source, in spawn order
+  handOver: 3,         // ticks a hauler may spend handing energy to upgraders
+  fillDone: 10,        // free capacity at which a hauler leaves to deliver
+  spareTarget: 0,      // extra upgrade WORK beyond the harvest rate
+  earlyPairs: 1,       // size of the first hauler
+  minPairs: 3,         // smallest later hauler (pairs of CARRY, MOVE)
+  maxPairs: 3,         // hauler size cap
+  backlog: 150,        // source drops that justify a hauler before miners
+  haulMax: 1.15,       // extra haulers stop at this multiple of the need
+  pileBuffer: 120,     // pile energy kept per upgrader
+  pileBase: 100,       // pile energy kept with no upgraders posted
+  upgraderStop: 180,   // no upgraders with fewer ticks left
+  freeStop: 250,       // free spawn energy still buys upgraders until here
+  haulerStop: 250,     // no haulers with fewer ticks left
+  minerStop: 350,      // no miners with fewer ticks left
+  tripSlack: 12,       // extra ticks per hauler trip
+  pileUpgrader: 300,   // idle pile energy that pulls an upgrader forward
+  pileToward: "sources", // piles sit on the controller side facing this
+  sweepMin: 1000,      // smallest drop a hauler walks to at its source
+  waitTiles: 1,        // wait tiles per source for queued haulers
+  jitter: 0,           // tug tie-break noise, for robustness samples
+  slowWeight: 25,      // ticks of range a slow tow is worth avoiding
+  stuckLimit: 2,       // ticks without progress before a crowded repath
+  leaveIdle: 0,        // load at which a hauler leaves an idle station
+  handWalk: true,      // haulers also hand energy to neighbours while walking
+  drainAfter: 700,     // tick after which idle-spawn energy is hauled out
+  drainers: 1,         // smallest haulers that drain the spawn
+  remoteAt: 700,       // tick from which remote miners may be built
+  remoteStop: 500,     // no remote miners with fewer ticks left
+  remoteMiner: "WWCM", // remote miner body (walks; tows break at room edges)
+  remoteW3N3: [{ room: "W3N4", x: 13, y: 42 }],
+  remoteW2N2: []       // W2N1 (17,18) at 51 steps loses 240-380
 }
 
 // Heap state survives between ticks until a global reset.
@@ -128,7 +144,12 @@ function makePlan(room) {
             slots.push({ x: sx, y: sy })
           }
         }
-        const score = slots.length * 100 - chebyshev({ x, y }, spawn.pos)
+        let toward = chebyshev({ x, y }, spawn.pos)
+        if (Tune.pileToward == "sources") {
+          toward = 0
+          for (const s of room.find(FIND_SOURCES)) toward += chebyshev({ x, y }, s.pos)
+        }
+        const score = slots.length * 100 - toward
         candidates.push({ x, y, slots, score })
       }
     }
@@ -168,25 +189,32 @@ function makePlan(room) {
 
   const pile = new RoomPosition(piles[0].x, piles[0].y, room.name)
   const planSource = (id, roomName, sx, sy, cap) => {
-    const t = Game.map.getRoomTerrain(roomName)
-    const ok = (x, y) => {
+    const remote = roomName != room.name
+    const remoteTerrain = remote ? Game.map.getRoomTerrain(roomName) : null
+    const open = (x, y) => {
+      if (!remote) return free(x, y)
       if (x < 1 || y < 1 || x > 48 || y > 48) return false
-      if (t.get(x, y) == TERRAIN_MASK_WALL) return false
-      return roomName != room.name || free(x, y)
+      return remoteTerrain.get(x, y) != TERRAIN_MASK_WALL
+    }
+    // Remote stations face the edge toward home.
+    let toward = pile
+    if (remote) {
+      const [hw, hn] = room.name.match(/\d+/g).map(Number)
+      const [rw, rn] = roomName.match(/\d+/g).map(Number)
+      toward = { x: rw > hw ? 49 : rw < hw ? 0 : 25, y: rn > hn ? 49 : rn < hn ? 0 : 25 }
     }
     const spots = []
     for (let dx = -1; dx <= 1; dx++) {
       for (let dy = -1; dy <= 1; dy++) {
-        if ((dx || dy) && ok(sx + dx, sy + dy)) spots.push({ x: sx + dx, y: sy + dy })
+        if ((dx || dy) && open(sx + dx, sy + dy)) spots.push({ x: sx + dx, y: sy + dy })
       }
     }
     // Station: where haulers wait, next to as many spots as possible.
-    const toward = roomName == room.name ? pile : new RoomPosition(25, 25, roomName)
     let station = null
     for (let dx = -2; dx <= 2; dx++) {
       for (let dy = -2; dy <= 2; dy++) {
         const x = sx + dx, y = sy + dy
-        if (!ok(x, y) || (dx == 0 && dy == 0)) continue
+        if (!open(x, y) || (dx == 0 && dy == 0)) continue
         const isSpot = spots.some(p => p.x == x && p.y == y)
         let near = 0
         for (const p of spots) {
@@ -200,35 +228,51 @@ function makePlan(room) {
     }
     const minerSpots = spots.filter(p => !(p.x == station.x && p.y == station.y))
     minerSpots.sort((p, q) => chebyshev(p, station) - chebyshev(q, station))
+    // Wait tiles: where filling haulers queue, each next to a miner spot,
+    // the station first, then by how many spots they touch.
+    const waits = [{ x: station.x, y: station.y, near: 9 }]
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dy = -2; dy <= 2; dy++) {
+        const x = sx + dx, y = sy + dy
+        if (!open(x, y) || (x == station.x && y == station.y)) continue
+        if (minerSpots.some(p => p.x == x && p.y == y)) continue
+        let near = 0
+        for (const p of minerSpots) if (chebyshev(p, { x, y }) <= 1) near++
+        if (near > 0) waits.push({ x, y, near })
+      }
+    }
+    waits.sort((a, b) => b.near - a.near)
     const from = new RoomPosition(station.x, station.y, roomName)
-    const opts = { plainCost: 2, swampCost: 10, maxRooms: 6, maxOps: 20000 }
+    const opts = { plainCost: 2, swampCost: 10, maxRooms: remote ? 3 : 1, maxOps: 20000 }
     const route = PathFinder.search(from, { pos: pile, range: 0 }, opts)
     const home = PathFinder.search(from, { pos: spawn.pos, range: 1 }, opts)
     return {
       id,
       room: roomName,
+      remote,
       x: sx,
       y: sy,
       cap,
-      remote: roomName != room.name,
       spots: minerSpots,
       station: { x: station.x, y: station.y },
+      waits: waits.slice(0, Tune.waitTiles),
       distance: route.path.length,
       spawnDistance: home.path.length
     }
   }
-  const sources = []
-  for (const s of room.find(FIND_SOURCES)) {
-    sources.push(planSource(s.id, room.name, s.pos.x, s.pos.y, 10))
+  const sources = room.find(FIND_SOURCES).map(s =>
+    planSource(s.id, room.name, s.pos.x, s.pos.y, 10))
+  sources.sort((a, b) => a.spawnDistance - b.spawnDistance)
+  if (Tune.remoteAt < MatchTicks) {
+    for (const r of Tune["remote" + room.name] || []) {
+      sources.push(planSource("R" + r.room + ":" + r.x + ":" + r.y, r.room, r.x, r.y, 5))
+    }
   }
   return {
     room: room.name,
     spawn: spawn.id,
     piles,
     slotCount: piles.reduce((n, p) => n + p.slots.length, 0),
-    remoteRooms: [...new Set((Remotes[room.name] || []).map(r => r.room))],
-    pendingRemotes: UseRemotes ? (Remotes[room.name] || []).slice() : [],
-    planSource,
     sources
   }
 }
@@ -274,7 +318,7 @@ function findPath(from, to, range, crowded) {
   const result = PathFinder.search(from, { pos: to, range }, {
     plainCost: 2,
     swampCost: 10,
-    maxOps: 6000,
+    maxOps: 4000,
     roomCallback: (roomName) => {
       const costs = tickCosts(roomName)
       if (!costs || !crowded || roomName != from.roomName) return costs
@@ -299,7 +343,6 @@ function go(creep, target, range) {
   let m = heap.paths[creep.name]
   let crowded = false
   if (m && m.key == key) {
-    // Find the creep on its path, allowing for exit tile jumps.
     for (let j = m.i; j < Math.min(m.i + 3, m.path.length); j++) {
       if (creep.pos.isEqualTo(m.path[j])) {
         m.i = j + 1
@@ -311,7 +354,7 @@ function go(creep, target, range) {
     } else {
       m.stuck = 0
     }
-    if (m.stuck >= 4) crowded = true
+    if (m.stuck >= Tune.stuckLimit) crowded = true
     if (crowded || m.i >= m.path.length || !creep.pos.isNearTo(m.path[m.i])) {
       m = null
     }
@@ -334,7 +377,7 @@ function go(creep, target, range) {
 }
 
 function resolveTraffic() {
-  // Swaps idle creeps out of the way of moving ones.
+  // Swaps idle mobile creeps out of the way of moving ones.
   const occupants = new Map()
   for (const name in Game.creeps) {
     const c = Game.creeps[name]
@@ -345,6 +388,7 @@ function resolveTraffic() {
     const other = occupants.get(posKey(next))
     if (!other || other == creep || heap.intents.has(other.name)) continue
     if (other.memory.posted || other.fatigue > 0) continue
+    if (other.memory.role != "h" || heap.towed.has(other.name)) continue
     other.move(other.pos.getDirectionTo(creep.pos))
     heap.intents.set(other.name, creep.pos)
   }
@@ -352,145 +396,171 @@ function resolveTraffic() {
 
 function census(plan) {
   // Groups creeps by role and source for this tick.
-  const c = { m: [], h: [], u: [], bySource: {}, haulCarry: 0 }
-  for (const s of plan.sources) c.bySource[s.id] = { work: 0, miners: [] }
+  const c = { m: [], h: [], u: [], b: [], bySource: {}, haulCarry: 0, upgradeWork: 0 }
+  for (const s of plan.sources) {
+    c.bySource[s.id] = { work: 0, postedWork: 0, miners: [], buffer: null }
+  }
   for (const name in Game.creeps) {
     const creep = Game.creeps[name]
     const role = creep.memory.role
     if (!c[role]) continue
     c[role].push(creep)
-    // Creeps about to die no longer count for spawning.
-    const aging = creep.ticksToLive !== undefined && creep.ticksToLive < 50
     if (role == "m" && c.bySource[creep.memory.src]) {
       const b = c.bySource[creep.memory.src]
       b.miners.push(creep)
-      if (!aging) b.work += countParts(creep, WORK)
+      b.work += countParts(creep, WORK)
+      if (creep.memory.posted) b.postedWork += countParts(creep, WORK)
     }
-    if (role == "h" && !aging) c.haulCarry += countParts(creep, CARRY) * 50
+    if (role == "h") c.haulCarry += countParts(creep, CARRY) * 50
+    if (role == "b" && c.bySource[creep.memory.src]) {
+      c.bySource[creep.memory.src].buffer = creep
+    }
+    if (role == "u") c.upgradeWork += countParts(creep, WORK)
   }
   return c
 }
 
-function minerBody(budget) {
-  // Builds a miner body that hands its harvest to haulers.
-  if (budget >= 600) return [WORK, WORK, WORK, WORK, WORK, CARRY, MOVE]
-  if (budget >= 400) return [WORK, WORK, WORK, CARRY, MOVE]
-  if (budget >= 300) return [WORK, WORK, CARRY, MOVE]
-  return [WORK, CARRY, MOVE]
+function minerBody(code) {
+  // Builds an immobile miner body from a letter code.
+  const body = []
+  for (const letter of code) {
+    body.push(letter == "W" ? WORK : letter == "M" ? MOVE : CARRY)
+  }
+  return body
 }
 
-function haulerBody(budget) {
+function haulerBody(pairs) {
   // Builds a hauler body with one MOVE per CARRY.
   const body = []
-  const pairs = Math.max(1, Math.min(16, Math.floor(budget / 100)))
   for (let i = 0; i < pairs; i++) body.push(CARRY)
   for (let i = 0; i < pairs; i++) body.push(MOVE)
   return body
 }
 
-function upgraderBody(budget) {
-  // Builds an upgrader body that walks once and then stays.
-  const work = Math.max(1, Math.min(10, Math.floor((budget - 100) / 100)))
+function bodyOf(code) {
+  // Builds a body from W, C and M letters.
   const body = []
-  for (let i = 0; i < work; i++) body.push(WORK)
-  body.push(CARRY, MOVE)
+  for (const letter of code) {
+    body.push(letter == "W" ? WORK : letter == "C" ? CARRY : MOVE)
+  }
   return body
 }
 
-function spawnNext(room, plan, c) {
+function fits(source, c, work) {
+  // True when a miner of this WORK leaves the source able to reach five.
+  const b = c.bySource[source.id]
+  const spotsLeft = source.spots.length - b.miners.length
+  const missing = 5 - b.work
+  if (spotsLeft <= 0 || missing <= 0 || work > missing) return false
+  return work >= missing - 2 * (spotsLeft - 1)
+}
+
+function emptiestSource(plan, c, work) {
+  // Returns the source where a miner of this WORK fits, lowest WORK first.
+  let pick = null
+  for (const s of plan.sources) {
+    if (s.remote || !fits(s, c, work)) continue
+    if (!pick || c.bySource[s.id].work < c.bySource[pick.id].work) pick = s
+  }
+  return pick
+}
+
+function spawnNext(room, plan, c, left) {
   // Picks the next creep to build, or null.
-  const cap = room.energyCapacityAvailable
-  const left = MatchTicks - (Game.time - Memory.start)
-  if (left < 60) return null
-  const home = plan.sources.filter(s => !s.remote).sort((a, b) =>
-    a.spawnDistance - b.spawnDistance)
-  const remote = plan.sources.filter(s => s.remote)
+  const energy = room.energyAvailable
+  const built = Memory.built || 0
+  const order = Tune["order" + room.name] || Tune.order
+  if (built < order.length) {
+    const entry = order[built]
+    const role = entry[0]
+    const at = entry.indexOf("@")
+    const code = at < 0 ? entry.slice(2) : entry.slice(2, at)
+    if (role == "m") {
+      const work = code.split("W").length - 1
+      const pick = at < 0 ? emptiestSource(plan, c, work) :
+        plan.sources[Number(entry.slice(at + 1))]
+      if (pick) return { body: bodyOf(code), memory: { role: "m", src: pick.id } }
+    } else if (role == "b") {
+      const pick = plan.sources[Number(entry.slice(at + 1))]
+      return { body: bodyOf(code), memory: { role: "b", src: pick.id } }
+    } else {
+      return { body: bodyOf(code), memory: { role } }
+    }
+  }
   // Opening: a small miner and a small hauler right away.
   if (c.m.length == 0) {
-    return { body: [WORK, CARRY, MOVE], memory: { role: "m", src: home[0].id } }
+    return { body: minerBody(Tune.miners[0]), memory: { role: "m", src: plan.sources[0].id } }
   }
   if (c.h.length == 0) {
-    return { body: [CARRY, MOVE], memory: { role: "h" } }
+    return { body: haulerBody(Tune.earlyPairs), memory: { role: "h" } }
   }
   // Haul demand follows the current sink: the spawn while ramping.
   const toPile = c.u.length > 0
   let harvest = 0
-  let homeNeed = 0
   let haulNeed = 0
   for (const s of plan.sources) {
-    const rate = Math.min(s.cap, c.bySource[s.id].work * 2)
+    const b0 = c.bySource[s.id]
+    const rate = Math.min(s.cap, (s.remote ? b0.postedWork : b0.work) * 2)
     const d = toPile ? s.distance : s.spawnDistance
     harvest += rate
-    haulNeed += rate * (d * 2 + 6)
-    if (!s.remote) homeNeed += rate * (d * 2 + 6)
+    haulNeed += rate * (d * 2 + Tune.tripSlack)
   }
-  // Size bodies to what the colony can pay for soon.
-  const budget = Math.max(200, Math.min(cap, 30 * (harvest + 1)))
-  // Upgrader WORK alive now, and the WORK the income and pile can feed.
-  let work = 0
-  for (const u of c.u) {
-    if (u.ticksToLive === undefined || u.ticksToLive > 30) work += countParts(u, WORK)
+  const pairs = Math.max(Tune.minPairs, Math.min(Tune.maxPairs, Math.floor(energy / 100)))
+  const hauler = { body: haulerBody(pairs), memory: { role: "h" } }
+  // Haulers only once drops wait at the sources: miners compound first.
+  if (c.haulCarry < haulNeed && heap.backlog >= Tune.backlog && left > Tune.haulerStop) {
+    return hauler
   }
-  const upkeep = (c.m.length * 300 + c.h.length * 300) / 1500
-  const slotWork = plan.slotCount * 2
-  const target = Math.min(slotWork,
-    Math.floor(harvest + 1 - upkeep) + (heap.pileEnergy > 300 ? 2 : 0))
-  const upgrader = { body: upgraderBody(cap), memory: { role: "u" } }
-  if (c.haulCarry < homeNeed && left > 200) {
-    return { body: haulerBody(Math.min(budget, 300)), memory: { role: "h" } }
-  }
-  for (const s of home) {
-    const b = c.bySource[s.id]
-    const young = b.miners.filter(m =>
-      m.ticksToLive === undefined || m.ticksToLive >= 50).length
-    const spotsLeft = s.spots.length - young
-    if (b.work < 5 && spotsLeft <= 0 && left > 200 && budget >= 300) {
-      const small = b.miners.find(m => countParts(m, WORK) < 2 &&
-        !b.miners.some(n => n.memory.replaces == m.name))
-      if (small) {
-        return { body: minerBody(300), memory: { role: "m", src: s.id, replaces: small.name } }
-      }
+  // Replace the dropping opener with a CARRY miner that takes its spot.
+  if (MatchTicks - left >= Tune.replaceAt && left > Tune.minerStop) {
+    for (const m of c.m) {
+      if (m.store.getCapacity() > 0 || m.memory.retiring) continue
+      if (c.m.some(n => n.memory.replaces == m.name)) continue
+      return { body: minerBody("WWC"), memory: { role: "m", src: m.memory.src,
+        spot: m.memory.spot, replaces: m.name } }
     }
-    if (b.work >= 5 || spotsLeft <= 0 || left <= 200) continue
-    // A one WORK miner only when the spots can still reach five WORK.
-    let size = budget
-    if (b.work + 1 + (spotsLeft - 1) * 2 < 5) size = Math.max(size, 300)
-    return { body: minerBody(size), memory: { role: "m", src: s.id } }
   }
-  // Once home is saturated, idle pile energy goes to upgraders before
-  // remote haulers, so remotes never starve the controller.
-  if (heap.pileEnergy > 300 && work < target && c.u.length < plan.slotCount) {
+  // Miners until every source has five WORK: the biggest body that fits.
+  if (left > Tune.minerStop) {
+    for (const code of ["WWC", "WC"]) {
+      const pick = emptiestSource(plan, c, code.split("W").length - 1)
+      if (pick) return { body: minerBody(code), memory: { role: "m", src: pick.id } }
+    }
+  }
+  if (c.haulCarry < haulNeed && left > Tune.haulerStop) return hauler
+  // Drops backing up at the sources mean the trip estimate is short.
+  if (heap.backlog >= Tune.backlog * 2 && c.haulCarry < haulNeed * Tune.haulMax &&
+    left > Tune.haulerStop) {
+      return hauler
+  }
+  // Remote miners once the opening is done, one per remote source.
+  if (MatchTicks - left >= Tune.remoteAt && left > Tune.remoteStop) {
+    for (const s of plan.sources) {
+      if (!s.remote || c.bySource[s.id].miners.length > 0) continue
+      return { body: minerBody(Tune.remoteMiner), memory: { role: "m", src: s.id } }
+    }
+  }
+  // Upgraders: as many WORK as the income feeds, two per creep.
+  const target = Math.min(plan.slotCount * 2, Math.floor(harvest) + Tune.spareTarget +
+    (heap.pileEnergy > Tune.pileUpgrader ? 2 : 0))
+  const upgrader = { body: bodyOf(Tune.upgrader), memory: { role: "u" } }
+  const slots = Math.min(plan.slotCount, Tune.maxUpgraders)
+  if (c.upgradeWork < target && c.u.length < slots && left > Tune.upgraderStop) {
     return upgrader
   }
-  if (c.haulCarry < haulNeed && left > 200) {
-    return { body: haulerBody(Math.min(budget, 300)), memory: { role: "h" } }
+  // A full spawn is free energy: one more upgrader while slots remain.
+  if (energy >= 300 && c.u.length < plan.slotCount && left > Tune.freeStop) {
+    return upgrader
   }
-  // Remote miners before topping up upgraders once upgraders hold three
-  // quarters of their target: income compounds, and idle pile energy
-  // already pulls upgraders forward above. A new remote opens only with
-  // drained piles and upgrade slots to spare.
-  if (work < target * 0.75 && c.u.length < plan.slotCount) return upgrader
-  for (const s of remote) {
-    const b = c.bySource[s.id]
-    const young = b.miners.filter(m =>
-      m.ticksToLive === undefined || m.ticksToLive >= 50).length
-    if (b.work >= 3 || s.spots.length - young <= 0 || left <= 300) continue
-    if (b.work == 0 && (left < RemoteStart || heap.pileEnergy > 300 ||
-      slotWork - target < 5)) {
-        break
-    }
-    return { body: minerBody(300), memory: { role: "m", src: s.id } }
-  }
-  if (work < target && c.u.length < plan.slotCount) return upgrader
   return null
 }
 
-function runSpawn(room, plan, c) {
+function runSpawn(room, plan, c, left) {
   // Spawns the next creep when energy allows.
   const spawn = Game.getObjectById(plan.spawn)
   heap.nextCost = 0
   if (!spawn) return
-  const next = spawnNext(room, plan, c)
+  const next = spawnNext(room, plan, c, left)
   if (!next) return
   const cost = bodyCost(next.body)
   heap.nextCost = cost
@@ -509,90 +579,198 @@ function runSpawn(room, plan, c) {
     }
     if (next.memory.slot === undefined) return
   }
-  const name = next.memory.role + Game.time
-  if (spawn.spawnCreep(next.body, name, { memory: next.memory }) == OK) {
-    heap.nextCost = 0
-  }
-}
-
-function runMiner(creep, plan, c) {
-  // Harvests from a fixed spot and hands energy toward haulers.
-  const src = plan.sources.find(s => s.id == creep.memory.src)
-  if (!src) return
-  const b = c.bySource[src.id]
-  if (creep.memory.spot === undefined) {
-    const taken = new Set()
-    for (const m of b.miners) {
-      if (m.memory.spot !== undefined) taken.add(m.memory.spot)
-    }
-    for (let i = 0; i < src.spots.length; i++) {
+  if (next.memory.role == "m" && next.memory.spot === undefined) {
+    // Give each miner a free spot at its source.
+    const b = c.bySource[next.memory.src]
+    const s = plan.sources.find(s => s.id == next.memory.src)
+    const taken = new Set(b.miners.map(m => m.memory.spot))
+    for (let i = 0; i < s.spots.length; i++) {
       if (!taken.has(i)) {
-        creep.memory.spot = i
+        next.memory.spot = i
         break
       }
     }
-    const old = creep.memory.replaces && Game.creeps[creep.memory.replaces]
-    if (creep.memory.spot === undefined && old &&
-      creep.pos.inRangeTo(new RoomPosition(src.x, src.y, src.room), 4)) {
-        old.suicide()
-        creep.memory.replaces = undefined
-    }
-    if (creep.memory.spot === undefined) {
-      // Wait near the source until an old miner frees a spot.
-      go(creep, new RoomPosition(src.station.x, src.station.y, src.room), 2)
-      return
+    if (next.memory.spot === undefined) return
+  }
+  const name = next.memory.role + Game.time
+  if (spawn.spawnCreep(next.body, name, { memory: next.memory }) == OK) {
+    heap.nextCost = 0
+    Memory.built = (Memory.built || 0) + 1
+  }
+}
+
+function postOf(creep, plan) {
+  // Returns the tile an immobile creep must stand on.
+  if (creep.memory.role == "b") {
+    const src = plan.sources.find(s => s.id == creep.memory.src)
+    return src ? new RoomPosition(src.station.x, src.station.y, src.room) : null
+  }
+  if (creep.memory.role == "m") {
+    const src = plan.sources.find(s => s.id == creep.memory.src)
+    const spot = src && src.spots[creep.memory.spot]
+    return spot ? new RoomPosition(spot.x, spot.y, src.room) : null
+  }
+  const pile = plan.piles[creep.memory.pile]
+  const slot = pile && pile.slots[creep.memory.slot]
+  return slot ? new RoomPosition(slot.x, slot.y, plan.room) : null
+}
+
+function assignTugs(plan, c) {
+  // Pairs every waiting immobile creep with the nearest free hauler.
+  heap.towed = new Set()
+  heap.tugs = new Map()
+  const busy = new Set()
+  for (const h of c.h) {
+    const p = h.memory.tug && Game.creeps[h.memory.tug]
+    if (p && !p.memory.posted) {
+      busy.add(h.name)
+      heap.tugs.set(h.name, p)
+      heap.towed.add(p.name)
+    } else {
+      h.memory.tug = undefined
     }
   }
-  const spot = src.spots[creep.memory.spot]
-  creep.memory.posted = go(creep, new RoomPosition(spot.x, spot.y, src.room), 0)
+  for (const p of [...c.b, ...c.m, ...c.u]) {
+    if (p.spawning || p.memory.posted || heap.towed.has(p.name)) continue
+    if (countParts(p, MOVE) > 0) continue
+    let best = null
+    const parts = p.body.length
+    for (const h of c.h) {
+      if (h.spawning || busy.has(h.name)) continue
+      // Ticks per tile while towing: the passenger's fatigue over the MOVEs.
+      const slow = Math.ceil((parts + Math.ceil(h.store.energy / 50)) / countParts(h, MOVE))
+      let score = h.pos.getRangeTo(p) + Tune.slowWeight * (slow - 1)
+      if (Tune.jitter > 0) {
+        let hash = Tune.jitter
+        for (let i = 0; i < h.name.length; i++) hash = (hash * 31 + h.name.charCodeAt(i)) % 1009
+        score += hash % 3
+      }
+      if (!best || score < best.score) best = { h, score }
+    }
+    if (!best) break
+    busy.add(best.h.name)
+    best.h.memory.tug = p.name
+    heap.tugs.set(best.h.name, p)
+    heap.towed.add(p.name)
+  }
+}
+
+function runTug(h, p, plan) {
+  // Tows passenger p to its post; returns true while towing.
+  const post = postOf(p, plan)
+  if (!post) {
+    h.memory.tug = undefined
+    return false
+  }
+  if (p.pos.isEqualTo(post)) {
+    p.memory.posted = true
+    h.memory.tug = undefined
+    return false
+  }
+  if (!h.pos.isNearTo(p)) {
+    go(h, p.pos, 1)
+    return true
+  }
+  const old = p.memory.replaces && Game.creeps[p.memory.replaces]
+  if (old && p.pos.inRangeTo(post, 3)) {
+    // The old miner frees the spot one tick before the newcomer steps in.
+    old.memory.retiring = true
+    old.suicide()
+    p.memory.replaces = undefined
+    return true
+  }
+  h.pull(p)
+  p.move(h)
+  if (h.pos.isEqualTo(post)) {
+    // Swap: the hauler steps onto the passenger, the passenger onto the post.
+    h.move(h.pos.getDirectionTo(p.pos))
+    heap.intents.set(h.name, p.pos)
+    return true
+  }
+  if (h.fatigue > 0) return true
+  go(h, post, 0)
+  return true
+}
+
+function runMiner(creep, plan, c) {
+  // Harvests from its post and hands energy to a waiting hauler.
+  if (!creep.memory.posted && countParts(creep, MOVE) > 0) {
+    const post = postOf(creep, plan)
+    if (post && go(creep, post, 0)) creep.memory.posted = true
+  }
   if (!creep.memory.posted) return
-  const source = Game.getObjectById(src.id)
-  if (source && source.energy > 0) creep.harvest(source)
-  if (creep.store.energy < 20) return
-  // A pile under the miner goes first: haulers pick it up, so it drains.
-  if ((heap.drops[src.id] || []).some(d => d.pos.isEqualTo(creep.pos) && d.amount >= 20)) {
-    return
+  let source = Game.getObjectById(creep.memory.src)
+  if (!source) {
+    const s = plan.sources.find(s => s.id == creep.memory.src)
+    if (s && Game.rooms[s.room]) {
+      source = new RoomPosition(s.x, s.y, s.room).lookFor(LOOK_SOURCES)[0]
+    }
   }
-  // Hand energy to an adjacent filling hauler.
+  if (source && source.energy > 0) creep.harvest(source)
+  if (creep.store.energy == 0 || creep.store.getCapacity() == 0) return
   for (const h of c.h) {
     if (h.memory.state != "fill" || h.store.getFreeCapacity() == 0) continue
+    if (heap.towed.size > 0 && heap.tugs.has(h.name)) continue
     if (!creep.pos.isNearTo(h)) continue
     creep.transfer(h, RESOURCE_ENERGY)
     return
   }
-  // Far miners relay to a miner nearer the station.
+  const src = plan.sources.find(s => s.id == creep.memory.src)
+  const buffer = c.bySource[src.id].buffer
+  if (buffer && buffer.memory.posted && creep.pos.isNearTo(buffer) &&
+    buffer.store.getFreeCapacity() > 0) {
+      creep.transfer(buffer, RESOURCE_ENERGY)
+      return
+  }
+  // Far miners relay to a miner next to the station.
+  const spot = src.spots[creep.memory.spot]
   if (chebyshev(spot, src.station) <= 1) return
-  for (const m of b.miners) {
-    if (m == creep || m.memory.spot === undefined) continue
+  for (const m of c.bySource[src.id].miners) {
+    if (m == creep || !m.memory.posted) continue
     const s = src.spots[m.memory.spot]
     if (chebyshev(s, src.station) > 1) continue
-    if (!creep.pos.isNearTo(m) || m.store.getFreeCapacity() < 20) continue
+    if (!creep.pos.isNearTo(m) || m.store.getFreeCapacity() < 10) continue
     creep.transfer(m, RESOURCE_ENERGY)
     return
   }
+}
+
+function runBuffer(creep, c) {
+  // Hands stored energy to the adjacent filling hauler with the most room.
+  if (!creep.memory.posted || creep.store.energy == 0) return
+  let best = null
+  for (const h of c.h) {
+    if (h.memory.state != "fill" || heap.tugs.has(h.name)) continue
+    const free = h.store.getFreeCapacity()
+    if (free == 0 || !creep.pos.isNearTo(h)) continue
+    if (!best || free > best.free) best = { h, free }
+  }
+  if (best) creep.transfer(best.h, RESOURCE_ENERGY)
 }
 
 function assignSource(creep, plan, c) {
   // Sends a hauler to the source with the least haul capacity per need.
   let best = null
   for (const s of plan.sources) {
-    const rate = Math.min(s.cap, c.bySource[s.id].work * 2)
+    const b0 = c.bySource[s.id]
+    const rate = Math.min(s.cap, (s.remote ? b0.postedWork : b0.work) * 2)
     if (rate == 0) continue
     let carry = 0
     for (const h of c.h) {
       if (h.memory.src == s.id && h != creep) carry += h.store.getCapacity()
     }
-    const ratio = carry / (rate * (s.distance * 2 + 6))
+    const ratio = (carry + 1) / (rate * (s.distance * 2 + 6))
     if (!best || ratio < best.ratio) best = { id: s.id, ratio }
   }
   return best ? best.id : plan.sources[0].id
 }
 
 function pickPile(plan, c) {
-  // Returns the pile whose upgraders need energy the most.
+  // Returns the pile whose upgraders need energy the most, counting
+  // loads already promised to it.
   let best = 0, bestNeed = -Infinity
   for (let p = 0; p < plan.piles.length; p++) {
-    let need = -(heap.pileEnergies[p] || 0)
+    let need = -(heap.pileEnergies[p] || 0) - (heap.pilePromisedBy[p] || 0)
     for (const u of c.u) {
       if (u.memory.pile == p) need += u.store.getFreeCapacity() + 20
     }
@@ -604,9 +782,42 @@ function pickPile(plan, c) {
   return best
 }
 
-function runHauler(creep, plan, c, room) {
-  // Moves energy from miners to the spawn or an upgrade pile.
+function pickDrainers(c, left) {
+  // Names the haulers that empty the spawn while it has nothing to build.
+  heap.drainers = new Set()
+  if (MatchTicks - left < Tune.drainAfter || heap.nextCost > 0) return
+  const haulers = c.h.filter(h => !h.spawning && !heap.tugs.has(h.name))
+  haulers.sort((a, b) => countParts(a, CARRY) - countParts(b, CARRY) ||
+    (a.name < b.name ? -1 : 1))
+  for (const h of haulers.slice(0, Tune.drainers)) heap.drainers.add(h.name)
+}
+
+function runDrainer(creep, plan, c, left) {
+  // Withdraws spawn energy and hauls it to a pile; true while draining.
+  if (creep.memory.state != "fill") return false
+  const spawn = Game.getObjectById(plan.spawn)
+  if (!spawn) return false
+  const stock = spawn.store.energy
+  const free = creep.store.getFreeCapacity()
+  if (free == 0 || (creep.store.energy > 0 && (stock == 0 || left < 40))) {
+    creep.memory.state = "deliver"
+    creep.memory.target = "pile"
+    creep.memory.pile = pickPile(plan, c)
+    return false
+  }
+  if (go(creep, spawn.pos, 1)) {
+    // Wait for a full load unless the match is ending.
+    if (stock >= free || (left < 40 && stock > 0)) {
+      creep.withdraw(spawn, RESOURCE_ENERGY, Math.min(free, stock))
+    }
+  }
+  return true
+}
+
+function runHauler(creep, plan, c, room, left) {
+  // Moves energy from source drops to the spawn or an upgrade pile.
   if (!creep.memory.state) creep.memory.state = "fill"
+  if (heap.drainers.has(creep.name) && runDrainer(creep, plan, c, left)) return
   if (creep.memory.state == "fill") {
     if (!creep.memory.src || !c.bySource[creep.memory.src]) {
       creep.memory.src = assignSource(creep, plan, c)
@@ -614,7 +825,16 @@ function runHauler(creep, plan, c, room) {
     const src = plan.sources.find(s => s.id == creep.memory.src)
     const b = c.bySource[src.id]
     const free = creep.store.getFreeCapacity()
-    if (free == 0 || (b.miners.length == 0 && creep.store.energy > 0)) {
+    const ending = left < src.distance + 15 && creep.store.energy > 0
+    // Idle station: no adjacent miner holds energy and no drop is in reach.
+    let idle = Tune.leaveIdle > 0 && creep.store.energy >= Tune.leaveIdle
+    if (idle) {
+      for (const m of b.miners) {
+        if (m.memory.posted && creep.pos.isNearTo(m) && m.store.energy > 0) idle = false
+      }
+      for (const d of heap.drops[src.id] || []) if (creep.pos.isNearTo(d)) idle = false
+    }
+    if (free < Tune.fillDone || ending || idle || (b.work == 0 && creep.store.energy > 0)) {
       creep.memory.state = "deliver"
       creep.memory.pile = pickPile(plan, c)
     } else {
@@ -627,7 +847,7 @@ function runHauler(creep, plan, c, room) {
           if (!reach || d.amount > reach.amount) reach = d
           continue
         }
-        if (d.amount < 40 || heap.swept.has(d.id)) continue
+        if (d.amount < Tune.sweepMin || heap.swept.has(d.id)) continue
         if (!sweep || d.amount > sweep.amount) sweep = d
       }
       if (reach) {
@@ -639,10 +859,16 @@ function runHauler(creep, plan, c, room) {
         go(creep, sweep.pos, 1)
         return
       }
+      // Take the first wait tile nobody else holds; else queue by the station.
+      for (const w of src.waits) {
+        const tile = new RoomPosition(w.x, w.y, src.room)
+        if (creep.pos.isEqualTo(tile)) return
+        if (Game.rooms[src.room] && tile.lookFor(LOOK_CREEPS).length > 0) continue
+        go(creep, tile, 0)
+        return
+      }
       const station = new RoomPosition(src.station.x, src.station.y, src.room)
-      const busy = Game.rooms[src.room] !== undefined &&
-        station.lookFor(LOOK_CREEPS).length > 0 && !creep.pos.isEqualTo(station)
-      go(creep, station, busy ? 1 : 0)
+      go(creep, station, 1)
       return
     }
   }
@@ -653,18 +879,21 @@ function runHauler(creep, plan, c, room) {
       return
     }
     const spawn = Game.getObjectById(plan.spawn)
-    let need = heap.nextCost - room.energyAvailable - heap.spawnPromised
+    const spawnFree = spawn ? spawn.store.getFreeCapacity(RESOURCE_ENERGY) : 0
+    let need = Math.min(spawnFree, heap.nextCost - room.energyAvailable) - heap.spawnPromised
     // With no upgraders yet, park energy in the spawn instead of a pile.
-    if (c.u.length == 0 && spawn) {
-      need = Math.max(need, spawn.store.getFreeCapacity(RESOURCE_ENERGY) -
-        heap.spawnPromised)
+    if (c.u.length == 0) need = spawnFree - heap.spawnPromised
+    const pileCap = Tune.pileBase + Tune.pileBuffer * c.u.length
+    const pileRoom = pileCap - heap.pileEnergy - heap.pilePromised
+    if (creep.memory.target === undefined) {
+      if (need > 0 && left > 60) creep.memory.target = "spawn"
+      else if (c.u.length > 0 && (pileRoom > 0 || left <= 60)) creep.memory.target = "pile"
+      else creep.memory.target = "hold"
     }
-    if (spawn && need > 0 && creep.memory.target != "pile") {
-      creep.memory.target = "spawn"
-      heap.spawnPromised += Math.min(need, creep.store.energy)
+    if (creep.memory.target == "spawn") {
+      heap.spawnPromised += Math.min(Math.max(need, 0), creep.store.energy)
       if (go(creep, spawn.pos, 1)) {
-        const amount = Math.min(creep.store.energy,
-          spawn.store.getFreeCapacity(RESOURCE_ENERGY))
+        const amount = Math.min(creep.store.energy, spawnFree)
         if (amount > 0) creep.transfer(spawn, RESOURCE_ENERGY, amount)
         creep.memory.target = undefined
         if (creep.store.energy - amount < 50) {
@@ -674,31 +903,97 @@ function runHauler(creep, plan, c, room) {
       }
       return
     }
+    if (creep.memory.target == "hold") {
+      // Nothing wants energy yet: wait by the spawn and top it up.
+      creep.memory.target = undefined
+      if (go(creep, spawn.pos, 1)) {
+        const amount = Math.min(creep.store.energy, spawnFree)
+        if (amount > 0) creep.transfer(spawn, RESOURCE_ENERGY, amount)
+      }
+      return
+    }
+    if (!creep.memory.promised) {
+      heap.pilePromisedBy[creep.memory.pile || 0] =
+        (heap.pilePromisedBy[creep.memory.pile || 0] || 0) + creep.store.energy
+    }
+    creep.memory.promised = true
+    heap.pilePromised += creep.store.energy
     creep.memory.target = "pile"
     const p = plan.piles[creep.memory.pile || 0]
-    if (go(creep, new RoomPosition(p.x, p.y, plan.room), 0)) {
-      creep.drop(RESOURCE_ENERGY)
+    const pilePos = new RoomPosition(p.x, p.y, plan.room)
+    if (Tune.handWalk && !creep.pos.isEqualTo(pilePos)) {
+      // On the way in, feed the hungriest adjacent upgrader of any pile.
+      let hungry = null
+      for (const u of c.u) {
+        if (!u.memory.posted || !creep.pos.isNearTo(u)) continue
+        const burn = countParts(u, WORK) * left - u.store.energy
+        const free = Math.min(u.store.getFreeCapacity(), burn) - (heap.handed[u.name] || 0)
+        if (free >= 20 && (!hungry || free > hungry.free)) hungry = { u, free }
+      }
+      if (hungry) {
+        const amount = Math.min(creep.store.energy, hungry.free)
+        creep.transfer(hungry.u, RESOURCE_ENERGY, amount)
+        heap.handed[hungry.u.name] = (heap.handed[hungry.u.name] || 0) + amount
+        if (creep.store.energy - amount <= 0) {
+          creep.memory.target = undefined
+          creep.memory.promised = undefined
+          creep.memory.state = "fill"
+          creep.memory.src = assignSource(creep, plan, c)
+          return
+        }
+      }
+    }
+    if (go(creep, pilePos, 0)) {
+      // Hand energy to the hungriest adjacent upgrader; drop the rest when
+      // another hauler waits at the door or the hand over takes too long.
+      creep.memory.handing = (creep.memory.handing || 0) + 1
+      let hungry = null
+      for (const u of c.u) {
+        if (!u.memory.posted || u.memory.pile != (creep.memory.pile || 0)) continue
+        const burn = countParts(u, WORK) * left - u.store.energy
+        const free = Math.min(u.store.getFreeCapacity(), burn) - (heap.handed[u.name] || 0)
+        if (free <= 0 || !creep.pos.isNearTo(u)) continue
+        if (!hungry || free > hungry.free) hungry = { u, free }
+      }
+      const door = new RoomPosition(p.door.x, p.door.y, plan.room)
+      const queued = door.lookFor(LOOK_CREEPS).some(o => o.my && o.memory.role == "h")
+      const energy = creep.store.energy
+      if (hungry && !(queued && creep.memory.handing > 1) &&
+        creep.memory.handing <= Tune.handOver) {
+          const amount = Math.min(energy, hungry.free)
+          creep.transfer(hungry.u, RESOURCE_ENERGY, amount)
+          heap.handed[hungry.u.name] = (heap.handed[hungry.u.name] || 0) + amount
+          if (energy - amount > 0) return
+      } else if (energy > 0) {
+        creep.drop(RESOURCE_ENERGY)
+      }
+      creep.memory.handing = undefined
       creep.memory.target = undefined
+      creep.memory.promised = undefined
       creep.memory.state = "fill"
       creep.memory.src = assignSource(creep, plan, c)
     }
   }
 }
 
-function runUpgrader(creep, plan, room) {
-  // Walks to a slot next to its pile, then picks up and upgrades.
-  const pile = plan.piles[creep.memory.pile]
-  const slot = pile && pile.slots[creep.memory.slot]
-  if (!slot) return
-  creep.memory.posted = go(creep, new RoomPosition(slot.x, slot.y, plan.room), 0)
+function runUpgrader(creep, plan, room, left) {
+  // Picks up from its pile and upgrades from its post.
   if (!creep.memory.posted) {
+    if (countParts(creep, MOVE) > 0) {
+      // Mobile upgraders walk to their post on their own.
+      const post = postOf(creep, plan)
+      if (post && go(creep, post, 0)) creep.memory.posted = true
+    }
     if (creep.store.energy > 0 && creep.pos.inRangeTo(room.controller, 3)) {
       creep.upgradeController(room.controller)
     }
     return
   }
   const drop = heap.pileDrops[creep.memory.pile]
-  if (drop && creep.store.getFreeCapacity() > 0) creep.pickup(drop)
+  const burn = countParts(creep, WORK) * left
+  if (drop && creep.store.getFreeCapacity() > 0 && creep.store.energy < burn) {
+    creep.pickup(drop)
+  }
   if (creep.store.energy > 0) creep.upgradeController(room.controller)
 }
 
@@ -710,8 +1005,8 @@ function scanDrops(room, plan) {
   heap.pileEnergies = []
   heap.pileEnergy = 0
   const drops = room.find(FIND_DROPPED_RESOURCES)
-  for (const name of plan.remoteRooms) {
-    if (Game.rooms[name]) drops.push(...Game.rooms[name].find(FIND_DROPPED_RESOURCES))
+  for (const s of plan.sources) {
+    if (s.remote && Game.rooms[s.room]) drops.push(...Game.rooms[s.room].find(FIND_DROPPED_RESOURCES))
   }
   for (const d of drops) {
     if (d.resourceType != RESOURCE_ENERGY) continue
@@ -763,29 +1058,20 @@ function report(room, c) {
       JSON.stringify(heap.plan.sources.map(s => [s.x, s.y, s.station.x,
         s.station.y, s.spots.length, s.distance, s.spawnDistance])))
   }
-  console.log("[mokosh] t=" + (Game.time - Memory.start) +
-    " rcl=" + room.controller.level +
-    " gcl=" + Math.floor(Game.gcl.progress) +
-    " energy=" + room.energyAvailable +
-    " m=" + c.m.length + " h=" + c.h.length + " u=" + c.u.length +
-    " pile=" + heap.pileEnergy +
-    " cpu=" + Game.cpu.getUsed().toFixed(2) +
-    " bucket=" + Game.cpu.bucket)
-  // Diagnostics: source leftovers, hauler states, stuck and idle creeps.
   const srcs = heap.plan.sources.map(s => {
     const o = Game.getObjectById(s.id)
-    return s.room.slice(-2) + ":" + (o ? o.energy + "/" + (o.ticksToRegeneration || 0) : "?") +
+    return (o ? o.energy + "/" + (o.ticksToRegeneration || 0) : "?") +
       ":w" + c.bySource[s.id].work
   })
-  const fill = c.h.filter(h => h.memory.state == "fill")
   const carried = c.h.reduce((n, h) => n + h.store.energy, 0)
-  let stuck = 0
-  for (const name in heap.paths) if (heap.paths[name].stuck >= 2) stuck++
   const posted = c.u.filter(u => u.memory.posted).length
-  const empty = c.u.filter(u => u.memory.posted && u.store.energy == 0).length
-  console.log("[diag] src " + srcs.join(" ") + " fill=" + fill.length +
-    " carried=" + carried + " stuck=" + stuck + " posted=" + posted +
-    " dry=" + empty)
+  console.log("[mokosh] t=" + (Game.time - Memory.start) +
+    " gcl=" + Math.floor(Game.gcl.progress) +
+    " energy=" + room.energyAvailable + " next=" + heap.nextCost +
+    " m=" + c.m.length + " h=" + c.h.length + " u=" + c.u.length +
+    "/" + posted + " pile=" + heap.pileEnergy + " backlog=" + heap.backlog +
+    " carried=" + carried + " src=" + srcs.join(" ") +
+    " cpu=" + Game.cpu.getUsed().toFixed(1) + " bucket=" + Game.cpu.bucket)
 }
 
 module.exports.loop = function () {
@@ -796,28 +1082,44 @@ module.exports.loop = function () {
   const room = spawn.room
   if (!heap.plan || heap.plan.room != room.name) heap.plan = makePlan(room)
   const plan = heap.plan
-  // Remote sources are planned later, one per tick, to spare the CPU.
-  if (plan.pendingRemotes.length > 0 && Game.time - Memory.start > 30 &&
-    Game.cpu.bucket > 300) {
-      const r = plan.pendingRemotes.shift()
-      safely("plan " + r.room, () =>
-        plan.sources.push(plan.planSource(r.id, r.room, r.x, r.y, 5)))
-  }
+  const left = MatchTicks - (Game.time - Memory.start)
   cleanMemory()
   scanDrops(room, plan)
   const c = census(plan)
   heap.spawnPromised = 0
+  heap.pilePromised = 0
+  heap.pilePromisedBy = []
+  heap.handed = {}
   heap.swept = new Set()
   heap.intents = new Map()
-  safely("spawn", () => runSpawn(room, plan, c))
+  for (const h of c.h) {
+    if (h.memory.state == "deliver" && h.memory.target == "pile") {
+      heap.pilePromisedBy[h.memory.pile || 0] =
+        (heap.pilePromisedBy[h.memory.pile || 0] || 0) + h.store.energy
+    }
+  }
+  safely("spawn", () => runSpawn(room, plan, c, left))
+  safely("tugs", () => assignTugs(plan, c))
+  heap.drainers = new Set()
+  safely("drainers", () => pickDrainers(c, left))
   for (const creep of c.m) {
     if (!creep.spawning) safely(creep.name, () => runMiner(creep, plan, c))
   }
+  for (const creep of c.b) {
+    if (!creep.spawning) safely(creep.name, () => runBuffer(creep, c))
+  }
   for (const creep of c.h) {
-    if (!creep.spawning) safely(creep.name, () => runHauler(creep, plan, c, room))
+    if (creep.spawning) continue
+    const passenger = heap.tugs.get(creep.name)
+    if (passenger && !passenger.spawning) {
+      let towing = false
+      safely(creep.name, () => { towing = runTug(creep, passenger, plan) })
+      if (towing) continue
+    }
+    safely(creep.name, () => runHauler(creep, plan, c, room, left))
   }
   for (const creep of c.u) {
-    if (!creep.spawning) safely(creep.name, () => runUpgrader(creep, plan, room))
+    if (!creep.spawning) safely(creep.name, () => runUpgrader(creep, plan, room, left))
   }
   safely("traffic", resolveTraffic)
   if ((Game.time - Memory.start) % LogEvery == 0) report(room, c)

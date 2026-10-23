@@ -121,6 +121,7 @@ character, thematically matched to its game. Game classification lives in
 | **Volot** | [Territory](games/territory/) | `volot` | the land giant |
 | **Yarilo** | [Tribal Village](games/tribal_village/) | `yarilo` | god of spring and village life |
 | **Zhar-Ptitsa** | [Fruit Market](games/fruit-market/) | `zhar_ptitsa` | the Firebird, stealer of golden apples |
+| **Zhukov** | [Generals Competition](games/generals-competition/) | `zhukov` | the marshal who took Berlin |
 | **Zlydni** | [Emerg Ant](games/emerg-ant/) | `zlydni` | a swarm of little spirits |
 | **Zmey Gorynych** | [Moba](games/moba/) | `gorynych` | three heads for three lanes |
 | **Zmeya** | [Snake Royale](games/snake-royale/) | `zmeya` | the snake |

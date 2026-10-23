@@ -46,3 +46,23 @@ proc run*(client: CoworldClient, onMessage: proc(m: JsonNode)) =
       echo client.name, ": bad JSON from server, ignoring"
       continue
     onMessage(parsed)
+
+proc runRaw*(client: CoworldClient, onText: proc(text: string)) =
+  ## Receive loop variant that hands the raw JSON text to onText so a
+  ## policy can use a faster parser for large observations.
+  while true:
+    var received: Option[Message]
+    try:
+      received = client.ws.receiveMessage()
+    except CatchableError:
+      echo client.name, ": websocket closed (", getCurrentExceptionMsg(), ")"
+      break
+    if received.isNone:
+      continue
+    let message = received.get()
+    if message.kind == Ping:
+      client.ws.send(message.data, Pong)
+      continue
+    if message.kind != TextMessage:
+      continue
+    onText(message.data)

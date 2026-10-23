@@ -1,0 +1,2147 @@
+{
+  "schema_version": 1,
+  "purpose": "Regression for preserving an unverified rejected decision across conversation rebase without promoting it to verified state.",
+  "provenance": {
+    "policy_version": 109,
+    "slot": 2,
+    "game_id": 1,
+    "country_id": 3,
+    "phase": "15:Diplomacy",
+    "archive": "games/webdiplomacy/kutuzov/runs/2026-10-15-imitation-phase-6/game-001/slot-2.zip",
+    "archive_sha256": "d7971c9d77c2d8333d384bc1f1fbde7e46817704b31445bb56f6a9c38f00b022",
+    "details_member": "logs/details.jsonl",
+    "details_sha256": "e071240eb10af828231ce1093a45e097b903c2f965aaa5277f54fb9d8c6ecbc2",
+    "manifest_complete": true,
+    "manifest_files_verified": true,
+    "analysis": "games/webdiplomacy/kutuzov/runs/2026-10-15-imitation-phase-6/game-001/final-italy-evidence.json",
+    "analysis_sha256": "f6a4479abab87e42992f8accf3d68eb9a6a36c3b024aa499ecce3406515274ed",
+    "frozen_source_archive": "games/webdiplomacy/kutuzov/runs/2026-10-15-imitation-phase-6/game-001/source.tar.gz",
+    "frozen_source_archive_sha256": "556687a33296b73176716be6be0904b44308a3816577fa02679d3cce75b129e4",
+    "frozen_engines_sha256": "7a06c0272b7426e693623b7fa523a6832a9897d91386c344f28ccfecadbfb842",
+    "events": {
+      "verified_decision": {
+        "sequence": 8159,
+        "timestamp": "2026-10-16T06:06:26.119Z",
+        "event": "decision_parsed",
+        "phase": "15:Diplomacy",
+        "task": "plan",
+        "details_line": 8159,
+        "event_json_sha256": "e137d479077c21b96722be90e1c2c5ab697123ac80c9fd4dcd3adda71c16b533"
+      },
+      "verified_orders": {
+        "sequence": 8164,
+        "timestamp": "2026-10-16T06:06:26.129Z",
+        "event": "orders_verified",
+        "phase": "15:Diplomacy",
+        "task": "plan",
+        "details_line": 8164,
+        "event_json_sha256": "dc968b83de71d149d2756afe06d1460279e4a379801304d7dba1d5bc112d4c6e"
+      },
+      "review_request": {
+        "sequence": 8467,
+        "timestamp": "2026-10-16T06:08:05.633Z",
+        "event": "http_request",
+        "request_id": 2694,
+        "scope": "model",
+        "details_line": 8467,
+        "event_json_sha256": "673388572f6a540adea3da69e7256c046b2f0c37ba51c72187a044ec397d337a"
+      },
+      "rejected_decision": {
+        "sequence": 8474,
+        "timestamp": "2026-10-16T06:08:23.038Z",
+        "event": "decision_parsed",
+        "phase": "15:Diplomacy",
+        "task": "review",
+        "details_line": 8474,
+        "event_json_sha256": "ca2a010689fe9283273b271c98373c32f48f24ed3a82ba4d5d04a9106a2d9b8b"
+      },
+      "save_request": {
+        "sequence": 8475,
+        "timestamp": "2026-10-16T06:08:23.039Z",
+        "event": "http_request",
+        "request_id": 2696,
+        "scope": "game",
+        "details_line": 8475,
+        "event_json_sha256": "b4fa343691167cd60c4e0fec2ff244d2fe60d7228e76fd4882384acddf93d823"
+      },
+      "server_saved_orders": {
+        "sequence": 8476,
+        "timestamp": "2026-10-16T06:08:23.051Z",
+        "event": "http_response",
+        "request_id": 2696,
+        "scope": "game",
+        "details_line": 8476,
+        "event_json_sha256": "7e2d67c5dd63863712101528ffaa871902fda07efa16e30aa30d6b3e59b77150"
+      },
+      "verification_error": {
+        "sequence": 8478,
+        "timestamp": "2026-10-16T06:08:23.051Z",
+        "event": "error",
+        "scope": "orders_verification",
+        "details_line": 8478,
+        "event_json_sha256": "1f368529978bebcd0be6aa236e42b3835eac9c1bd7a046b937eb325354168004"
+      },
+      "fresh_context": {
+        "sequence": 8482,
+        "timestamp": "2026-10-16T06:08:23.562Z",
+        "event": "http_response",
+        "request_id": 2697,
+        "scope": "game",
+        "details_line": 8482,
+        "event_json_sha256": "4b2e684774e8f3980e56530aff6be0b43439d665aab0fc857232b72da1323799"
+      },
+      "rebase": {
+        "sequence": 8488,
+        "timestamp": "2026-10-16T06:08:23.571Z",
+        "event": "conversation_rebased",
+        "phase": "15:Diplomacy",
+        "details_line": 8488,
+        "event_json_sha256": "c514a2081a1fee115252b866126a0081c0e875a596dee83cada9cd31602dabc7"
+      },
+      "repair_request": {
+        "sequence": 8491,
+        "timestamp": "2026-10-16T06:08:23.575Z",
+        "event": "http_request",
+        "request_id": 2699,
+        "scope": "model",
+        "details_line": 8491,
+        "event_json_sha256": "cc30c0a337c4b0f03f7ec0b9c8fa790bfd1922dac7905e67ac1dde6b4d9a9f88"
+      }
+    },
+    "review_model": "openai/gpt-6.1-sol",
+    "repair_model": "openai/gpt-6-luna",
+    "review_request_body_sha256": "314fc2d4cc0597dcb42d9fe5df3328229cf6111d5acc2f350a1f26d1ec4c2b5c",
+    "repair_request_body_sha256": "a799bb94d583c8c5af027083986afa0961109bc416f93cf45f4b81fcc0a09088",
+    "current_input_sha256": "8ebefc0989af0255e4ff169af844b5006c91bf1aa5017efe1c950b800afbcfe1",
+    "map_text_sha256": "6122d3be449053110393441f48fdf6c5e9617b7553043d96b8441f38a958f67b",
+    "captured_rejection_receipt_available": false,
+    "rejected_receipt_derivation": "Reconstructed object from the frozen engines.nim failure-path schema, decision 8474 press=[], and error 8478. It is not a captured receipt or exact serialized receipt bytes.",
+    "fixture_scope": "current_input is the complete user object from request 8491, unchanged. Its press array was already empty. Unrelated private press, request credentials, provider response metadata and the policy text are excluded. The static public map is retained verbatim.",
+    "state_proof": "Decision 8159 was verified at 8164. Its saved_orders and memory are present before rejection in request 8467 and unchanged in request 8491, including memory_phase and memory_delivery. No orders_verified event occurs after 8164 before 8491. Current order_slots from request 8491 match fresh context 8482 and the server partial result 8476, not the last verified saved_orders.",
+    "source_order": [
+      8159,
+      8164,
+      8467,
+      8474,
+      8475,
+      8476,
+      8478,
+      8482,
+      8488,
+      8491
+    ],
+    "order_comparison": "Order relationships compare territory, type, destination, source and convoy flag, normalizing null coordinates to zero and Yes/No convoy strings to booleans. Native row IDs and metadata fields are excluded from this comparison."
+  },
+  "rejected_decision": {
+    "orders": [
+      {
+        "type": "Support move",
+        "terrID": 14,
+        "toTerrID": 15,
+        "fromTerrID": 16,
+        "viaConvoy": "No"
+      },
+      {
+        "type": "Hold",
+        "terrID": 24,
+        "toTerrID": 0,
+        "fromTerrID": 0,
+        "viaConvoy": "No"
+      },
+      {
+        "type": "Support hold",
+        "terrID": 23,
+        "toTerrID": 24,
+        "fromTerrID": 0,
+        "viaConvoy": "No"
+      },
+      {
+        "type": "Move",
+        "terrID": 68,
+        "toTerrID": 67,
+        "fromTerrID": 0,
+        "viaConvoy": "No"
+      },
+      {
+        "type": "Move",
+        "terrID": 63,
+        "toTerrID": 49,
+        "fromTerrID": 0,
+        "viaConvoy": "No"
+      },
+      {
+        "type": "Move",
+        "terrID": 16,
+        "toTerrID": 15,
+        "fromTerrID": 0,
+        "viaConvoy": "No"
+      },
+      {
+        "type": "Support move",
+        "terrID": 13,
+        "toTerrID": 15,
+        "fromTerrID": 16,
+        "viaConvoy": "No"
+      }
+    ],
+    "press": [],
+    "memory": "Final autumn review replaces erroneous self-bounce at Constantinople. Ankara holds with Smyrna support; Eastern Mediterranean attacks Aegean to cut support. Apulia attacks Venice with Tuscany and Piedmont support, aiming to beat Venice plus Trieste defense. Gulf of Lyons attacks Marseilles opportunistically. Marseilles ownership likely lost; priority recapture Venice and preserve Turkish centers. Watch final retreats for center captures.",
+    "stop_spending": false,
+    "stop_reason": ""
+  },
+  "verified_state": {
+    "saved_orders": [
+      {
+        "unitType": "Army",
+        "terrID": 14,
+        "type": "Move",
+        "fromTerrID": null,
+        "toTerrID": 49,
+        "viaConvoy": "No",
+        "countryID": "3"
+      },
+      {
+        "unitType": "Army",
+        "terrID": 24,
+        "type": "Move",
+        "fromTerrID": null,
+        "toTerrID": 22,
+        "viaConvoy": "No",
+        "countryID": "3"
+      },
+      {
+        "unitType": "Fleet",
+        "terrID": 23,
+        "type": "Move",
+        "fromTerrID": null,
+        "toTerrID": 22,
+        "viaConvoy": "No",
+        "countryID": "3"
+      },
+      {
+        "unitType": "Fleet",
+        "terrID": 68,
+        "type": "Hold",
+        "fromTerrID": null,
+        "toTerrID": null,
+        "viaConvoy": null,
+        "countryID": "3"
+      },
+      {
+        "unitType": "Fleet",
+        "terrID": 63,
+        "type": "Support move",
+        "fromTerrID": 14,
+        "toTerrID": 49,
+        "viaConvoy": null,
+        "countryID": "3"
+      },
+      {
+        "unitType": "Army",
+        "terrID": 16,
+        "type": "Hold",
+        "fromTerrID": null,
+        "toTerrID": null,
+        "viaConvoy": null,
+        "countryID": "3"
+      },
+      {
+        "unitType": "Army",
+        "terrID": 13,
+        "type": "Hold",
+        "fromTerrID": null,
+        "toTerrID": null,
+        "viaConvoy": null,
+        "countryID": "3"
+      }
+    ],
+    "memory": "Final autumn 1908 orders target Constantinople with Ankara and Smyrna, and Marseilles with Piedmont supported by Gulf of Lyons. Hold remaining units. Maximize final centers after retreats.",
+    "memory_phase": "15:Diplomacy",
+    "memory_delivery": {
+      "decision_id": "1:3:33",
+      "phase": "15:Diplomacy",
+      "outcomes": []
+    }
+  },
+  "current_input": {
+    "country_id": 3,
+    "end_year": 1908,
+    "scoring": "sum_of_squares",
+    "turn": 15,
+    "phase": "Diplomacy",
+    "year": 1908,
+    "season": "autumn",
+    "final_year": true,
+    "board": {
+      "turn": 15,
+      "phase": "Diplomacy",
+      "turnText": "Autumn, 1908",
+      "pressType": "Regular",
+      "gameOver": "No",
+      "units_fields": [
+        "id",
+        "countryID",
+        "type",
+        "terrID",
+        "retreating",
+        "countryName",
+        "territoryName"
+      ],
+      "units": [
+        [
+          4,
+          2,
+          "Fleet",
+          52,
+          false,
+          "France",
+          "Norwegian Sea"
+        ],
+        [
+          5,
+          2,
+          "Army",
+          37,
+          false,
+          "France",
+          "Kiel"
+        ],
+        [
+          7,
+          3,
+          "Army",
+          14,
+          false,
+          "Italy",
+          "Piedmont"
+        ],
+        [
+          8,
+          3,
+          "Army",
+          24,
+          false,
+          "Italy",
+          "Ankara"
+        ],
+        [
+          9,
+          3,
+          "Fleet",
+          23,
+          false,
+          "Italy",
+          "Smyrna"
+        ],
+        [
+          10,
+          4,
+          "Fleet",
+          35,
+          false,
+          "Germany",
+          "Norway"
+        ],
+        [
+          13,
+          5,
+          "Army",
+          22,
+          false,
+          "Austria",
+          "Constantinople"
+        ],
+        [
+          14,
+          5,
+          "Fleet",
+          67,
+          false,
+          "Austria",
+          "Aegean Sea"
+        ],
+        [
+          19,
+          7,
+          "Army",
+          25,
+          false,
+          "Russia",
+          "Armenia"
+        ],
+        [
+          21,
+          7,
+          "Army",
+          38,
+          false,
+          "Russia",
+          "Berlin"
+        ],
+        [
+          22,
+          7,
+          "Fleet",
+          69,
+          false,
+          "Russia",
+          "Black Sea"
+        ],
+        [
+          26,
+          2,
+          "Fleet",
+          2,
+          false,
+          "France",
+          "Edinburgh"
+        ],
+        [
+          27,
+          2,
+          "Army",
+          43,
+          false,
+          "France",
+          "Holland"
+        ],
+        [
+          28,
+          3,
+          "Fleet",
+          68,
+          false,
+          "Italy",
+          "Eastern Mediterranean"
+        ],
+        [
+          30,
+          4,
+          "Fleet",
+          54,
+          false,
+          "Germany",
+          "Skagerrack"
+        ],
+        [
+          31,
+          5,
+          "Army",
+          73,
+          false,
+          "Austria",
+          "Trieste"
+        ],
+        [
+          32,
+          5,
+          "Fleet",
+          65,
+          false,
+          "Austria",
+          "Ionian Sea"
+        ],
+        [
+          38,
+          2,
+          "Fleet",
+          55,
+          false,
+          "France",
+          "Heligoland Bight"
+        ],
+        [
+          39,
+          2,
+          "Army",
+          48,
+          false,
+          "France",
+          "Burgundy"
+        ],
+        [
+          41,
+          5,
+          "Army",
+          19,
+          false,
+          "Austria",
+          "Serbia"
+        ],
+        [
+          42,
+          7,
+          "Army",
+          41,
+          false,
+          "Russia",
+          "Munich"
+        ],
+        [
+          44,
+          2,
+          "Fleet",
+          77,
+          false,
+          "France",
+          "Spain (South Coast)"
+        ],
+        [
+          45,
+          2,
+          "Army",
+          42,
+          false,
+          "France",
+          "Ruhr"
+        ],
+        [
+          46,
+          4,
+          "Army",
+          36,
+          false,
+          "Germany",
+          "Denmark"
+        ],
+        [
+          47,
+          3,
+          "Fleet",
+          63,
+          false,
+          "Italy",
+          "Gulf of Lyons"
+        ],
+        [
+          51,
+          2,
+          "Army",
+          49,
+          false,
+          "France",
+          "Marseilles"
+        ],
+        [
+          52,
+          5,
+          "Army",
+          71,
+          false,
+          "Austria",
+          "Bohemia"
+        ],
+        [
+          53,
+          7,
+          "Army",
+          34,
+          false,
+          "Russia",
+          "Sweden"
+        ],
+        [
+          54,
+          7,
+          "Army",
+          40,
+          false,
+          "Russia",
+          "Silesia"
+        ],
+        [
+          55,
+          7,
+          "Army",
+          27,
+          false,
+          "Russia",
+          "Sevastopol"
+        ],
+        [
+          56,
+          5,
+          "Army",
+          15,
+          false,
+          "Austria",
+          "Venice"
+        ],
+        [
+          57,
+          2,
+          "Fleet",
+          60,
+          false,
+          "France",
+          "English Channel"
+        ],
+        [
+          58,
+          3,
+          "Army",
+          16,
+          false,
+          "Italy",
+          "Apulia"
+        ],
+        [
+          59,
+          3,
+          "Army",
+          13,
+          false,
+          "Italy",
+          "Tuscany"
+        ]
+      ],
+      "territories_fields": [
+        "terrID",
+        "ownerCountryID",
+        "unitID",
+        "retreatingUnitID",
+        "standoff",
+        "occupiedFromTerrID",
+        "territoryName"
+      ],
+      "territories": [
+        [
+          1,
+          2,
+          null,
+          null,
+          false,
+          null,
+          "Clyde"
+        ],
+        [
+          2,
+          2,
+          26,
+          null,
+          false,
+          null,
+          "Edinburgh"
+        ],
+        [
+          3,
+          2,
+          null,
+          null,
+          false,
+          null,
+          "Liverpool"
+        ],
+        [
+          4,
+          2,
+          null,
+          null,
+          false,
+          null,
+          "Yorkshire"
+        ],
+        [
+          5,
+          1,
+          null,
+          null,
+          false,
+          null,
+          "Wales"
+        ],
+        [
+          6,
+          2,
+          null,
+          null,
+          false,
+          null,
+          "London"
+        ],
+        [
+          7,
+          2,
+          null,
+          null,
+          false,
+          null,
+          "Portugal"
+        ],
+        [
+          8,
+          2,
+          44,
+          null,
+          false,
+          null,
+          "Spain"
+        ],
+        [
+          10,
+          3,
+          null,
+          null,
+          false,
+          null,
+          "Tunis"
+        ],
+        [
+          11,
+          3,
+          null,
+          null,
+          false,
+          null,
+          "Naples"
+        ],
+        [
+          12,
+          3,
+          null,
+          null,
+          false,
+          null,
+          "Rome"
+        ],
+        [
+          13,
+          3,
+          59,
+          null,
+          false,
+          null,
+          "Tuscany"
+        ],
+        [
+          14,
+          3,
+          7,
+          null,
+          false,
+          null,
+          "Piedmont"
+        ],
+        [
+          15,
+          3,
+          56,
+          null,
+          false,
+          null,
+          "Venice"
+        ],
+        [
+          16,
+          3,
+          58,
+          null,
+          false,
+          null,
+          "Apulia"
+        ],
+        [
+          17,
+          5,
+          null,
+          null,
+          false,
+          null,
+          "Greece"
+        ],
+        [
+          18,
+          5,
+          null,
+          null,
+          false,
+          null,
+          "Albania"
+        ],
+        [
+          19,
+          5,
+          41,
+          null,
+          false,
+          null,
+          "Serbia"
+        ],
+        [
+          20,
+          5,
+          null,
+          null,
+          false,
+          null,
+          "Bulgaria"
+        ],
+        [
+          21,
+          7,
+          null,
+          null,
+          false,
+          null,
+          "Rumania"
+        ],
+        [
+          22,
+          5,
+          13,
+          null,
+          false,
+          null,
+          "Constantinople"
+        ],
+        [
+          23,
+          3,
+          9,
+          null,
+          false,
+          null,
+          "Smyrna"
+        ],
+        [
+          24,
+          3,
+          8,
+          null,
+          false,
+          null,
+          "Ankara"
+        ],
+        [
+          25,
+          7,
+          19,
+          null,
+          false,
+          null,
+          "Armenia"
+        ],
+        [
+          26,
+          3,
+          null,
+          null,
+          false,
+          null,
+          "Syria"
+        ],
+        [
+          27,
+          7,
+          55,
+          null,
+          false,
+          null,
+          "Sevastopol"
+        ],
+        [
+          28,
+          7,
+          null,
+          null,
+          false,
+          null,
+          "Ukraine"
+        ],
+        [
+          29,
+          7,
+          null,
+          null,
+          false,
+          null,
+          "Warsaw"
+        ],
+        [
+          30,
+          7,
+          null,
+          null,
+          false,
+          null,
+          "Livonia"
+        ],
+        [
+          31,
+          7,
+          null,
+          null,
+          false,
+          null,
+          "Moscow"
+        ],
+        [
+          32,
+          7,
+          null,
+          null,
+          false,
+          null,
+          "St. Petersburg"
+        ],
+        [
+          33,
+          7,
+          null,
+          null,
+          false,
+          null,
+          "Finland"
+        ],
+        [
+          34,
+          4,
+          53,
+          null,
+          false,
+          null,
+          "Sweden"
+        ],
+        [
+          35,
+          4,
+          10,
+          null,
+          false,
+          null,
+          "Norway"
+        ],
+        [
+          36,
+          4,
+          46,
+          null,
+          false,
+          null,
+          "Denmark"
+        ],
+        [
+          37,
+          2,
+          5,
+          null,
+          false,
+          null,
+          "Kiel"
+        ],
+        [
+          38,
+          7,
+          21,
+          null,
+          false,
+          null,
+          "Berlin"
+        ],
+        [
+          39,
+          7,
+          null,
+          null,
+          false,
+          null,
+          "Prussia"
+        ],
+        [
+          40,
+          7,
+          54,
+          null,
+          false,
+          null,
+          "Silesia"
+        ],
+        [
+          41,
+          7,
+          42,
+          null,
+          false,
+          null,
+          "Munich"
+        ],
+        [
+          42,
+          2,
+          45,
+          null,
+          false,
+          null,
+          "Ruhr"
+        ],
+        [
+          43,
+          2,
+          27,
+          null,
+          false,
+          null,
+          "Holland"
+        ],
+        [
+          44,
+          2,
+          null,
+          null,
+          false,
+          null,
+          "Belgium"
+        ],
+        [
+          45,
+          2,
+          null,
+          null,
+          false,
+          null,
+          "Picardy"
+        ],
+        [
+          46,
+          2,
+          null,
+          null,
+          false,
+          null,
+          "Brest"
+        ],
+        [
+          47,
+          2,
+          null,
+          null,
+          false,
+          null,
+          "Paris"
+        ],
+        [
+          48,
+          2,
+          39,
+          null,
+          false,
+          null,
+          "Burgundy"
+        ],
+        [
+          49,
+          3,
+          51,
+          null,
+          false,
+          null,
+          "Marseilles"
+        ],
+        [
+          50,
+          2,
+          null,
+          null,
+          false,
+          null,
+          "Gascony"
+        ],
+        [
+          51,
+          7,
+          null,
+          null,
+          false,
+          null,
+          "Barents Sea"
+        ],
+        [
+          52,
+          2,
+          4,
+          null,
+          false,
+          null,
+          "Norwegian Sea"
+        ],
+        [
+          53,
+          2,
+          null,
+          null,
+          false,
+          null,
+          "North Sea"
+        ],
+        [
+          54,
+          4,
+          30,
+          null,
+          false,
+          null,
+          "Skagerrack"
+        ],
+        [
+          55,
+          2,
+          38,
+          null,
+          false,
+          null,
+          "Heligoland Bight"
+        ],
+        [
+          56,
+          7,
+          null,
+          null,
+          false,
+          null,
+          "Baltic Sea"
+        ],
+        [
+          57,
+          7,
+          null,
+          null,
+          false,
+          null,
+          "Gulf of Bothnia"
+        ],
+        [
+          58,
+          2,
+          null,
+          null,
+          false,
+          null,
+          "North Atlantic Ocean"
+        ],
+        [
+          60,
+          2,
+          57,
+          null,
+          false,
+          null,
+          "English Channel"
+        ],
+        [
+          61,
+          2,
+          null,
+          null,
+          false,
+          null,
+          "Mid-Atlantic Ocean"
+        ],
+        [
+          63,
+          3,
+          47,
+          null,
+          false,
+          null,
+          "Gulf of Lyons"
+        ],
+        [
+          64,
+          3,
+          null,
+          null,
+          false,
+          null,
+          "Tyrrhenian Sea"
+        ],
+        [
+          65,
+          5,
+          32,
+          null,
+          false,
+          null,
+          "Ionian Sea"
+        ],
+        [
+          67,
+          5,
+          14,
+          null,
+          false,
+          null,
+          "Aegean Sea"
+        ],
+        [
+          68,
+          3,
+          28,
+          null,
+          false,
+          null,
+          "Eastern Mediterranean"
+        ],
+        [
+          69,
+          7,
+          22,
+          null,
+          false,
+          null,
+          "Black Sea"
+        ],
+        [
+          70,
+          5,
+          null,
+          null,
+          false,
+          null,
+          "Tyrolia"
+        ],
+        [
+          71,
+          5,
+          52,
+          null,
+          false,
+          null,
+          "Bohemia"
+        ],
+        [
+          72,
+          5,
+          null,
+          null,
+          false,
+          null,
+          "Vienna"
+        ],
+        [
+          73,
+          5,
+          31,
+          null,
+          false,
+          null,
+          "Trieste"
+        ],
+        [
+          74,
+          5,
+          null,
+          null,
+          false,
+          null,
+          "Budapest"
+        ],
+        [
+          75,
+          5,
+          null,
+          null,
+          false,
+          null,
+          "Galicia"
+        ]
+      ],
+      "members_fields": [
+        "countryID",
+        "country",
+        "status",
+        "supplyCenterNo",
+        "unitNo"
+      ],
+      "members": [
+        [
+          1,
+          "England",
+          "Defeated",
+          0,
+          0
+        ],
+        [
+          2,
+          "France",
+          "Playing",
+          10,
+          10
+        ],
+        [
+          3,
+          "Italy",
+          "Playing",
+          7,
+          7
+        ],
+        [
+          4,
+          "Germany",
+          "Playing",
+          3,
+          3
+        ],
+        [
+          5,
+          "Austria",
+          "Playing",
+          7,
+          7
+        ],
+        [
+          6,
+          "Turkey",
+          "Defeated",
+          0,
+          0
+        ],
+        [
+          7,
+          "Russia",
+          "Playing",
+          7,
+          7
+        ]
+      ]
+    },
+    "recent_history": [
+      {
+        "turn": 13,
+        "phase": "Builds",
+        "order_fields": [
+          "countryID",
+          "terrID",
+          "unitType",
+          "type",
+          "toTerrID",
+          "fromTerrID",
+          "viaConvoy",
+          "success",
+          "dislodged"
+        ],
+        "orders": [
+          [
+            3,
+            12,
+            null,
+            "Build Army",
+            null,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            3,
+            11,
+            null,
+            "Build Army",
+            null,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            2,
+            46,
+            null,
+            "Build Fleet",
+            null,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            7,
+            56,
+            null,
+            "Destroy",
+            null,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            4,
+            55,
+            null,
+            "Destroy",
+            null,
+            null,
+            false,
+            true,
+            false
+          ]
+        ]
+      },
+      {
+        "turn": 14,
+        "phase": "Diplomacy",
+        "order_fields": [
+          "countryID",
+          "terrID",
+          "unitType",
+          "type",
+          "toTerrID",
+          "fromTerrID",
+          "viaConvoy",
+          "success",
+          "dislodged"
+        ],
+        "orders": [
+          [
+            5,
+            22,
+            "Army",
+            "Hold",
+            null,
+            null,
+            false,
+            false,
+            false
+          ],
+          [
+            5,
+            19,
+            "Army",
+            "Hold",
+            null,
+            null,
+            false,
+            false,
+            false
+          ],
+          [
+            3,
+            15,
+            "Army",
+            "Hold",
+            null,
+            null,
+            false,
+            false,
+            true
+          ],
+          [
+            7,
+            41,
+            "Army",
+            "Hold",
+            null,
+            null,
+            false,
+            false,
+            false
+          ],
+          [
+            3,
+            49,
+            "Fleet",
+            "Move",
+            77,
+            null,
+            false,
+            false,
+            true
+          ],
+          [
+            2,
+            14,
+            "Army",
+            "Move",
+            49,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            2,
+            53,
+            "Fleet",
+            "Move",
+            55,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            7,
+            33,
+            "Army",
+            "Move",
+            34,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            7,
+            28,
+            "Army",
+            "Move",
+            27,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            5,
+            70,
+            "Army",
+            "Move",
+            15,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            2,
+            46,
+            "Fleet",
+            "Move",
+            60,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            3,
+            11,
+            "Army",
+            "Move",
+            16,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            3,
+            12,
+            "Army",
+            "Move",
+            13,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            5,
+            17,
+            "Fleet",
+            "Move",
+            65,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            7,
+            27,
+            "Army",
+            "Move",
+            25,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            7,
+            69,
+            "Fleet",
+            "Move",
+            24,
+            null,
+            false,
+            false,
+            false
+          ],
+          [
+            2,
+            2,
+            "Fleet",
+            "Move",
+            53,
+            null,
+            false,
+            false,
+            false
+          ],
+          [
+            3,
+            23,
+            "Fleet",
+            "Move",
+            22,
+            null,
+            false,
+            false,
+            false
+          ],
+          [
+            2,
+            37,
+            "Army",
+            "Move",
+            41,
+            null,
+            false,
+            false,
+            false
+          ],
+          [
+            2,
+            43,
+            "Army",
+            "Move",
+            37,
+            null,
+            false,
+            false,
+            false
+          ],
+          [
+            3,
+            68,
+            "Fleet",
+            "Move",
+            67,
+            null,
+            false,
+            false,
+            false
+          ],
+          [
+            4,
+            54,
+            "Fleet",
+            "Move",
+            53,
+            null,
+            false,
+            false,
+            false
+          ],
+          [
+            5,
+            67,
+            "Fleet",
+            "Move",
+            23,
+            null,
+            false,
+            false,
+            false
+          ],
+          [
+            5,
+            71,
+            "Army",
+            "Support hold",
+            41,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            7,
+            40,
+            "Army",
+            "Support hold",
+            41,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            7,
+            38,
+            "Army",
+            "Support hold",
+            41,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            4,
+            35,
+            "Fleet",
+            "Support move",
+            53,
+            54,
+            false,
+            true,
+            false
+          ],
+          [
+            2,
+            77,
+            "Fleet",
+            "Support move",
+            49,
+            14,
+            false,
+            true,
+            false
+          ],
+          [
+            2,
+            52,
+            "Fleet",
+            "Support move",
+            53,
+            2,
+            false,
+            true,
+            false
+          ],
+          [
+            4,
+            36,
+            "Army",
+            "Support move",
+            37,
+            38,
+            false,
+            false,
+            false
+          ],
+          [
+            2,
+            42,
+            "Army",
+            "Support move",
+            41,
+            37,
+            false,
+            true,
+            false
+          ],
+          [
+            3,
+            24,
+            "Army",
+            "Support move",
+            22,
+            23,
+            false,
+            false,
+            false
+          ],
+          [
+            2,
+            48,
+            "Army",
+            "Support move",
+            41,
+            37,
+            false,
+            true,
+            false
+          ],
+          [
+            5,
+            73,
+            "Army",
+            "Support move",
+            15,
+            70,
+            false,
+            true,
+            false
+          ]
+        ]
+      },
+      {
+        "turn": 14,
+        "phase": "Retreats",
+        "order_fields": [
+          "countryID",
+          "terrID",
+          "unitType",
+          "type",
+          "toTerrID",
+          "fromTerrID",
+          "viaConvoy",
+          "success",
+          "dislodged"
+        ],
+        "orders": [
+          [
+            3,
+            15,
+            "Army",
+            "Retreat",
+            14,
+            null,
+            false,
+            true,
+            false
+          ],
+          [
+            3,
+            49,
+            "Fleet",
+            "Retreat",
+            63,
+            null,
+            false,
+            true,
+            false
+          ]
+        ]
+      },
+      {
+        "turn": 15,
+        "phase": "Diplomacy",
+        "order_fields": [
+          "countryID",
+          "terrID",
+          "unitType",
+          "type",
+          "toTerrID",
+          "fromTerrID",
+          "viaConvoy",
+          "success",
+          "dislodged"
+        ],
+        "orders": []
+      }
+    ],
+    "task": "repair",
+    "order_slots": [
+      {
+        "id": 950,
+        "countryID": 3,
+        "unitID": 7,
+        "unitType": "Army",
+        "terrID": 14,
+        "type": "Support move",
+        "toTerrID": 15,
+        "fromTerrID": 16,
+        "viaConvoy": false
+      },
+      {
+        "id": 951,
+        "countryID": 3,
+        "unitID": 8,
+        "unitType": "Army",
+        "terrID": 24,
+        "type": "Hold",
+        "toTerrID": null,
+        "fromTerrID": null,
+        "viaConvoy": false
+      },
+      {
+        "id": 952,
+        "countryID": 3,
+        "unitID": 9,
+        "unitType": "Fleet",
+        "terrID": 23,
+        "type": "Move",
+        "toTerrID": 22,
+        "fromTerrID": null,
+        "viaConvoy": false
+      },
+      {
+        "id": 961,
+        "countryID": 3,
+        "unitID": 28,
+        "unitType": "Fleet",
+        "terrID": 68,
+        "type": "Move",
+        "toTerrID": 67,
+        "fromTerrID": null,
+        "viaConvoy": false
+      },
+      {
+        "id": 972,
+        "countryID": 3,
+        "unitID": 47,
+        "unitType": "Fleet",
+        "terrID": 63,
+        "type": "Move",
+        "toTerrID": 49,
+        "fromTerrID": null,
+        "viaConvoy": false
+      },
+      {
+        "id": 980,
+        "countryID": 3,
+        "unitID": 58,
+        "unitType": "Army",
+        "terrID": 16,
+        "type": "Move",
+        "toTerrID": 15,
+        "fromTerrID": null,
+        "viaConvoy": false
+      },
+      {
+        "id": 981,
+        "countryID": 3,
+        "unitID": 59,
+        "unitType": "Army",
+        "terrID": 13,
+        "type": "Support move",
+        "toTerrID": 15,
+        "fromTerrID": 16,
+        "viaConvoy": false
+      }
+    ],
+    "saved_orders": [
+      {
+        "unitType": "Army",
+        "terrID": 14,
+        "type": "Move",
+        "fromTerrID": null,
+        "toTerrID": 49,
+        "viaConvoy": "No",
+        "countryID": "3"
+      },
+      {
+        "unitType": "Army",
+        "terrID": 24,
+        "type": "Move",
+        "fromTerrID": null,
+        "toTerrID": 22,
+        "viaConvoy": "No",
+        "countryID": "3"
+      },
+      {
+        "unitType": "Fleet",
+        "terrID": 23,
+        "type": "Move",
+        "fromTerrID": null,
+        "toTerrID": 22,
+        "viaConvoy": "No",
+        "countryID": "3"
+      },
+      {
+        "unitType": "Fleet",
+        "terrID": 68,
+        "type": "Hold",
+        "fromTerrID": null,
+        "toTerrID": null,
+        "viaConvoy": null,
+        "countryID": "3"
+      },
+      {
+        "unitType": "Fleet",
+        "terrID": 63,
+        "type": "Support move",
+        "fromTerrID": 14,
+        "toTerrID": 49,
+        "viaConvoy": null,
+        "countryID": "3"
+      },
+      {
+        "unitType": "Army",
+        "terrID": 16,
+        "type": "Hold",
+        "fromTerrID": null,
+        "toTerrID": null,
+        "viaConvoy": null,
+        "countryID": "3"
+      },
+      {
+        "unitType": "Army",
+        "terrID": 13,
+        "type": "Hold",
+        "fromTerrID": null,
+        "toTerrID": null,
+        "viaConvoy": null,
+        "countryID": "3"
+      }
+    ],
+    "press": [],
+    "omitted_messages": 2,
+    "outgoing_press": {
+      "limit_per_recipient": 2,
+      "press_type": "Regular",
+      "recipients": [
+        {
+          "to": 0,
+          "allowed": true,
+          "attempts": 0,
+          "remaining_attempts": 2
+        },
+        {
+          "to": 1,
+          "allowed": true,
+          "attempts": 0,
+          "remaining_attempts": 2
+        },
+        {
+          "to": 2,
+          "allowed": true,
+          "attempts": 0,
+          "remaining_attempts": 2
+        },
+        {
+          "to": 3,
+          "allowed": false,
+          "attempts": 0,
+          "remaining_attempts": 2
+        },
+        {
+          "to": 4,
+          "allowed": true,
+          "attempts": 0,
+          "remaining_attempts": 2
+        },
+        {
+          "to": 5,
+          "allowed": true,
+          "attempts": 0,
+          "remaining_attempts": 2
+        },
+        {
+          "to": 6,
+          "allowed": true,
+          "attempts": 0,
+          "remaining_attempts": 2
+        },
+        {
+          "to": 7,
+          "allowed": true,
+          "attempts": 0,
+          "remaining_attempts": 2
+        }
+      ]
+    },
+    "memory": "Final autumn 1908 orders target Constantinople with Ankara and Smyrna, and Marseilles with Piedmont supported by Gulf of Lyons. Hold remaining units. Maximize final centers after retreats.",
+    "memory_phase": "15:Diplomacy",
+    "memory_delivery": {
+      "decision_id": "1:3:33",
+      "phase": "15:Diplomacy",
+      "outcomes": []
+    },
+    "repair_feedback": "Server changed orders. Requested: Hold:24, Move:16:15:false, Move:63:49:false, Move:68:67:false, Support hold:23:24, Support move:13:15:16, Support move:14:15:16; saved: Hold:24, Move:16:15:false, Move:23:22:false, Move:63:49:false, Move:68:67:false, Support move:13:15:16, Support move:14:15:16.",
+    "remaining_usd": 0.08859943999999997,
+    "final_year_reserve_usd": 0.1,
+    "remaining_phase_calls": 2,
+    "reviewed": false,
+    "updates_stopped": false,
+    "remaining_updates": 2,
+    "deadline_unix": 1792130955,
+    "seconds_left": 52
+  },
+  "server_saved_orders": [
+    {
+      "unitType": "Army",
+      "terrID": 14,
+      "type": "Support move",
+      "fromTerrID": 16,
+      "toTerrID": 15,
+      "viaConvoy": null,
+      "countryID": "3"
+    },
+    {
+      "unitType": "Army",
+      "terrID": 24,
+      "type": "Hold",
+      "fromTerrID": null,
+      "toTerrID": null,
+      "viaConvoy": null,
+      "countryID": "3"
+    },
+    {
+      "unitType": "Fleet",
+      "terrID": 23,
+      "type": "Move",
+      "fromTerrID": null,
+      "toTerrID": 22,
+      "viaConvoy": "No",
+      "countryID": "3"
+    },
+    {
+      "unitType": "Fleet",
+      "terrID": 68,
+      "type": "Move",
+      "fromTerrID": null,
+      "toTerrID": 67,
+      "viaConvoy": "No",
+      "countryID": "3"
+    },
+    {
+      "unitType": "Fleet",
+      "terrID": 63,
+      "type": "Move",
+      "fromTerrID": null,
+      "toTerrID": 49,
+      "viaConvoy": "No",
+      "countryID": "3"
+    },
+    {
+      "unitType": "Army",
+      "terrID": 16,
+      "type": "Move",
+      "fromTerrID": null,
+      "toTerrID": 15,
+      "viaConvoy": "No",
+      "countryID": "3"
+    },
+    {
+      "unitType": "Army",
+      "terrID": 13,
+      "type": "Support move",
+      "fromTerrID": 16,
+      "toTerrID": 15,
+      "viaConvoy": null,
+      "countryID": "3"
+    }
+  ],
+  "failure": {
+    "scope": "orders_verification",
+    "error_type": "KutuzovError",
+    "error": "Server changed orders. Requested: Hold:24, Move:16:15:false, Move:63:49:false, Move:68:67:false, Support hold:23:24, Support move:13:15:16, Support move:14:15:16; saved: Hold:24, Move:16:15:false, Move:23:22:false, Move:63:49:false, Move:68:67:false, Support move:13:15:16, Support move:14:15:16."
+  },
+  "rejected_receipt": {
+    "event": "host_result",
+    "orders_verified": false,
+    "outcome": "rejected",
+    "error": "Server changed orders. Requested: Hold:24, Move:16:15:false, Move:63:49:false, Move:68:67:false, Support hold:23:24, Support move:13:15:16, Support move:14:15:16; saved: Hold:24, Move:16:15:false, Move:23:22:false, Move:63:49:false, Move:68:67:false, Support move:13:15:16, Support move:14:15:16.",
+    "confirmed_press": [],
+    "press_outcomes": []
+  },
+  "rebase": {
+    "phase": "15:Diplomacy",
+    "bytes": 50638,
+    "previous_messages": 6
+  },
+  "map_text": "{\"name\":\"Classic\",\"countries\":[{\"countryID\":1,\"name\":\"England\"},{\"countryID\":2,\"name\":\"France\"},{\"countryID\":3,\"name\":\"Italy\"},{\"countryID\":4,\"name\":\"Germany\"},{\"countryID\":5,\"name\":\"Austria\"},{\"countryID\":6,\"name\":\"Turkey\"},{\"countryID\":7,\"name\":\"Russia\"}],\"rules\":{},\"supplyCenterCount\":34,\"supplyCenterTarget\":18,\"territory_fields\":[\"id\",\"name\",\"type\",\"supply\",\"homeCountryID\",\"coast\",\"coastParentID\",\"borders\",\"coastalBorders\"],\"territories\":[[1,\"Clyde\",\"Coast\",false,1,\"No\",1,[[2,true,true],[3,true,true],[52,false,true],[58,false,true]],[[2,true,true],[3,true,true],[52,false,true],[58,false,true]]],[2,\"Edinburgh\",\"Coast\",true,1,\"No\",2,[[1,true,true],[3,true,false],[4,true,true],[52,false,true],[53,false,true]],[[1,true,true],[3,true,false],[4,true,true],[52,false,true],[53,false,true]]],[3,\"Liverpool\",\"Coast\",true,1,\"No\",3,[[1,true,true],[2,true,false],[4,true,false],[5,true,true],[58,false,true],[59,false,true]],[[1,true,true],[2,true,false],[4,true,false],[5,true,true],[58,false,true],[59,false,true]]],[4,\"Yorkshire\",\"Coast\",false,1,\"No\",4,[[2,true,true],[3,true,false],[5,true,false],[6,true,true],[53,false,true]],[[2,true,true],[3,true,false],[5,true,false],[6,true,true],[53,false,true]]],[5,\"Wales\",\"Coast\",false,1,\"No\",5,[[3,true,true],[4,true,false],[6,true,true],[59,false,true],[60,false,true]],[[3,true,true],[4,true,false],[6,true,true],[59,false,true],[60,false,true]]],[6,\"London\",\"Coast\",true,1,\"No\",6,[[4,true,true],[5,true,true],[53,false,true],[60,false,true]],[[4,true,true],[5,true,true],[53,false,true],[60,false,true]]],[7,\"Portugal\",\"Coast\",true,null,\"No\",7,[[8,true,true],[61,false,true]],[[8,true,false],[61,false,true],[76,false,true],[77,false,true]]],[8,\"Spain\",\"Coast\",true,null,\"Parent\",8,[[7,true,true],[49,true,true],[50,true,true],[61,false,true],[62,false,true],[63,false,true]],[[7,true,false],[49,true,false],[50,true,false]]],[9,\"North Africa\",\"Coast\",false,null,\"No\",9,[[10,true,true],[61,false,true],[62,false,true]],[[10,true,true],[61,false,true],[62,false,true]]],[10,\"Tunis\",\"Coast\",true,null,\"No\",10,[[9,true,true],[62,false,true],[64,false,true],[65,false,true]],[[9,true,true],[62,false,true],[64,false,true],[65,false,true]]],[11,\"Naples\",\"Coast\",true,3,\"No\",11,[[12,true,true],[16,true,true],[64,false,true],[65,false,true]],[[12,true,true],[16,true,true],[64,false,true],[65,false,true]]],[12,\"Rome\",\"Coast\",true,3,\"No\",12,[[11,true,true],[13,true,true],[15,true,false],[16,true,false],[64,false,true]],[[11,true,true],[13,true,true],[15,true,false],[16,true,false],[64,false,true]]],[13,\"Tuscany\",\"Coast\",false,3,\"No\",13,[[12,true,true],[14,true,true],[15,true,false],[63,false,true],[64,false,true]],[[12,true,true],[14,true,true],[15,true,false],[63,false,true],[64,false,true]]],[14,\"Piedmont\",\"Coast\",false,3,\"No\",14,[[13,true,true],[15,true,false],[49,true,true],[63,false,true],[70,true,false]],[[13,true,true],[15,true,false],[49,true,true],[63,false,true],[70,true,false]]],[15,\"Venice\",\"Coast\",true,3,\"No\",15,[[12,true,false],[13,true,false],[14,true,false],[16,true,true],[66,false,true],[70,true,false],[73,true,true]],[[12,true,false],[13,true,false],[14,true,false],[16,true,true],[66,false,true],[70,true,false],[73,true,true]]],[16,\"Apulia\",\"Coast\",false,3,\"No\",16,[[11,true,true],[12,true,false],[15,true,true],[65,false,true],[66,false,true]],[[11,true,true],[12,true,false],[15,true,true],[65,false,true],[66,false,true]]],[17,\"Greece\",\"Coast\",true,null,\"No\",17,[[18,true,true],[19,true,false],[20,true,true],[65,false,true],[67,false,true]],[[18,true,true],[19,true,false],[20,true,false],[65,false,true],[67,false,true],[81,false,true]]],[18,\"Albania\",\"Coast\",false,null,\"No\",18,[[17,true,true],[19,true,false],[65,false,true],[66,false,true],[73,true,true]],[[17,true,true],[19,true,false],[65,false,true],[66,false,true],[73,true,true]]],[19,\"Serbia\",\"Land\",true,null,\"No\",19,[[17,true,false],[18,true,false],[20,true,false],[21,true,false],[73,true,false],[74,true,false]],[[17,true,false],[18,true,false],[20,true,false],[21,true,false],[73,true,false],[74,true,false]]],[20,\"Bulgaria\",\"Coast\",true,null,\"Parent\",20,[[17,true,true],[19,true,false],[21,true,true],[22,true,true],[67,false,true],[69,false,true]],[[17,true,false],[19,true,false],[21,true,false],[22,true,false]]],[21,\"Rumania\",\"Coast\",true,null,\"No\",21,[[19,true,false],[20,true,true],[27,true,true],[28,true,false],[69,false,true],[74,true,false],[75,true,false]],[[19,true,false],[20,true,false],[27,true,true],[28,true,false],[69,false,true],[74,true,false],[75,true,false],[80,false,true]]],[22,\"Constantinople\",\"Coast\",true,6,\"No\",22,[[20,true,true],[23,true,true],[24,true,true],[67,false,true],[69,false,true]],[[20,true,false],[23,true,true],[24,true,true],[67,false,true],[69,false,true],[80,false,true],[81,false,true]]],[23,\"Smyrna\",\"Coast\",true,6,\"No\",23,[[22,true,true],[24,true,false],[25,true,false],[26,true,true],[67,false,true],[68,false,true]],[[22,true,true],[24,true,false],[25,true,false],[26,true,true],[67,false,true],[68,false,true]]],[24,\"Ankara\",\"Coast\",true,6,\"No\",24,[[22,true,true],[23,true,false],[25,true,true],[69,false,true]],[[22,true,true],[23,true,false],[25,true,true],[69,false,true]]],[25,\"Armenia\",\"Coast\",false,6,\"No\",25,[[23,true,false],[24,true,true],[26,true,false],[27,true,true],[69,false,true]],[[23,true,false],[24,true,true],[26,true,false],[27,true,true],[69,false,true]]],[26,\"Syria\",\"Coast\",false,6,\"No\",26,[[23,true,true],[25,true,false],[68,false,true]],[[23,true,true],[25,true,false],[68,false,true]]],[27,\"Sevastopol\",\"Coast\",true,7,\"No\",27,[[21,true,true],[25,true,true],[28,true,false],[31,true,false],[69,false,true]],[[21,true,true],[25,true,true],[28,true,false],[31,true,false],[69,false,true]]],[28,\"Ukraine\",\"Land\",false,7,\"No\",28,[[21,true,false],[27,true,false],[29,true,false],[31,true,false],[75,true,false]],[[21,true,false],[27,true,false],[29,true,false],[31,true,false],[75,true,false]]],[29,\"Warsaw\",\"Land\",true,7,\"No\",29,[[28,true,false],[30,true,false],[31,true,false],[39,true,false],[40,true,false],[75,true,false]],[[28,true,false],[30,true,false],[31,true,false],[39,true,false],[40,true,false],[75,true,false]]],[30,\"Livonia\",\"Coast\",false,7,\"No\",30,[[29,true,false],[31,true,false],[32,true,true],[39,true,true],[56,false,true],[57,false,true]],[[29,true,false],[31,true,false],[32,true,false],[39,true,true],[56,false,true],[57,false,true],[79,false,true]]],[31,\"Moscow\",\"Land\",true,7,\"No\",31,[[27,true,false],[28,true,false],[29,true,false],[30,true,false],[32,true,false]],[[27,true,false],[28,true,false],[29,true,false],[30,true,false],[32,true,false]]],[32,\"St. Petersburg\",\"Coast\",true,7,\"Parent\",32,[[30,true,true],[31,true,false],[33,true,true],[35,true,true],[51,false,true],[57,false,true]],[[30,true,false],[31,true,false],[33,true,false],[35,true,false]]],[33,\"Finland\",\"Coast\",false,7,\"No\",33,[[32,true,true],[34,true,true],[35,true,false],[57,false,true]],[[32,true,false],[34,true,true],[35,true,false],[57,false,true],[79,false,true]]],[34,\"Sweden\",\"Coast\",true,null,\"No\",34,[[33,true,true],[35,true,true],[36,true,true],[54,false,true],[56,false,true],[57,false,true]],[[33,true,true],[35,true,true],[36,true,true],[54,false,true],[56,false,true],[57,false,true]]],[35,\"Norway\",\"Coast\",true,null,\"No\",35,[[32,true,true],[33,true,false],[34,true,true],[51,false,true],[52,false,true],[53,false,true],[54,false,true]],[[32,true,false],[33,true,false],[34,true,true],[51,false,true],[52,false,true],[53,false,true],[54,false,true],[78,false,true]]],[36,\"Denmark\",\"Coast\",true,null,\"No\",36,[[34,true,true],[37,true,true],[53,false,true],[54,false,true],[55,false,true],[56,false,true]],[[34,true,true],[37,true,true],[53,false,true],[54,false,true],[55,false,true],[56,false,true]]],[37,\"Kiel\",\"Coast\",true,4,\"No\",37,[[36,true,true],[38,true,true],[41,true,false],[42,true,false],[43,true,true],[55,false,true],[56,false,true]],[[36,true,true],[38,true,true],[41,true,false],[42,true,false],[43,true,true],[55,false,true],[56,false,true]]],[38,\"Berlin\",\"Coast\",true,4,\"No\",38,[[37,true,true],[39,true,true],[40,true,false],[41,true,false],[56,false,true]],[[37,true,true],[39,true,true],[40,true,false],[41,true,false],[56,false,true]]],[39,\"Prussia\",\"Coast\",false,4,\"No\",39,[[29,true,false],[30,true,true],[38,true,true],[40,true,false],[56,false,true]],[[29,true,false],[30,true,true],[38,true,true],[40,true,false],[56,false,true]]],[40,\"Silesia\",\"Land\",false,4,\"No\",40,[[29,true,false],[38,true,false],[39,true,false],[41,true,false],[71,true,false],[75,true,false]],[[29,true,false],[38,true,false],[39,true,false],[41,true,false],[71,true,false],[75,true,false]]],[41,\"Munich\",\"Land\",true,4,\"No\",41,[[37,true,false],[38,true,false],[40,true,false],[42,true,false],[48,true,false],[70,true,false],[71,true,false]],[[37,true,false],[38,true,false],[40,true,false],[42,true,false],[48,true,false],[70,true,false],[71,true,false]]],[42,\"Ruhr\",\"Land\",false,4,\"No\",42,[[37,true,false],[41,true,false],[43,true,false],[44,true,false],[48,true,false]],[[37,true,false],[41,true,false],[43,true,false],[44,true,false],[48,true,false]]],[43,\"Holland\",\"Coast\",true,null,\"No\",43,[[37,true,true],[42,true,false],[44,true,true],[53,false,true],[55,false,true]],[[37,true,true],[42,true,false],[44,true,true],[53,false,true],[55,false,true]]],[44,\"Belgium\",\"Coast\",true,null,\"No\",44,[[42,true,false],[43,true,true],[45,true,true],[48,true,false],[53,false,true],[60,false,true]],[[42,true,false],[43,true,true],[45,true,true],[48,true,false],[53,false,true],[60,false,true]]],[45,\"Picardy\",\"Coast\",false,2,\"No\",45,[[44,true,true],[46,true,true],[47,true,false],[48,true,false],[60,false,true]],[[44,true,true],[46,true,true],[47,true,false],[48,true,false],[60,false,true]]],[46,\"Brest\",\"Coast\",true,2,\"No\",46,[[45,true,true],[47,true,false],[50,true,true],[60,false,true],[61,false,true]],[[45,true,true],[47,true,false],[50,true,true],[60,false,true],[61,false,true]]],[47,\"Paris\",\"Land\",true,2,\"No\",47,[[45,true,false],[46,true,false],[48,true,false],[50,true,false]],[[45,true,false],[46,true,false],[48,true,false],[50,true,false]]],[48,\"Burgundy\",\"Land\",false,2,\"No\",48,[[41,true,false],[42,true,false],[44,true,false],[45,true,false],[47,true,false],[49,true,false],[50,true,false]],[[41,true,false],[42,true,false],[44,true,false],[45,true,false],[47,true,false],[49,true,false],[50,true,false]]],[49,\"Marseilles\",\"Coast\",true,2,\"No\",49,[[8,true,true],[14,true,true],[48,true,false],[50,true,false],[63,false,true]],[[8,true,false],[14,true,true],[48,true,false],[50,true,false],[63,false,true],[77,false,true]]],[50,\"Gascony\",\"Coast\",false,2,\"No\",50,[[8,true,true],[46,true,true],[47,true,false],[48,true,false],[49,true,false],[61,false,true]],[[8,true,false],[46,true,true],[47,true,false],[48,true,false],[49,true,false],[61,false,true],[76,false,true]]],[51,\"Barents Sea\",\"Sea\",false,null,\"No\",51,[[32,false,true],[35,false,true],[52,false,true]],[[35,false,true],[52,false,true],[78,false,true]]],[52,\"Norwegian Sea\",\"Sea\",false,null,\"No\",52,[[1,false,true],[2,false,true],[35,false,true],[51,false,true],[53,false,true],[58,false,true]],[[1,false,true],[2,false,true],[35,false,true],[51,false,true],[53,false,true],[58,false,true]]],[53,\"North Sea\",\"Sea\",false,null,\"No\",53,[[2,false,true],[4,false,true],[6,false,true],[35,false,true],[36,false,true],[43,false,true],[44,false,true],[52,false,true],[54,false,true],[55,false,true],[60,false,true]],[[2,false,true],[4,false,true],[6,false,true],[35,false,true],[36,false,true],[43,false,true],[44,false,true],[52,false,true],[54,false,true],[55,false,true],[60,false,true]]],[54,\"Skagerrack\",\"Sea\",false,null,\"No\",54,[[34,false,true],[35,false,true],[36,false,true],[53,false,true]],[[34,false,true],[35,false,true],[36,false,true],[53,false,true]]],[55,\"Heligoland Bight\",\"Sea\",false,null,\"No\",55,[[36,false,true],[37,false,true],[43,false,true],[53,false,true]],[[36,false,true],[37,false,true],[43,false,true],[53,false,true]]],[56,\"Baltic Sea\",\"Sea\",false,null,\"No\",56,[[30,false,true],[34,false,true],[36,false,true],[37,false,true],[38,false,true],[39,false,true],[57,false,true]],[[30,false,true],[34,false,true],[36,false,true],[37,false,true],[38,false,true],[39,false,true],[57,false,true]]],[57,\"Gulf of Bothnia\",\"Sea\",false,null,\"No\",57,[[30,false,true],[32,false,true],[33,false,true],[34,false,true],[56,false,true]],[[30,false,true],[33,false,true],[34,false,true],[56,false,true],[79,false,true]]],[58,\"North Atlantic Ocean\",\"Sea\",false,null,\"No\",58,[[1,false,true],[3,false,true],[52,false,true],[59,false,true],[61,false,true]],[[1,false,true],[3,false,true],[52,false,true],[59,false,true],[61,false,true]]],[59,\"Irish Sea\",\"Sea\",false,null,\"No\",59,[[3,false,true],[5,false,true],[58,false,true],[60,false,true],[61,false,true]],[[3,false,true],[5,false,true],[58,false,true],[60,false,true],[61,false,true]]],[60,\"English Channel\",\"Sea\",false,null,\"No\",60,[[5,false,true],[6,false,true],[44,false,true],[45,false,true],[46,false,true],[53,false,true],[59,false,true],[61,false,true]],[[5,false,true],[6,false,true],[44,false,true],[45,false,true],[46,false,true],[53,false,true],[59,false,true],[61,false,true]]],[61,\"Mid-Atlantic Ocean\",\"Sea\",false,null,\"No\",61,[[7,false,true],[8,false,true],[9,false,true],[46,false,true],[50,false,true],[58,false,true],[59,false,true],[60,false,true],[62,false,true]],[[7,false,true],[9,false,true],[46,false,true],[50,false,true],[58,false,true],[59,false,true],[60,false,true],[62,false,true],[76,false,true],[77,false,true]]],[62,\"Western Mediterranean\",\"Sea\",false,null,\"No\",62,[[8,false,true],[9,false,true],[10,false,true],[61,false,true],[63,false,true],[64,false,true]],[[9,false,true],[10,false,true],[61,false,true],[63,false,true],[64,false,true],[77,false,true]]],[63,\"Gulf of Lyons\",\"Sea\",false,null,\"No\",63,[[8,false,true],[13,false,true],[14,false,true],[49,false,true],[62,false,true],[64,false,true]],[[13,false,true],[14,false,true],[49,false,true],[62,false,true],[64,false,true],[77,false,true]]],[64,\"Tyrrhenian Sea\",\"Sea\",false,null,\"No\",64,[[10,false,true],[11,false,true],[12,false,true],[13,false,true],[62,false,true],[63,false,true],[65,false,true]],[[10,false,true],[11,false,true],[12,false,true],[13,false,true],[62,false,true],[63,false,true],[65,false,true]]],[65,\"Ionian Sea\",\"Sea\",false,null,\"No\",65,[[10,false,true],[11,false,true],[16,false,true],[17,false,true],[18,false,true],[64,false,true],[66,false,true],[67,false,true],[68,false,true]],[[10,false,true],[11,false,true],[16,false,true],[17,false,true],[18,false,true],[64,false,true],[66,false,true],[67,false,true],[68,false,true]]],[66,\"Adriatic Sea\",\"Sea\",false,null,\"No\",66,[[15,false,true],[16,false,true],[18,false,true],[65,false,true],[73,false,true]],[[15,false,true],[16,false,true],[18,false,true],[65,false,true],[73,false,true]]],[67,\"Aegean Sea\",\"Sea\",false,null,\"No\",67,[[17,false,true],[20,false,true],[22,false,true],[23,false,true],[65,false,true],[68,false,true]],[[17,false,true],[22,false,true],[23,false,true],[65,false,true],[68,false,true],[81,false,true]]],[68,\"Eastern Mediterranean\",\"Sea\",false,null,\"No\",68,[[23,false,true],[26,false,true],[65,false,true],[67,false,true]],[[23,false,true],[26,false,true],[65,false,true],[67,false,true]]],[69,\"Black Sea\",\"Sea\",false,null,\"No\",69,[[20,false,true],[21,false,true],[22,false,true],[24,false,true],[25,false,true],[27,false,true]],[[21,false,true],[22,false,true],[24,false,true],[25,false,true],[27,false,true],[80,false,true]]],[70,\"Tyrolia\",\"Land\",false,5,\"No\",70,[[14,true,false],[15,true,false],[41,true,false],[71,true,false],[72,true,false],[73,true,false]],[[14,true,false],[15,true,false],[41,true,false],[71,true,false],[72,true,false],[73,true,false]]],[71,\"Bohemia\",\"Land\",false,5,\"No\",71,[[40,true,false],[41,true,false],[70,true,false],[72,true,false],[75,true,false]],[[40,true,false],[41,true,false],[70,true,false],[72,true,false],[75,true,false]]],[72,\"Vienna\",\"Land\",true,5,\"No\",72,[[70,true,false],[71,true,false],[73,true,false],[74,true,false],[75,true,false]],[[70,true,false],[71,true,false],[73,true,false],[74,true,false],[75,true,false]]],[73,\"Trieste\",\"Coast\",true,5,\"No\",73,[[15,true,true],[18,true,true],[19,true,false],[66,false,true],[70,true,false],[72,true,false],[74,true,false]],[[15,true,true],[18,true,true],[19,true,false],[66,false,true],[70,true,false],[72,true,false],[74,true,false]]],[74,\"Budapest\",\"Land\",true,5,\"No\",74,[[19,true,false],[21,true,false],[72,true,false],[73,true,false],[75,true,false]],[[19,true,false],[21,true,false],[72,true,false],[73,true,false],[75,true,false]]],[75,\"Galicia\",\"Land\",false,5,\"No\",75,[[21,true,false],[28,true,false],[29,true,false],[40,true,false],[71,true,false],[72,true,false],[74,true,false]],[[21,true,false],[28,true,false],[29,true,false],[40,true,false],[71,true,false],[72,true,false],[74,true,false]]],[76,\"Spain (North Coast)\",\"Coast\",false,null,\"Child\",8,[[7,false,true],[50,false,true],[61,false,true]],[[7,false,true],[50,false,true],[61,false,true]]],[77,\"Spain (South Coast)\",\"Coast\",false,null,\"Child\",8,[[7,false,true],[49,false,true],[61,false,true],[62,false,true],[63,false,true]],[[7,false,true],[49,false,true],[61,false,true],[62,false,true],[63,false,true]]],[78,\"St. Petersburg (North Coast)\",\"Coast\",false,7,\"Child\",32,[[35,false,true],[51,false,true]],[[35,false,true],[51,false,true]]],[79,\"St. Petersburg (South Coast)\",\"Coast\",false,7,\"Child\",32,[[30,false,true],[33,false,true],[57,false,true]],[[30,false,true],[33,false,true],[57,false,true]]],[80,\"Bulgaria (North Coast)\",\"Coast\",false,null,\"Child\",20,[[21,false,true],[22,false,true],[69,false,true]],[[21,false,true],[22,false,true],[69,false,true]]],[81,\"Bulgaria (South Coast)\",\"Coast\",false,null,\"Child\",20,[[17,false,true],[22,false,true],[67,false,true]],[[17,false,true],[22,false,true],[67,false,true]]]]}",
+  "expected_relationships": {
+    "rejected_orders_verified": false,
+    "verified_memory_matches_rejected_memory": false,
+    "verified_saved_orders_equal_current_slots": false,
+    "current_slots_match_server_partial_result": true,
+    "server_disagrees_with_rejected_order_territories": [
+      23
+    ],
+    "current_slots_differ_from_verified_order_territories": [
+      13,
+      14,
+      16,
+      24,
+      63,
+      68
+    ],
+    "rejected_decision_or_receipt_present_in_repair_transcript": false
+  }
+}

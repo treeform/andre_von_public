@@ -10,7 +10,7 @@
 ## Either file argument may be a comma-joined list (a.json,b.json) to pool arms.
 ##
 ## episodes.json comes from:
-##   uv --project ~/p/metta run coworld xp-request episodes <xreq_id> --json
+##   uvx --from ~/p/metta-coworld-cli/packages/coworld[auth] coworld xp-request episodes <xreq_id> --json
 ## One file: per-episode score, rank of 16, top score, then a summary. Two
 ## files: candidate vs baseline for the policy (any version) — Welch t on
 ## the log scores, Mann-Whitney U with a normal approximation, rank-1 rate —

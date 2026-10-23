@@ -9,14 +9,19 @@ import std/[httpclient, json, os, osproc, strutils], zippy
 
 proc episodesJson(requestId: string): JsonNode =
   let (output, code) = execCmdEx(
-    "uv --project " & getHomeDir() / "p/metta" &
-    " run coworld xp-request episodes " & requestId & " --json",
+    "uvx --from " & quoteShell(getHomeDir() / "p/metta-coworld-cli/packages/coworld[auth]") &
+    " coworld xp-request episodes " & requestId & " --json",
     options = {poUsePath, poStdErrToStdOut})
-  let start = output.find('[')
+  var start = output.find('{')
+  let arrayStart = output.find('[')
+  if start < 0 or (arrayStart >= 0 and arrayStart < start):
+    start = arrayStart
   if code != 0 or start < 0:
     quit("coworld xp-request episodes failed:\n" & output, 1)
   let parsed = parseJson(output[start .. ^1])
-  if parsed.kind == JArray: parsed else: parsed["episodes"]
+  if parsed.kind == JArray: parsed
+  elif parsed.hasKey("entries"): parsed["entries"]
+  else: parsed["episodes"]
 
 proc main() =
   if paramCount() < 2:

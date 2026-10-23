@@ -13,7 +13,7 @@
 
 import
   std/[os, random, strformat, strutils, tables],
-  sim, bots, match
+  sim, bots, match, replays, sessions
 
 type
   Tally = object
@@ -29,6 +29,11 @@ proc main() =
     seed = parseInt(paramStr(2))
     one = getEnv("AWM_FIELD_ONE") == "1"
     randomField = getEnv("AWM_FIELD_RANDOM") == "1"
+    seatCount = if getEnv("AWM_FIELD_SEATS").len > 0: parseInt(getEnv("AWM_FIELD_SEATS")) else: 5
+    record = getEnv("AWM_FIELD_RECORD")
+  var index = ""
+  if record.len > 0:
+    createDir(record)
   var rng = initRand(seed)
   var names, sources: seq[string]
   for k in 3 .. paramCount():
@@ -41,28 +46,28 @@ proc main() =
   for g in 0 ..< games:
     var picks: seq[int]
     if randomField:
-      let ourSeat = g mod 5
-      for seat in 0 ..< 5:
+      let ourSeat = g mod seatCount
+      for seat in 0 ..< seatCount:
         if seat == ourSeat:
           picks.add 0
         else:
           picks.add 1 + rng.rand(names.len - 2)
     elif one:
-      let ourSeat = g mod 5
+      let ourSeat = g mod seatCount
       var k = 0
-      for seat in 0 ..< 5:
+      for seat in 0 ..< seatCount:
         if seat == ourSeat:
           picks.add 0
         else:
           picks.add 1 + (g + k) mod (names.len - 1)
           inc k
     else:
-      for seat in 0 ..< 5:
-        picks.add (g * 5 + seat) mod names.len
+      for seat in 0 ..< seatCount:
+        picks.add (g * seatCount + seat) mod names.len
     var seated: seq[string]
     for p in picks:
       seated.add sources[p]
-    resetInboxes(5)
+    resetInboxes(seatCount)
     let vms = loadBots(seated)
     for i, vm in vms:
       if vm.failed:
@@ -72,7 +77,14 @@ proc main() =
     for i, vm in vms:
       if vm.deckProblems.len > 0:
         quit(names[picks[i]] & " illegal deck: " & $vm.deckProblems, 1)
-    var played = initBotMatch(seats, gameSeed, vms, 28_800)
+    var recorder: ReplayRecorder
+    if record.len > 0:
+      var config = GameConfig(seed: gameSeed.int32, maxTicks: 28_800)
+      for p in picks:
+        config.players.add PlayerConfig(name: names[p])
+      recorder = initReplayRecorder(matchSetup(seats, gameSeed.int32, 28_800),
+        config)
+    var played = initBotMatch(seats, gameSeed, vms, 28_800, recorder)
     var failedSeat = -1
     played.scriptError = proc(player: int, message: string) =
       failedSeat = player
@@ -80,6 +92,13 @@ proc main() =
         " FAILED: ", message
     played.run()
     lengths += played.game.turnNumber
+    if record.len > 0:
+      saveReplay(record / "g" & $g & ".raw", recorder.data)
+      var seatLabels, seatScores: seq[string]
+      for seat, p in picks:
+        seatLabels.add names[p]
+        seatScores.add (if played.outcome == MatchWon and played.game.winner == seat: "1.0" else: "0.0")
+      index.add "g" & $g & "\t-\t" & seatLabels.join("|") & "\t" & seatScores.join("|") & "\n"
     for seat, p in picks:
       tallies[names[p]].games += 1
       tallies[names[p]].seatGames[seat] += 1
@@ -89,10 +108,12 @@ proc main() =
         tallies[names[p]].seatWins[seat] += 1
       if seat == failedSeat:
         tallies[names[p]].failures += 1
+  if record.len > 0:
+    writeFile(record / "index.tsv", index)
   echo &"{games} games, mean turns {lengths.float / games.float:.1f}"
   for name, t in tallies:
     var seatText = ""
-    for s in 0 ..< 5:
+    for s in 0 ..< seatCount:
       seatText.add &" {t.seatWins[s]}/{t.seatGames[s]}"
     echo &"  {name}: {t.wins}/{t.games} ({100.0 * t.wins.float / max(t.games, 1).float:.1f}%)",
       &" failures {t.failures} seats{seatText}"

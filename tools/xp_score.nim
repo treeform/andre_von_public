@@ -9,7 +9,7 @@
 ## file argument may be a comma-separated list (west.json,east.json) to
 ## pool both-side arms.
 ## episodes.json comes from:
-##   uv --project ~/p/metta run coworld xp-request episodes <xreq_id> --json
+##   uvx --from ~/p/metta-coworld-cli/packages/coworld[auth] coworld xp-request episodes <xreq_id> --json
 
 import std/[json, os, math, strformat, strutils, tables, algorithm, sequtils]
 

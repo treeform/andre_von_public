@@ -87,7 +87,11 @@ proc gameInfo(root, name: string, names: JsonNode, delayDays: int,
     quoteShell("games" / name)
   ).strip()
   if log.len == 0:
-    result.status = Active
+    result.status =
+      if name in hold:
+        Held
+      else:
+        Active
     return
   let parts = log.split(' ')
   result.commit = parts[0]

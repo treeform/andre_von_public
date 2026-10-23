@@ -1,0 +1,54 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Screeps PW stats</title>
+<style>
+body { font: 14px/1.4 -apple-system, Helvetica, sans-serif; margin: 24px; color: #222; }
+table { border-collapse: collapse; }
+th, td { padding: 4px 12px; text-align: right; border-bottom: 1px solid #ddd; }
+th:first-child, td:first-child { text-align: left; }
+th.group { text-align: left; background: #eee; padding-top: 14px; }
+tr.off td { background: #f8e0e0; }
+tr.off td:first-child { color: #a00; }
+td.ours { font-weight: 600; }
+</style></head><body>
+<h2>Screeps PW: mokosh vs lyrebird, bowerbird, richard</h2>
+<p>Averages over each policy's seats. Red rows: ours is below 0.67x or above 1.5x the rivals' mean.</p>
+<table>
+<tr><th>stat</th><th>mokosh</th><th>lyrebird</th><th>bowerbird</th><th>richard</th></tr>
+<tr><th class="group" colspan="5">Direct control (what the script decides)</th></tr>
+<tr class="off"><td>first miner spawn tick</td><td class="ours">1.</td><td>7.</td><td>7.</td><td>7.</td></tr>
+<tr class="off"><td>first hauler spawn tick</td><td class="ours">7.</td><td>1.</td><td>1.</td><td>1.</td></tr>
+<tr><td>first upgrader spawn tick</td><td class="ours">567.5</td><td>557.</td><td>565.5</td><td>550.5</td></tr>
+<tr><td>tick reaching 10 harvest WORK</td><td class="ours">556.</td><td>533.5</td><td>528.5</td><td>563.5</td></tr>
+<tr><td>miners spawned</td><td class="ours">6.</td><td>4.</td><td>4.</td><td>4.</td></tr>
+<tr><td>haulers spawned</td><td class="ours">10.</td><td>9.</td><td>9.</td><td>10.</td></tr>
+<tr><td>upgraders spawned</td><td class="ours">10.</td><td>10.</td><td>10.</td><td>10.</td></tr>
+<tr><td>miner WORK parts</td><td class="ours">10.</td><td>10.</td><td>10.</td><td>10.</td></tr>
+<tr><td>upgrader WORK parts</td><td class="ours">20.</td><td>20.</td><td>20.</td><td>20.</td></tr>
+<tr><td>hauler CARRY capacity</td><td class="ours">1175.</td><td>1175.</td><td>1175.</td><td>1400.</td></tr>
+<tr class="off"><td>creeps with CARRY among miners</td><td class="ours">5.</td><td>0.</td><td>0.</td><td>0.</td></tr>
+<tr><td>miner spawn to first harvest ticks</td><td class="ours">44.2</td><td>54.6</td><td>55.1</td><td>54.</td></tr>
+<tr><td>upgrader spawn to first upgrade ticks</td><td class="ours">50.0</td><td>58.</td><td>55.8</td><td>45.7</td></tr>
+<tr><td>hauler ticks moving loaded</td><td class="ours">4623.5</td><td>4258.</td><td>4305.</td><td>4639.</td></tr>
+<tr><td>hauler ticks moving empty</td><td class="ours">4425.</td><td>3761.5</td><td>3726.5</td><td>3463.5</td></tr>
+<tr class="off"><td>hauler ticks waiting at stations</td><td class="ours">1160.5</td><td>837.5</td><td>694.</td><td>553.5</td></tr>
+<tr class="off"><td>hauler ticks waiting at the controller</td><td class="ours">430.</td><td>655.</td><td>738.5</td><td>547.5</td></tr>
+<tr><td>hauler ticks waiting on the road</td><td class="ours">368.</td><td>208.</td><td>226.5</td><td>507.5</td></tr>
+<tr class="off"><td>hauler ticks waiting at the spawn</td><td class="ours">176.5</td><td>74.5</td><td>75.5</td><td>95.</td></tr>
+<tr><th class="group" colspan="5">Semi-indirect (what the economy yields)</th></tr>
+<tr><td>energy harvested</td><td class="ours">23069.</td><td>23250.</td><td>23270.</td><td>23392.</td></tr>
+<tr><td>energy hauled</td><td class="ours">21897.</td><td>19665.5</td><td>19612.</td><td>18730.5</td></tr>
+<tr><td>hauled per CARRY per tick</td><td class="ours">1.2</td><td>1.1</td><td>1.1</td><td>0.9</td></tr>
+<tr><td>energy spent on bodies</td><td class="ours">6100.</td><td>5850.</td><td>5850.</td><td>6300.</td></tr>
+<tr><td>energy left at source regen</td><td class="ours">3911.</td><td>3390.</td><td>3370.</td><td>3338.</td></tr>
+<tr class="off"><td>decay at sources</td><td class="ours">1777.5</td><td>4329.</td><td>4411.5</td><td>4590.5</td></tr>
+<tr class="off"><td>decay at the controller</td><td class="ours">496.</td><td>0.</td><td>0.</td><td>0.</td></tr>
+<tr class="off"><td>spawn full ticks (regen lost)</td><td class="ours">16.5</td><td>24.5</td><td>23.5</td><td>114.5</td></tr>
+<tr class="off"><td>upgrader idle share (percent)</td><td class="ours">1.8</td><td>12.0</td><td>12.2</td><td>7.8</td></tr>
+<tr><td>energy left at the end</td><td class="ours">958.5</td><td>978.5</td><td>976.</td><td>1074.</td></tr>
+<tr><th class="group" colspan="5">Indirect (outcomes)</th></tr>
+<tr><td>GCL at tick 500</td><td class="ours">0.</td><td>0.</td><td>0.</td><td>0.</td></tr>
+<tr><td>GCL at tick 1000</td><td class="ours">5585.</td><td>5041.</td><td>4867.</td><td>4672.5</td></tr>
+<tr><td>GCL final</td><td class="ours">15563.</td><td>13930.</td><td>13875.</td><td>13179.5</td></tr>
+</table>
+<p>Generated 2026-10-23 11:16.</p>
+</body></html>

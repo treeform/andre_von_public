@@ -56,27 +56,36 @@ https://softmaxdash-nginx.tail0f4a29.ts.net/league/screeps-pw
   far. Neighbors W8N9, W9N8, W8N8, W7N9 have two sources each.
 - Baseline colony (README): 32,416 from W1N1, 16,792 from W9N9.
 
+- 0.1.5 through 0.1.11 (2026-10-09 to 2026-10-22, current 0.1.11): W3N3 is W2N2 rotated 180
+  degrees (both homes: two sources with three open spots each, controller 21-25 steps
+  from the sources, spawn 21-23 steps from both); matches are 1500 ticks; ZIP/WASM
+  policies allowed; safeMode is nil (combat possible, nobody uses it). Scores are
+  deterministic per seat (sd 0) and fast-XP == local == hosted exactly.
+- Fast-XP: POST https://fast-xp-k8s-prod.tail0f4a29.ts.net/v1/games/screeps-pw/run with
+  the JS source in both seats runs a full match in ~11 s (tools/fastxp.nim, tools/sweep.nim
+  for Tune overrides, two requests at a time). Hosted XP remains the verdict.
+- Rules confirmed from the engine source: the spawn regenerates 1/tick only while room
+  energy < 300; a source's 300-tick timer starts at its first harvest and resets it to
+  3000 (owned room); drops decay ceil(amount/1000) per pile per tick, so every dropping
+  miner costs 1/tick.
+
 ## Backlog
 
-- Status 2026-10-09 ~07:30Z: champion v13, ladder #1 (1628 MMR, 46-2); 0.1.4 is viewer only.
-- Small tweaks around v13 keep losing 1-6k (the deterministic economy is timing sensitive):
-  extensions, extra haulers, hauler hysteresis, early upgraders, no-overflow miners,
-  fullest-miner targeting, lifecycle. Next tries should be structural.
-- Remaining leaks (ledger, v13): loose pile decay 20-26k per seat (persistent overflow piles
-  under home miners, ~1/tick each), upgrade-pile decay 4-8k, tombstones ~3.6k.
-- W3N3 home source: north spot (13,8) is walled off from the station (14,11); its pile is
-  swept only by a ~12 tile detour.
-- W2N2 ramp: no upgrading until ~t1000 while ~2.9k energy idles on the piles.
-- If a stronger rival appears: shared rooms W2N3 and W3N2 hold our remotes; add flee or defense.
-
-- Remote mining: local runs (mirror and vs colony) give v5 82,540 / 77,732 but hosted gives 78,064 / 58,675. Find the hosted-only difference first.
-- W9N9 pile layout: (11,5) door (12,6) and (8,5) door (9,4) keep a 2-wide corridor at x 13-14.
-
-
-- Remote mining in neighbor rooms (5/tick per neutral source).
-- Faster opening (time to saturate home sources).
-- End game: drain every pile and hauler into the controller by tick 6000.
-- Pulled upgraders/miners without MOVE parts (pull mechanics).
+- Status 2026-10-22 23:30Z: field is Andrew Brower's lyrebird:v11 / bowerbird:v12 (14,149 W3N3 /
+  13,711 W2N2, richard's co-gas design with a faster ramp), richard/relh reservations (13,015 /
+  13,344), us mokosh:v14 13,430 / 13,392 (submitted, beats richard both seats, loses to lyrebird
+  and bowerbird). Old v13 scored 7,585 / 8,814 (6000-tick build order).
+- Ledger vs lyrebird (W3N3, tools/stats.nim): harvest -600 (2-WORK CARRY miners arrive later than
+  WWW drop miners), bodies +1,050 (12 upgraders, 10 haulers, 1,250 of miners), decay -1,233
+  (CARRY miners, hand-over at piles). Net -719.
+- Remaining leaks (v14 W3N3): source decay 2,600 (the WW opener alone 1,122, each WWC 270-590
+  from store overflow between hauler visits), pile decay 400-800, end inventory ~1,100 (haulers
+  in flight, full spawn), bodies 6,750.
+- Knob changes move a seat by +-200 chaotically (traffic); judge ideas on both seats, prefer
+  structural changes.
+- Untested: hauler route shortening (piles toward the sources), two piles instead of three,
+  no sweeping, WWW on one source only, replacing the opener late (t>900), combat (safeMode off).
+- Source regen phase does not matter: with 5 WORK a source yields exactly 10/tick regardless.
 
 ## Trials
 
@@ -105,3 +114,24 @@ Uploads that are not candidates: mokosh:v7 = v5 plus reset, hostile and death lo
 | v19x (local only) | early pile upgraders | upgrader ahead of home miners while piles hold >800 idle energy | local vs colony | colony baseline file | W3N3 44,715 (=), W2N2 67,769 (-3,142 vs v13). Rejected. |
 | v20x (local only) | extensions where a home source is spot limited | v13 plus two extensions in W3N3 only (built at 32,36 and 33,36), 3 WORK home miners there | local vs colony | colony baseline file | W3N3 38,949 (-5,766 vs v13). Rejected: 6000 energy and 400-energy spawn waits cost more than the extra 2/tick. |
 | v21x (local only) | creep lifecycle | old haulers deliver early; no upgraders in the last 150 ticks unless energy idles | local vs colony | colony baseline file | W3N3 43,099 (-1,616 vs v13), W2N2 67,112 (-3,799). Rejected. |
+| v14 | 1500-tick rewrite | immobile towed miners (WW opener, WWC/WWC/WC per source) and WWC upgraders, lyrebird's scripted opening (CM, CCCMMM, miners, 8 haulers), haulers hand energy to the hungriest upgrader on the pile tile, spawn-first delivery, 12 upgrader cap; fast-XP sweeps s01-s12 chose the order and caps | xreq_0493defd, xreq_3cbb97e0 (lyrebird:v11), xreq_48e88c1e, xreq_69abde45 (bowerbird:v12), xreq_f1e814cb, xreq_cbe205e9 (richard) | lyrebird:v11, bowerbird:v12, co-gas-screeps-pw-reservations-richard:v1 | W3N3 13,430, W2N2 13,392, sd 0 (12 episodes); wins 4/12 (richard both seats), loses to lyrebird 14,149/13,711 and bowerbird 14,034/13,716. Beats v13 (7,585/8,814) deterministically: kept, submitted 2026-10-22 23:25Z. |
+| fast-XP rejects (local only, both seats) | drop miners WW/WWW like lyrebird: 12,984/12,558 (decay 4,051); WWCC miners: 12,924/13,163 (slower ramp); earlier miners o3/o4: 12,999/11,298, 13,061/13,477; replace the WW opener at t=400/600 with WWC: 12,698/13,175, 12,733/13,175 (tow starves stations, decay rises); CARRY buffer creeps at stations: 11,932/12,273, 11,899/12,733; 10 upgraders: 12,783/13,128; 14 cap = 12 built; WWCC upgraders with 10 cap: 12,669/13,281; small pile buffer: 11,803/13,575 then 13,454/13,132 without holding; early CCMM hauler: 13,005/12,525; early upgraders in the order: 12,793/12,849; free late upgraders (freeStop 60): 13,454/13,392 (kept in the file, +24). | | | all rejected except freeStop |
+| g1-g4 (fast-XP) | shorter hauler trips | piles chosen on the controller side facing the sources (g1: 13,881/13,424), no drop sweeping at stations (g2: 13,691/13,523), both plus two piles instead of three (g4: 13,930/13,716) | | | kept as the new base |
+| h1-h6 (fast-XP) | hauler count | nine haulers minus one: 12,822/12,701; tenth CCMM hauler (h4): 14,457/14,206; eleventh: 13,982/13,777; h4 plus opener replacement at t=900: 14,323/14,061 | | | h4 kept |
+| v15 | tenth hauler and source-facing piles | h4 configuration: order ends with CCCMMM, CCCMMM, CCMM; PileCount 2; piles scored by distance to the sources; sweepMin 1000 | xreq_5061cd48, xreq_9469c61d (lyrebird:v11), xreq_1644d20d, xreq_40e7b885 (bowerbird:v12), xreq_ef925244, xreq_820be0b6 (richard) | lyrebird:v11, bowerbird:v12, co-gas-screeps-pw-reservations-richard:v1 | W3N3 14,457, W2N2 14,206, sd 0, 12/12 wins (lyrebird 14,149/13,711, bowerbird 14,034/13,716, richard 13,344/13,015). Beats v14 (13,430/13,392) deterministically: kept, submitted 2026-10-22 23:50Z. |
+| i1-i2 (fast-XP) | pile buffer | pileBuffer 200: 14,183/14,040; 60: 14,408/14,354 (mixed) | | | 120 kept |
+| i3-i4, j1-j2, k1-k4 (fast-XP, on v15) | knobs and order permutations | handOver 4: 14,355/14,312; fillDone 30: 13,978/14,343; upgraderStop 150 or 220: unchanged; tenth hauler CCCMMM: 14,054/13,978; tenth hauler before the WC miners: 14,237/14,431; WC miners before the ninth hauler: 14,047/11,919; hauler-first opener: 14,194/14,091 | | | all rejected (mixed or worse on a seat); v15 stays |
+| m1-m2, n1-n4, q, w, s20-s21, t, f0 (fast-XP) | post-v15 structural probes | self-walking WWCM upgraders: 14,316/13,884 and 14,254/14,017; WWC opener: 13,812/13,686; freeStop 250 (no free upgraders in the last 250 ticks): 14,495/14,226 kept; hand-over burn cap: 14,513/14,248 kept; wait tiles 2-3 per source: 14,388/14,121, 14,150/14,041; handOver 2: 14,235/14,054; pileBase 50: 14,331/14,248; tug slow weight 10/50: no gain; jitter in tug ties: no effect (ties are rare) | | | freeStop 250 and burn cap kept |
+| v16 | freeStop 250, burn cap | v15 plus no free upgraders in the last 250 ticks and haulers never hand an upgrader more than it can burn | xreq_8a8f09f7, xreq_3ffc1062 (lyrebird:v11), xreq_e15d9c67, xreq_76efacc0 (bowerbird:v12), xreq_c443c789, xreq_26f39a53 (richard) | lyrebird:v11, bowerbird:v12, richard | W3N3 14,513, W2N2 14,248, sd 0, 12/12 wins. Kept but superseded by v17 before submission. |
+| v17 | climbed build order | tools/climb.nim adjacent-swap hill climb on fast-XP (both seats must improve): the sixth entry becomes h:CCMM before the second WWC miner (order: WW, CM, CCCMMM, WWC, CCCMMM, CCMM, WWC, CCMM, WWC, CCCMMM, CCMM, WC, WC, CCCMMM, CCCMMM, CCMM); a second pass with a relaxed rule found nothing | xreq_8ce6df82, xreq_c0192126 (lyrebird:v11), xreq_ad906f1c, xreq_0e9a93fc (bowerbird:v12), xreq_96feac6c, xreq_710339cc (richard) | lyrebird:v11, bowerbird:v12, richard | W3N3 14,783, W2N2 14,853, sd 0, 12/12 wins (+270/+605 over v16). Kept, submitted 2026-10-23 ~00:45Z. |
+| climb passes 2-4 (fast-XP) | deeper build-order search | climb.nim extended with hauler body swaps (CCMM <-> CCCMMM), one hauler dropped, one CCMM inserted; relaxed rule (sum +80, no seat -40). From v17 nothing kept; best sum body4 (fifth entry CCCMMM -> CCMM): 15,066/14,789 (W3N3 +283, W2N2 -64). Climbing from body4 kept nothing; no order beat v17 on both seats (closest: swap0 14,974/14,704, drop9 14,837/14,773). | | | v17 stays; body4 is a one-seat candidate kept in the backlog |
+| stats 2026-10-23 | policy-vs-top-3 table | tools/compare.nim over v17 (fast-XP, both seats) and round 354 replays of lyrebird:v11, bowerbird:v12, richard; stats/stats_2026-10-23.html. Red rows: we spawn the miner before the hauler, 5 CARRY miners vs 0, haulers idle 1,296 ticks at stations vs 550-840, road jams 503 vs 208-507, controller decay 450 vs 0, spawn full 231 ticks vs 24; our wins: source decay 1,836 vs 4,330-4,590, hauled 20,967 vs 18,730-19,665. Deficit: harvest 22,967 vs 23,250-23,392 (left at regen 4,013 vs 3,370). | | | stuckLimit 2/3 (faster repath): 14,867/14,845, 14,659/14,855, mixed |
+| v18 | hand-over while walking, faster repath | haulers feed the hungriest adjacent upgrader on their way to the pile (handWalk) and repath around crowds after 2 stuck ticks instead of 4; alone each is mixed (14,921/14,787 and 14,867/14,845), together both seats rise | xreq_2e2257ee, xreq_4ce5c526 (lyrebird:v11), xreq_d45eeeb9, xreq_e9d46d7b (bowerbird:v12), xreq_1b8bd1bb, xreq_c188d039 (richard) | lyrebird:v11, bowerbird:v12, richard | W3N3 14,907, W2N2 14,950, sd 0, 12/12 wins (+124/+97 over v17). Kept, superseded by v19 before submission. |
+| v19 | per-room build orders | the homes are rotated copies but PathFinder tie-breaks differ per room, so Tune.orderW3N3 / orderW2N2 pick each seat's best climber neighbour (W3N3: fifth entry CCMM; W2N2: the first WC miner before the ninth hauler) | xreq_ (eps/v19_ids.txt) | lyrebird:v11, bowerbird:v12, richard | W3N3 15,203, W2N2 15,084, sd 0, 12/12 wins (+296/+134 over v18). Kept, submitted 2026-10-23. League rounds resumed 2026-10-23: v17 won all 21 rounds since 355, MMR 1,016 -> 1,494 (Browers 1,865). |
+| v20 | drain the idle spawn | after drainAfter, and only while the spawn has nothing to build, the smallest hauler withdraws full loads from the spawn and hauls them to the piles (spawn regen is 1/tick only below 300, so a full idle spawn wastes it). Sweep: drainAfter 1250: 15,427/15,211; 1000: 15,664/15,303; 900: 15,537/15,448; 800: 15,610/15,468; 700: 15,620/15,506 (best on both seats); 600: 15,583/15,506; two drainers lose (15,190/15,193). Stats: spawn-full ticks 231 -> 16, upgrader idle 9% -> 1.8%. | xreq_280ed571, xreq_dc25565c (lyrebird:v11), xreq_3ab14761, xreq_671756eb (bowerbird:v12), xreq_14d763d7, xreq_8f1669c3 (richard) | lyrebird:v11, bowerbird:v12, richard | W3N3 15,620, W2N2 15,506, sd 0, 12/12 wins (+417/+422 over v19). Kept, submitted 2026-10-23. |
+| fast-XP rejects (on v20) | cheaper ramp miners | WWWC miners: impossible, a 350 body exceeds the 300 spawn capacity at RCL1-2 (opening stalls, score 0); one WWW drop miner replacing WWC+WC: 14,498/14,666 (first WWC) and 15,018/14,938 (second WWC) | | | rejected; CARRY miners stay |
+| v21 | eleventh hauler in W3N3 | per-room climb from v20 added a CCMM hauler at the end of the W3N3 order (the drainer takes one hauler off source duty) | xreq_7e4f958c xreq_3187d1ee xreq_30e9555c xreq_2d05f872 xreq_0d42541e xreq_90e2d874 | lyrebird:v11, bowerbird:v12, richard | W3N3 15,714 (+94), W2N2 15,506 (=), sd 0, 12/12 wins. Submitted 2026-10-23. |
+| tools/remotes.nim | remote source map | ranks neutral sources by path cost from each home controller over the 0.1.11 replay terrain: W3N3: W3N4 (13,42) 43, W4N3 (46,4) 45, W4N2 (45,23) 49; W2N2: W2N1 (17,18) 51, W2N3 (30,7) 60 (the 49-53 entries are the opponent's home sources) | | | |
+| v22 | remote mining in W3N3 | after remoteAt, one WWCM miner walks to W3N4 (13,42) (tows break at room edges: the first try left the miner stuck at 26,1 for 450 ticks while haulers idled at the remote); haulers count only posted remote WORK; drops scanned in the remote room. Sweep (W2N2 off): remoteAt 600: 14,010; 650: 16,116; 700: 16,152; 800: 16,061; 900: 15,821. W2N2 remote W2N1: -236 to -379, so off. Second W3N3 remote W4N3: 15,842; WWMM miner: 15,338. | xreq_9c643f7e xreq_81e4e623 xreq_9483b3d6 xreq_8c706079 xreq_db614df9 xreq_a169d2b5 | lyrebird:v11, bowerbird:v12, richard | W3N3 16,152 (+438 over v21), W2N2 15,506 (=), sd 0, 12/12 wins; remote mining behaves on the hosted engine exactly as on fast-XP. Submitted 2026-10-23. |
+| fast-XP rejects (on v22) | other remotes, caps | W2N2 remote W2N3 (30,7) at 60 steps: 14,694 / 14,613 (tick 700 / 650); upgrader cap 14: no change (the income target binds first) | | | rejected |
+| v23 | W3N3 order with remote haulers | per-room climb from v22: twelfth hauler and the last one CCCMMM in W3N3 (the remote needs its own haulers); W2N2 unchanged | xreq_fa076f69 xreq_199860a8 xreq_0220d3f3 xreq_ebae55f1 xreq_83f215b1 xreq_86192257 | lyrebird:v11, bowerbird:v12, richard | W3N3 16,620 (+468 over v22), W2N2 15,506 (=), sd 0, 12/12 wins. Submitted 2026-10-23. |

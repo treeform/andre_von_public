@@ -9,7 +9,7 @@ stopped. Games still being played are not here yet.
 | agricogla | mikula | 20ae58b7 | 2026-09-01 |
 | atari-57 | emelya_jr | 20ae58b7 | 2026-09-01 |
 | atari-cabinet | emelya | 20ae58b7 | 2026-09-01 |
-| awm | radogost | 9f2e3c69 | 2026-10-16 |
+| awm | radogost | 8359ce85 | 2026-10-23 |
 | babel | gamayun | 92f06376 | 2026-09-01 |
 | battleroyale | koschei | 6f3ca27f | 2026-09-01 |
 | board-gauntlet | volga | 20ae58b7 | 2026-09-01 |
@@ -86,6 +86,7 @@ stopped. Games still being played are not here yet.
 | meadow | poludnitsa | 20ae58b7 | 2026-09-01 |
 | mindustry | polkan | 00519c5b | 2026-10-11 |
 | minecraft | zodchiy | e2ab8db1 | 2026-08-31 |
+| mini-diplomacy | mini_suvorov | 8815ea66 | 2026-10-23 |
 | minigrid | kroshechka | 92f06376 | 2026-09-01 |
 | moba | gorynych | 5d22a735 | 2026-09-28 |
 | negotiation-games | svakha | 20ae58b7 | 2026-09-01 |
@@ -108,11 +109,11 @@ stopped. Games still being played are not here yet.
 | pommerman | tugarin | 92f06376 | 2026-09-01 |
 | procgen | skazochnik | 20ae58b7 | 2026-09-01 |
 | proxywar | ivan_tsarevich | 8c8e03ba | 2026-09-03 |
-| pudge-wars | myasnik | b683a59f | 2026-09-09 |
+| pudge-wars | myasnik | 6d50ee6a | 2026-10-23 |
 | raid | ushkuynik | 92f06376 | 2026-09-01 |
 | rumor | babarikha | 92f06376 | 2026-09-01 |
 | rware-warehouse | ovinnik | 92f06376 | 2026-09-01 |
-| screeps-pw |  | 7205a042 | 2026-10-09 |
+| screeps-pw |  | feffc858 | 2026-10-23 |
 | smac-starcraft-micro | peresvet | 20ae58b7 | 2026-09-01 |
 | snake-royale | zmeya | 20ae58b7 | 2026-09-01 |
 | sokoban | gruzchik | 70fbdef1 | 2026-08-31 |
@@ -127,6 +128,7 @@ stopped. Games still being played are not here yet.
 | vanilla-wow | bova | a91d2c13 | 2026-09-01 |
 | vizdoom-deathmatch | chert | 92f06376 | 2026-09-01 |
 | walker-waterworld | vodyanoy | 20ae58b7 | 2026-09-01 |
+| webdiplomacy | kutuzov | 8815ea66 | 2026-10-23 |
 | werecog | volkolak | 20ae58b7 | 2026-09-01 |
 | who-cried-wolf | volchok | 22b8438d | 2026-10-07 |
 | zero-sum | belobog | 20ae58b7 | 2026-09-01 |
